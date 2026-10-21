@@ -1,0 +1,98 @@
+# Project context — Chromaforge
+
+> Working memory for this project. Read this first when resuming work.
+> Last update: 2026-10-21
+
+## What it is
+
+A web app to plan miniature painting schemes (tabletop hobby). The user uploads a photo of a
+miniature, marks zones (armour, cloth, metal…), then tries paints on it. The shading of the photo
+is preserved, and wash / drybrush / highlight / metallic / contrast-paint effects are simulated.
+
+It is also a **portfolio piece for a Marketing Manager application in Japan**: it must show
+marketing thinking (player recruitment, social sharing, driving visits to physical stores),
+not only technical skill.
+
+## Stack (do not change without asking)
+
+- React 18 + Vite 5 + TypeScript (strict), Zustand for state. No other runtime dependency.
+- **Ask the owner before adding any new dependency.**
+- No backend. Persistence in IndexedDB (projects, library) and localStorage (prefs, analytics).
+- Hash router (`#/…`) written in-house, i18n written in-house.
+- CSS: one stylesheet, `rem` units, mobile-first, desktop layout from `64rem`.
+- Visual polish is deferred: keep styles simple, the owner will do a visual pass later.
+
+## Architecture
+
+```
+src/
+  engine/       engine.ts (recolour renderer), maskTools.ts (brush, wand, lasso), demo.ts
+  lib/          color.ts, image.ts (resize, export), palette.ts (k-means extraction),
+                share.ts (card + link), recipe.ts, beginner.ts, analytics.ts, router.ts
+  i18n/         en.ts, ja.ts, index.ts (useT hook)
+  data/         paints.ts (text + hex only), presets.ts (neutral scheme names), stores.ts (sample)
+  storage/      db.ts (IndexedDB)
+  components/   UI, one component per file
+  pages/        Home, Beginner, Stores, Legal, Stats, SharedScheme
+```
+
+Rendering: `engine.render()` multiplies the paint colour by the photo's relative luminance per
+zone mask, then adds wash (cavities = blurred luminance − luminance), drybrush (raised + noise),
+edge highlight (Sobel × ridge) and specular for satin/gloss/metal.
+
+## Brief (priority order)
+
+1. **Mandatory reference image + palette extraction** — JPG/PNG/WebP only, resized and
+   compressed client-side, rights confirmation checkbox, 5–8 dominant colours (k-means),
+   eyedropper adds colours, each colour assignable to a zone, closest paints with similarity,
+   image always visible (side panel desktop / collapsible mobile), replaceable but never removable.
+2. **Legal & brand safety** — independent fan project. No logos, artwork, product photos or
+   trademarks in app name / UI / assets / metadata. Paints referenced by text + hex only.
+   Paint links go to neutral search or the user's chosen retailer, no affiliate links.
+   Footer disclaimer on every page, full text on Legal/About page, short version on cards
+   and README, in EN and JP.
+3. **EN/JP interface** — all strings in translation files, language switcher, Noto Sans JP.
+   Uncertain hobby terms are flagged in `src/i18n/ja.ts` with `// CHECK:` comments.
+4. **Shareable card** — story 1080×1920 and square 1080×1080, download / Web Share / copy link,
+   public link that re-opens the scheme, "Made with Chromaforge" footer + short disclaimer.
+5. **Beginner path** — upload → 3–5 step scheme (base coat, wash, drybrush, highlight) →
+   shopping list → store finder (sample data, pluggable provider).
+6. **Analytics** — privacy-friendly local event counters + internal stats page.
+
+Deadline ≈ 10 days: favour simple working features over complete ones.
+
+## Decisions taken
+
+- **UI languages are EN + JP only** (the earlier French UI was converted). Adding FR later is a
+  new file in `src/i18n/`.
+- **Scheme presets renamed to neutral descriptions** ("Royal blue & gold"…). Faction / chapter
+  names are trademarks and are not used anywhere. The demo figure is a generic "armoured trooper".
+- **Public share links without backend**: the scheme (recipes per role, no image) is encoded in
+  the URL hash (`#/s/<base64url>`). Images are not uploaded anywhere. A real hosted link would
+  need a backend; `lib/share.ts` is the single place to swap.
+- **Analytics are local only** (counts in localStorage, no personal data, no cookies, no third
+  party). `lib/analytics.ts` has an optional `endpoint` hook to forward events to a
+  self-hosted, cookie-less counter later. Stats page = this browser's numbers.
+- **Store finder**: fictional sample stores (no real retailer names), OpenStreetMap embed
+  iframe for the map (no dependency). `data/stores.ts` exposes a `StoreProvider` interface.
+- Images are stored as JPEG (quality 0.85, max 1600 px) to keep IndexedDB small.
+
+## Status
+
+- [x] Core editor: zones, brush / eraser / smart brush, magic wand, lasso, eyedropper, mask ops,
+      undo/redo, effects, finishes, variants & comparison, schemes, harmonies, exports, autosave.
+- [ ] 1. Reference panel + palette extraction + rights confirmation + replace image
+- [ ] 2. Legal page, footer, neutral presets, neutral paint search links
+- [ ] 3. i18n EN/JP
+- [ ] 4. Share card + share link + shared scheme page
+- [ ] 5. Beginner path + store finder
+- [ ] 6. Analytics + stats page
+- [ ] README
+
+## How to run
+
+```
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # type-check + production build
+```
