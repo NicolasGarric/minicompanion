@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { isDark } from '../lib/color';
+import { useT } from '../i18n';
 
 const ICONS: Record<string, ReactNode> = {
   brush: <><path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 114.03 4.03l-8.06 8.08" /><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 00-3-3.02z" /></>,
@@ -37,6 +38,13 @@ const ICONS: Record<string, ReactNode> = {
   mask: <><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 000 18z" fill="currentColor" /></>,
   sparkle: <path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z" />,
   more: <><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></>,
+  globe: <><circle cx="12" cy="12" r="10" /><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20" /></>,
+  share: <><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></>,
+  link: <><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7" /></>,
+  map: <><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z" /><path d="M8 2v16M16 6v16" /></>,
+  image: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></>,
+  chart: <><path d="M3 3v18h18" /><path d="M7 16v-4M12 16V8M17 16v-7" /></>,
+  menu: <path d="M3 6h18M3 12h18M3 18h18" />,
   keyboard: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" /></>,
 };
 
@@ -122,7 +130,7 @@ export function Slider({
   );
 }
 
-export const pct = (v: number) => `${Math.round(v * 100)} %`;
+export const pct = (v: number) => `${Math.round(v * 100)}%`;
 
 export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
   return (
@@ -151,15 +159,16 @@ export function Swatch({ hex, size = 22, title, ring }: { hex: string; size?: nu
 }
 
 export function ColorInput({ value, onChange, title }: { value: string; onChange: (hex: string) => void; title?: string }) {
+  const t = useT();
   return (
-    <label className="color-input" title={title ?? 'Couleur personnalisée'} style={{ background: value, color: isDark(value) ? '#fff' : '#111' }}>
+    <label className="color-input" title={title ?? t('common.customColor')} style={{ background: value, color: isDark(value) ? '#fff' : '#111' }}>
       <input type="color" value={value} onChange={(e) => onChange(e.target.value)} />
       <Icon name="picker" size={12} />
     </label>
   );
 }
 
-/** Menu déroulant simple ancré sous un bouton. */
+/** Simple dropdown anchored under its trigger. */
 export function Menu({ trigger, children, align = 'right' }: { trigger: (open: () => void) => ReactNode; children: (close: () => void) => ReactNode; align?: 'left' | 'right' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -185,6 +194,7 @@ export function Menu({ trigger, children, align = 'right' }: { trigger: (open: (
 }
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  const t = useT();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -195,7 +205,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
       <div className={`modal ${wide ? 'wide' : ''}`} role="dialog" aria-label={title}>
         <header>
           <h2>{title}</h2>
-          <IconButton icon="x" label="Fermer" onClick={onClose} />
+          <IconButton icon="x" label={t('common.close')} onClick={onClose} />
         </header>
         <div className="modal-body">{children}</div>
       </div>

@@ -4,6 +4,7 @@ import { engine, type Rect } from '../engine/engine';
 import { BrushStroke, feather, magicWand, polygonMask, type CombineMode } from '../engine/maskTools';
 import { rgbToHex } from '../lib/color';
 import { Icon, IconButton } from './ui';
+import { translate as tr, useT } from '../i18n';
 
 interface View {
   z: number;
@@ -15,6 +16,7 @@ const MIN_Z = 0.05;
 const MAX_Z = 16;
 
 export function CanvasView() {
+  const t = useT();
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
   const zones = useStore((s) => s.zones);
@@ -46,7 +48,7 @@ export function CanvasView() {
   const fit = useCallback(() => {
     const el = wrapRef.current;
     if (!el || !width) return;
-    const pad = 32;
+    const pad = 16;
     const z = Math.min((el.clientWidth - pad * 2) / width, (el.clientHeight - pad * 2) / height);
     setView({ z, x: (el.clientWidth - width * z) / 2, y: (el.clientHeight - height * z) / 2 });
   }, [width, height]);
@@ -188,17 +190,18 @@ export function CanvasView() {
     if (pickTool) {
       const c = engine.sampleSource(Math.round(p.x), Math.round(p.y), 2);
       const hex = rgbToHex(c);
-      s.set({ pickedColor: hex, harmonyBase: hex, rightTab: 'palette' });
+      s.addPaletteColor(hex);
+      s.set({ pickedColor: hex, harmonyBase: hex });
       return;
     }
 
     const zone = s.zones.find((z) => z.id === s.activeZoneId);
     if (!zone) {
-      s.toast('Créez ou sélectionnez une zone dans le panneau Zones.', 'error');
+      s.toast(tr('toast.selectZoneFirst'), 'error');
       return;
     }
     if (!zone.visible) {
-      s.toast('La zone active est masquée. Rendez-la visible pour la peindre.', 'error');
+      s.toast(tr('toast.zoneHidden'), 'error');
       return;
     }
 
@@ -206,7 +209,7 @@ export function CanvasView() {
       const mask = engine.ensureMask(zone.id);
       const stroke = new BrushStroke(mask, {
         ...s.brush,
-        erase: effectiveTool === 'eraser' || e.altKey,
+        erase: effectiveTool === 'eraser',
       });
       strokeRef.current = { stroke, zoneId: zone.id, pending: null, raf: 0 };
       const r = stroke.to(p.x, p.y);
@@ -218,7 +221,7 @@ export function CanvasView() {
       const mode: CombineMode = e.shiftKey ? 'add' : e.altKey ? 'subtract' : s.wand.mode;
       let sel = magicWand(p.x, p.y, s.wand.tolerance, s.wand.contiguous);
       sel = feather(sel, s.wand.feather);
-      s.applySelection(sel, mode, 'Baguette magique');
+      s.applySelection(sel, mode);
       return;
     }
 
@@ -281,7 +284,7 @@ export function CanvasView() {
       strokeRef.current = null;
       const s = useStore.getState();
       if (st.stroke.dirty) {
-        s.pushMaskHistory(st.zoneId, st.stroke.snapshot, e.altKey || s.tool === 'eraser' ? 'Gomme' : 'Pinceau');
+        s.pushMaskHistory(st.zoneId, st.stroke.snapshot);
         engine.invalidate(st.zoneId);
         s.bumpMasks();
       }
@@ -290,7 +293,7 @@ export function CanvasView() {
       if (lasso.length > 2) {
         const s = useStore.getState();
         const mode: CombineMode = e.shiftKey ? 'add' : e.altKey ? 'subtract' : s.lassoMode;
-        s.applySelection(polygonMask(lasso), mode, 'Lasso');
+        s.applySelection(polygonMask(lasso), mode);
       }
       setLasso(null);
     }
@@ -346,9 +349,9 @@ export function CanvasView() {
               splitDragRef.current = true;
             }}
           >
-            <span className="split-label left">Avant</span>
+            <span className="split-label left">{t('canvas.before')}</span>
             <span className="split-knob"><Icon name="split" size={14} /></span>
-            <span className="split-label right">Après</span>
+            <span className="split-label right">{t('canvas.after')}</span>
           </div>
         )}
         {showBrushCursor && (
@@ -365,12 +368,12 @@ export function CanvasView() {
         )}
       </div>
       <div className="zoom-bar">
-        <IconButton icon="zoomOut" label="Dézoomer" onClick={() => zoomAt(1 / 1.25)} size={16} />
-        <button className="zoom-value" onClick={() => setView((v) => ({ ...v, z: 1 }))} title="Taille réelle">
-          {Math.round(view.z * 100)} %
+        <IconButton icon="zoomOut" label={t('canvas.zoomOut')} onClick={() => zoomAt(1 / 1.25)} size={16} />
+        <button className="zoom-value" onClick={() => setView((v) => ({ ...v, z: 1 }))} title={t('canvas.actualSize')}>
+          {Math.round(view.z * 100)}%
         </button>
-        <IconButton icon="zoomIn" label="Zoomer" onClick={() => zoomAt(1.25)} size={16} />
-        <IconButton icon="fit" label="Ajuster à l'écran" shortcut="F" onClick={fit} size={16} />
+        <IconButton icon="zoomIn" label={t('canvas.zoomIn')} onClick={() => zoomAt(1.25)} size={16} />
+        <IconButton icon="fit" label={t('canvas.fit')} shortcut="F" onClick={fit} size={16} />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-export type Brand = 'Citadel' | 'Vallejo' | 'Army Painter' | 'Perso';
+export type Brand = 'Citadel' | 'Vallejo' | 'Army Painter' | 'Custom';
 
 export type PaintType =
   | 'base'
@@ -21,7 +21,7 @@ export interface Paint {
 
 export type Finish = 'mat' | 'satin' | 'gloss' | 'metal';
 
-/** Une couche d'effet (lavis, éclaircissement, brossage à sec). */
+/** An effect layer (wash, highlight, drybrush). */
 export interface EffectLayer {
   enabled: boolean;
   hex: string;
@@ -37,11 +37,11 @@ export interface Zone {
   opacity: number; // 0..1
   base: { hex: string; paintId?: string };
   finish: Finish;
-  /** Conservation de l'ombrage de la photo, 0 = aplat, 1 = naturel, 2 = très contrasté */
+  /** How much photo shading is kept: 0 = flat, 1 = natural, 2 = very contrasted */
   shading: number;
-  /** Décalage de luminosité en stops, -1..1 */
+  /** Brightness offset in stops, -1..1 */
   brightness: number;
-  /** Simule une peinture Contrast / Speedpaint (translucide, se dépose dans les creux) */
+  /** Simulates a contrast-style paint (translucent, pools in recesses) */
   contrast: boolean;
   wash: EffectLayer;
   highlight: EffectLayer;
@@ -63,7 +63,7 @@ export type RoleId =
   | 'base'
   | 'other';
 
-/** Recette d'une zone, réutilisable (schémas, presets). */
+/** A zone's recipe, reusable across projects (schemes, presets). */
 export type ZoneRecipe = Omit<Zone, 'id' | 'name' | 'role' | 'visible'>;
 
 export interface Scheme {
@@ -71,8 +71,19 @@ export interface Scheme {
   name: string;
   faction: string;
   description?: string;
+  /** Built-in schemes use i18n keys `scheme.<id>` / `scheme.<id>.desc` / `cat.<category>` */
   builtin?: boolean;
+  category?: string;
   recipes: Partial<Record<RoleId, Partial<ZoneRecipe>>>;
+}
+
+/** A colour taken from the reference image (auto-extracted or picked with the eyedropper). */
+export interface PaletteColor {
+  id: string;
+  hex: string;
+  source: 'auto' | 'picked';
+  weight?: number;
+  zoneId?: string;
 }
 
 export interface Variant {
@@ -100,4 +111,5 @@ export interface ProjectRecord extends ProjectMeta {
   zones: Zone[];
   masks: Record<string, Uint8Array>;
   variants: Variant[];
+  palette: PaletteColor[];
 }

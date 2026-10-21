@@ -16,10 +16,10 @@ interface ZoneCache {
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
- * Moteur de peinture : conserve l'image source, des cartes dérivées (luminance,
- * luminance floutée pour détecter creux et reliefs, arêtes) et un masque 8 bits par zone.
- * Le rendu recolore chaque zone en multipliant la couleur de peinture par l'ombrage relatif
- * de la photo, ce qui conserve les volumes de la figurine.
+ * Paint engine: keeps the source image, derived maps (luminance, blurred luminance to detect
+ * recesses and raised areas, edges) and one 8-bit mask per zone.
+ * Rendering recolours each zone by multiplying the paint colour by the photo's relative shading,
+ * which preserves the volumes of the miniature.
  */
 export class PaintEngine {
   width = 0;
@@ -114,7 +114,7 @@ export class PaintEngine {
     return c;
   }
 
-  /** Étend la bbox en cache pendant un coup de pinceau sans recalculer la moyenne. */
+  /** Grows the cached bbox during a brush stroke without recomputing the mean. */
   growBBox(id: string, r: Rect) {
     const c = this.cache.get(id);
     if (!c) return;
@@ -131,7 +131,7 @@ export class PaintEngine {
     return this.zoneCache(id).bbox ? 1 : 0;
   }
 
-  /** Rend les zones dans `target` (par défaut le buffer principal), sur `rect` si fourni. */
+  /** Renders zones into `target` (default: the main buffer), limited to `rect` when given. */
   render(zones: Zone[], rect?: Rect, target?: ImageData): ImageData {
     const w = this.width;
     const h = this.height;
@@ -143,7 +143,7 @@ export class PaintEngine {
       : { x0: 0, y0: 0, x1: w, y1: h };
     if (r.x1 <= r.x0 || r.y1 <= r.y0) return out;
 
-    // Remet la source dans la zone à rendre
+    // Reset the area to the source image
     for (let y = r.y0; y < r.y1; y++) {
       const a = (y * w + r.x0) * 4;
       const b = (y * w + r.x1) * 4;
@@ -184,7 +184,7 @@ export class PaintEngine {
           const cav = clamp01((bl - lg) * 7);
           const ridge = clamp01((lg - bl) * 7);
 
-          // Ombrage relatif de la photo
+          // Relative shading from the photo
           let sh = 1 + (lumLin[i] / z.mean - 1) * z.shading;
           if (sh < 0) sh = 0;
           if (z.metal) sh = Math.pow(sh, 1.45);
@@ -199,7 +199,7 @@ export class PaintEngine {
           }
 
           if (z.contrast) {
-            // Pigment qui s'accumule dans les creux, plus clair sur les reliefs
+            // Pigment pools in recesses and thins out on raised areas
             const dk = 1 - cav * 0.65;
             const lt = ridge * 0.35;
             pr = pr * dk + (Math.min(1, z.base[0] * 1.8) - pr * dk) * lt;
@@ -316,7 +316,7 @@ function intersects(a: Rect, b: Rect) {
   return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
 }
 
-/** Flou boîte séparable, `passes` passes ≈ gaussien. */
+/** Separable box blur; a few passes approximate a Gaussian. */
 export function boxBlurFloat(src: Float32Array, w: number, h: number, r: number, passes: number): Float32Array {
   let a = new Float32Array(src);
   let b = new Float32Array(src.length);

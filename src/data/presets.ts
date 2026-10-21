@@ -1,21 +1,27 @@
 import type { EffectLayer, RoleId, Scheme, Zone, ZoneRecipe } from '../types';
 import { paintByName, PAINTS } from './paints';
+import { k, translate } from '../i18n';
 
-export const ROLES: { id: RoleId; label: string; color: string }[] = [
-  { id: 'armor', label: 'Armure principale', color: '#5b8def' },
-  { id: 'armor2', label: 'Armure secondaire', color: '#8e6cf0' },
-  { id: 'trim', label: 'Liserés / détails', color: '#e3b04b' },
-  { id: 'metal', label: 'Métal / armes', color: '#9aa4ad' },
-  { id: 'lenses', label: 'Lentilles / gemmes', color: '#ef4b6c' },
-  { id: 'cloth', label: 'Tissu / robe', color: '#d97a3a' },
-  { id: 'leather', label: 'Cuir / sangles', color: '#9b6a43' },
-  { id: 'skin', label: 'Peau', color: '#e2a582' },
-  { id: 'weapon', label: 'Arme (boîtier)', color: '#5fb08a' },
-  { id: 'base', label: 'Socle', color: '#a08a5f' },
-  { id: 'other', label: 'Autre', color: '#c0c4cc' },
+export const ROLES: { id: RoleId; color: string }[] = [
+  { id: 'armor', color: '#5b8def' },
+  { id: 'armor2', color: '#8e6cf0' },
+  { id: 'trim', color: '#e3b04b' },
+  { id: 'metal', color: '#9aa4ad' },
+  { id: 'lenses', color: '#ef4b6c' },
+  { id: 'cloth', color: '#d97a3a' },
+  { id: 'leather', color: '#9b6a43' },
+  { id: 'skin', color: '#e2a582' },
+  { id: 'weapon', color: '#5fb08a' },
+  { id: 'base', color: '#a08a5f' },
+  { id: 'other', color: '#c0c4cc' },
 ];
 
-export const roleLabel = (r: RoleId) => ROLES.find((x) => x.id === r)?.label ?? r;
+export const roleLabel = (r: RoleId) => translate(k(`role.${r}`));
+
+/** Display name of a scheme: built-ins are translated, user schemes keep their own text. */
+export const schemeName = (s: Scheme) => (s.builtin ? translate(k(`scheme.${s.id}`)) : s.name);
+export const schemeDescription = (s: Scheme) => (s.builtin ? translate(k(`scheme.${s.id}.desc`)) : s.description ?? '');
+export const schemeGroup = (s: Scheme) => (s.builtin && s.category ? translate(k(`cat.${s.category}`)) : s.faction);
 
 export function effect(name: string | null, amount = 0.6): EffectLayer {
   if (!name) return { enabled: false, hex: '#000000', amount };
@@ -42,7 +48,7 @@ export function defaultRecipe(): ZoneRecipe {
   };
 }
 
-/** Recette compacte : base, lavis, éclaircissement, brossage à sec. */
+/** Compact recipe: base, wash, highlight (+ optional extras such as drybrush). */
 function r(
   baseName: string,
   wash: string | null,
@@ -73,10 +79,10 @@ const greenLens = r('Moot Green', null, 'Gauss Blaster Green', { finish: 'gloss'
 
 export const BUILTIN_SCHEMES: Scheme[] = [
   {
-    id: 'ultramarines',
-    name: 'Ultramarines',
-    faction: 'Adeptus Astartes',
-    description: 'Bleu royal, liserés dorés, lentilles rouges.',
+    id: 'royal-blue-gold',
+    name: 'royal-blue-gold',
+    faction: 'classic',
+    category: 'classic',
     builtin: true,
     recipes: {
       armor: r('Macragge Blue', 'Drakenhof Nightshade', 'Calgar Blue'),
@@ -92,10 +98,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'blood-angels',
-    name: 'Blood Angels',
-    faction: 'Adeptus Astartes',
-    description: 'Rouge sang, or, noir pour les détails.',
+    id: 'crimson-gold',
+    name: 'crimson-gold',
+    faction: 'classic',
+    category: 'classic',
     builtin: true,
     recipes: {
       armor: r('Mephiston Red', 'Carroburg Crimson', 'Evil Sunz Scarlet'),
@@ -111,10 +117,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'dark-angels',
-    name: 'Dark Angels',
-    faction: 'Adeptus Astartes',
-    description: 'Vert sombre, robes os, rouge pour les lentilles.',
+    id: 'dark-green-bone',
+    name: 'dark-green-bone',
+    faction: 'classic',
+    category: 'classic',
     builtin: true,
     recipes: {
       armor: r('Caliban Green', 'Nuln Oil', 'Warpstone Glow'),
@@ -130,10 +136,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'space-wolves',
-    name: 'Space Wolves',
-    faction: 'Adeptus Astartes',
-    description: 'Gris-bleu glacial, or, fourrures et cuir.',
+    id: 'frost-grey',
+    name: 'frost-grey',
+    faction: 'classic',
+    category: 'classic',
     builtin: true,
     recipes: {
       armor: r('Russ Grey', 'Drakenhof Nightshade', 'Fenrisian Grey'),
@@ -149,10 +155,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'imperial-fists',
-    name: 'Imperial Fists',
-    faction: 'Adeptus Astartes',
-    description: 'Jaune vif, noir et rouge.',
+    id: 'bright-yellow',
+    name: 'bright-yellow',
+    faction: 'bright',
+    category: 'bright',
     builtin: true,
     recipes: {
       armor: r('Averland Sunset', 'Casandora Yellow', 'Yriel Yellow'),
@@ -168,10 +174,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'salamanders',
-    name: 'Salamanders',
-    faction: 'Adeptus Astartes',
-    description: 'Vert flamboyant, laiton, socle volcanique.',
+    id: 'emerald-brass',
+    name: 'emerald-brass',
+    faction: 'bright',
+    category: 'bright',
     builtin: true,
     recipes: {
       armor: r('Waaagh! Flesh', 'Biel-Tan Green', 'Warpstone Glow'),
@@ -187,10 +193,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'death-guard',
-    name: 'Death Guard',
-    faction: 'Heretic Astartes',
-    description: 'Vert maladif, laiton corrodé, chairs putrides.',
+    id: 'weathered-green',
+    name: 'weathered-green',
+    faction: 'grim',
+    category: 'grim',
     builtin: true,
     recipes: {
       armor: r('Death Guard Green', 'Agrax Earthshade', null, { drybrush: effect('Ushabti Bone', 0.4) }),
@@ -206,10 +212,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'black-templars',
-    name: 'Black Templars',
-    faction: 'Adeptus Astartes',
-    description: 'Armure noire, robes ivoire, croix blanches.',
+    id: 'black-ivory',
+    name: 'black-ivory',
+    faction: 'grim',
+    category: 'grim',
     builtin: true,
     recipes: {
       armor: r('Abaddon Black', null, 'Eshin Grey', { finish: 'satin' }),
@@ -225,10 +231,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'necrons',
-    name: 'Necrons — Sautekh',
-    faction: 'Necrons',
-    description: 'Acier sombre, lueurs vertes.',
+    id: 'gunmetal-glow',
+    name: 'gunmetal-glow',
+    faction: 'metal',
+    category: 'metal',
     builtin: true,
     recipes: {
       armor: r('Leadbelcher', 'Nuln Oil', null, { drybrush: effect('Necron Compound', 0.55) }),
@@ -244,10 +250,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'orks',
-    name: 'Orks — Goff',
-    faction: 'Orks',
-    description: 'Peau verte, noir et damier, métal rouillé.',
+    id: 'green-skin',
+    name: 'green-skin',
+    faction: 'grim',
+    category: 'grim',
     builtin: true,
     recipes: {
       armor: r('Abaddon Black', null, 'Eshin Grey'),
@@ -263,10 +269,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'tau',
-    name: 'T\'au — Sept T\'au',
-    faction: 'T\'au Empire',
-    description: 'Ocre sable, gris sombre, lentilles bleues.',
+    id: 'desert-ochre',
+    name: 'desert-ochre',
+    faction: 'bright',
+    category: 'bright',
     builtin: true,
     recipes: {
       armor: r('XV-88', 'Seraphim Sepia', 'Tau Light Ochre'),
@@ -282,10 +288,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'thousand-sons',
-    name: 'Thousand Sons',
-    faction: 'Heretic Astartes',
-    description: 'Bleu turquoise, or et lentilles bleues.',
+    id: 'turquoise-gold',
+    name: 'turquoise-gold',
+    faction: 'metal',
+    category: 'metal',
     builtin: true,
     recipes: {
       armor: r('Thousand Sons Blue', 'Coelia Greenshade', 'Ahriman Blue'),
@@ -301,10 +307,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'world-eaters',
-    name: 'World Eaters',
-    faction: 'Heretic Astartes',
-    description: 'Rouge sombre, laiton, sang frais.',
+    id: 'dark-red-brass',
+    name: 'dark-red-brass',
+    faction: 'grim',
+    category: 'grim',
     builtin: true,
     recipes: {
       armor: r('Khorne Red', 'Nuln Oil', 'Wazdakka Red'),
@@ -320,10 +326,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'custodes',
-    name: 'Adeptus Custodes',
-    faction: 'Adeptus Custodes',
-    description: 'Or impérial, capes rouges.',
+    id: 'full-gold',
+    name: 'full-gold',
+    faction: 'metal',
+    category: 'metal',
     builtin: true,
     recipes: {
       armor: r('Retributor Armour', 'Reikland Fleshshade', 'Liberator Gold'),
@@ -339,10 +345,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'sororitas',
-    name: 'Adepta Sororitas — Rose Ensanglantée',
-    faction: 'Adepta Sororitas',
-    description: 'Armure noire, robes rouges, parchemins.',
+    id: 'black-red-robes',
+    name: 'black-red-robes',
+    faction: 'grim',
+    category: 'grim',
     builtin: true,
     recipes: {
       armor: r('Abaddon Black', null, 'Eshin Grey', { finish: 'satin' }),
@@ -358,10 +364,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'ulthwe',
-    name: 'Aeldari — Ulthwé',
-    faction: 'Aeldari',
-    description: 'Noir profond, os, gemmes rouges.',
+    id: 'black-bone',
+    name: 'black-bone',
+    faction: 'grim',
+    category: 'grim',
     builtin: true,
     recipes: {
       armor: r('Abaddon Black', null, 'Eshin Grey', { finish: 'satin' }),
@@ -377,10 +383,10 @@ export const BUILTIN_SCHEMES: Scheme[] = [
     },
   },
   {
-    id: 'contrast-speed',
-    name: 'Speedpaint Contrast',
-    faction: 'Méthode rapide',
-    description: 'Tout en Contrast sur sous-couche Wraithbone.',
+    id: 'speed-contrast',
+    name: 'speed-contrast',
+    faction: 'quick',
+    category: 'quick',
     builtin: true,
     recipes: {
       armor: r('Ultramarines Blue', null, null),
@@ -397,7 +403,7 @@ export const BUILTIN_SCHEMES: Scheme[] = [
   },
 ];
 
-/** Applique une recette de schéma à une zone en conservant son identité. */
+/** Applies a scheme recipe to a zone while keeping its identity (id, name, role, mask). */
 export function applyRecipe(zone: Zone, recipe: Partial<ZoneRecipe> | undefined): Zone {
   if (!recipe) return zone;
   const d = defaultRecipe();

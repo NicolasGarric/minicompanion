@@ -1,9 +1,9 @@
 import type { RoleId } from '../types';
 
 /**
- * Génère une figurine de démonstration sous-couchée en gris (style Space Marine stylisé),
- * avec un masque par rôle. Chaque pièce est dessinée avec un volume éclairé en haut à gauche,
- * des creux sombres à ses bords et un grain photo, pour que les effets aient de la matière.
+ * Generates a grey-primed demo figure (a generic armoured trooper, original design),
+ * with one mask per role. Each part gets top-left lighting, dark recesses at its edges
+ * and photo grain, so the wash / drybrush effects have something to work with.
  */
 export interface DemoResult {
   image: ImageData;
@@ -46,7 +46,7 @@ export function createDemo(): DemoResult {
   };
 
   const part = (role: RoleId, path: PathFn, tone = 150, opts: { lx?: number; ly?: number; rim?: number; flat?: boolean } = {}) => {
-    // Retire la pièce des masques déjà dessinés (occlusion) puis l'ajoute au sien
+    // Remove the part from masks drawn earlier (occlusion), then add it to its own
     for (const m of maskCanvases.values()) {
       m.globalCompositeOperation = 'destination-out';
       m.beginPath();
@@ -81,7 +81,7 @@ export function createDemo(): DemoResult {
     }
     ctx.fillStyle = g;
     ctx.fillRect(b.x - 5, b.y - 5, b.w + 10, b.h + 10);
-    // Creux sur le pourtour
+    // Dark recess along the outline
     ctx.filter = 'blur(6px)';
     ctx.strokeStyle = 'rgba(10,10,14,0.75)';
     ctx.lineWidth = opts.rim ?? 14;
@@ -90,7 +90,7 @@ export function createDemo(): DemoResult {
     ctx.stroke();
     ctx.filter = 'none';
     ctx.restore();
-    // Arête fine
+    // Thin edge line
     ctx.strokeStyle = 'rgba(20,20,24,0.9)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -110,7 +110,7 @@ export function createDemo(): DemoResult {
     c.ellipse(x, y, rx - th, ry - th, 0, Math.PI * 2, 0, true);
   };
 
-  // Ombre portée
+  // Cast shadow
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.filter = 'blur(18px)';
   ctx.beginPath();
@@ -118,7 +118,7 @@ export function createDemo(): DemoResult {
   ctx.fill();
   ctx.filter = 'none';
 
-  // Socle
+  // Base
   part('base', (c) => {
     c.moveTo(150, 940);
     c.lineTo(150, 975);
@@ -127,30 +127,30 @@ export function createDemo(): DemoResult {
     c.closePath();
   }, 70, { flat: true, rim: 8 });
   part('base', ellipse(400, 940, 250, 62), 165, { ly: 0.2 });
-  // Rochers
+  // Rocks
   for (const [x, y, r] of [[300, 925, 30], [520, 945, 22], [470, 915, 16], [235, 950, 14]] as const) {
     part('base', ellipse(x, y, r * 1.3, r), 175, { rim: 6 });
   }
 
-  // Sac à dos
+  // Backpack
   part('armor2', rrect(270, 260, 260, 140, 30), 140);
   part('metal', rrect(250, 220, 40, 90, 12), 150);
   part('metal', rrect(510, 220, 40, 90, 12), 150);
 
-  // Jambes
+  // Legs
   part('armor', rrect(305, 650, 85, 300, 26), 150);
   part('armor', rrect(410, 650, 85, 300, 26), 150);
   part('armor', rrect(290, 880, 110, 70, 18), 145);
   part('armor', rrect(400, 880, 110, 70, 18), 145);
   part('armor2', ellipse(348, 760, 44, 40), 160);
   part('armor2', ellipse(452, 760, 44, 40), 160);
-  // Pagne / tabard
+  // Tabard
   part('cloth', poly([355, 600, 445, 600, 470, 860, 400, 880, 330, 860]), 175, { rim: 10 });
   part('leather', rrect(380, 620, 40, 90, 6), 125, { rim: 6 });
 
-  // Torse
+  // Torso
   part('armor', (c) => c.roundRect(280, 380, 240, 260, [40, 40, 70, 70]), 155);
-  // Aigle impérial sur le torse
+  // Chest emblem (original winged shape)
   part('trim', (c) => {
     c.moveTo(400, 430);
     c.bezierCurveTo(360, 420, 320, 430, 300, 460);
@@ -167,17 +167,17 @@ export function createDemo(): DemoResult {
     c.bezierCurveTo(480, 430, 440, 420, 400, 430);
     c.closePath();
   }, 170, { rim: 6 });
-  // Ceinture
+  // Belt
   part('leather', rrect(285, 595, 230, 48, 12), 120, { rim: 8 });
   part('metal', ellipse(400, 619, 28, 22), 175, { rim: 5 });
 
-  // Bras
+  // Arms
   part('armor', rrect(180, 470, 80, 190, 30), 145);
   part('armor', rrect(540, 470, 80, 190, 30), 145);
   part('armor2', rrect(170, 630, 100, 80, 24), 135);
   part('armor2', rrect(530, 630, 100, 80, 24), 135);
 
-  // Bolter tenu en travers
+  // Rifle held across the body
   const bolter = (c: CanvasRenderingContext2D) => {
     c.save();
     c.translate(400, 670);
@@ -209,23 +209,23 @@ export function createDemo(): DemoResult {
     c.restore();
   }, 170, { rim: 4 });
 
-  // Épaulières
+  // Shoulder pads
   part('armor', ellipse(215, 430, 120, 108, -0.15), 160);
   part('armor', ellipse(585, 430, 120, 108, 0.15), 160, { lx: 0.25 });
   part('trim', ring(215, 430, 120, 108, 18), 175, { rim: 6 });
   part('trim', ring(585, 430, 120, 108, 18), 175, { rim: 6 });
-  // Sceau de pureté
+  // Parchment seal
   part('cloth', rrect(560, 470, 40, 95, 4), 195, { rim: 6 });
   part('lenses', ellipse(580, 470, 26, 20), 110, { rim: 6 });
 
-  // Gorgerin et casque
+  // Gorget and helmet
   part('armor2', rrect(345, 330, 110, 60, 20), 130);
   part('armor', ellipse(400, 290, 72, 82), 160);
   part('metal', poly([365, 320, 435, 320, 420, 365, 380, 365]), 150, { rim: 6 });
   part('lenses', ellipse(372, 280, 18, 13, 0.25), 120, { rim: 5 });
   part('lenses', ellipse(428, 280, 18, 13, -0.25), 120, { rim: 5 });
 
-  // Grain photo
+  // Photo grain
   const img = ctx.getImageData(0, 0, W, H);
   let seed = 42;
   for (let i = 0; i < img.data.length; i += 4) {
@@ -247,7 +247,7 @@ export function createDemo(): DemoResult {
 }
 
 function bounds(path: PathFn) {
-  // Approximation de la boîte englobante via un canvas de mesure
+  // Bounding box measured on an offscreen canvas
   const c = measureCtx();
   c.clearRect(0, 0, W, H);
   c.beginPath();

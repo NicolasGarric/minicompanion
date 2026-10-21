@@ -1,7 +1,7 @@
 # Project context — Chromaforge
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-10-21
+> Last update: 2026-10-21 (brief items 1–6 implemented)
 
 ## What it is
 
@@ -81,13 +81,33 @@ Deadline ≈ 10 days: favour simple working features over complete ones.
 
 - [x] Core editor: zones, brush / eraser / smart brush, magic wand, lasso, eyedropper, mask ops,
       undo/redo, effects, finishes, variants & comparison, schemes, harmonies, exports, autosave.
-- [ ] 1. Reference panel + palette extraction + rights confirmation + replace image
-- [ ] 2. Legal page, footer, neutral presets, neutral paint search links
-- [ ] 3. i18n EN/JP
-- [ ] 4. Share card + share link + shared scheme page
-- [ ] 5. Beginner path + store finder
-- [ ] 6. Analytics + stats page
-- [ ] README
+- [x] 1. Reference panel + palette extraction + rights confirmation + replace image
+- [x] 2. Legal page, footer, neutral presets, neutral paint search links
+- [x] 3. i18n EN/JP (≈300 keys, `ja.ts` typed against `en.ts`)
+- [x] 4. Share card (square + story) + share link + shared scheme page
+- [x] 5. Beginner path + store finder (sample data, OSM embed)
+- [x] 6. Analytics + stats page (`#/stats`, not linked in the nav on purpose)
+- [x] README
+
+Verified 2026-10-21: `tsc` clean, `vite build` OK (≈108 KB gzip), headless Chromium smoke tests
+on desktop (1440×900) and mobile (390×844): demo → editor → eyedropper → brush → JP switch →
+share cards → shared link page; beginner path with real file upload → plan → shopping → stores →
+editor; stats; legal. No console errors, no horizontal overflow on mobile.
+
+## Open points / next steps
+
+- Japanese terms to validate with a native hobbyist: see `// CHECK:` in `src/i18n/ja.ts`
+  (エリア for "zone", ウォッシュ, コントラスト系塗料, 配色 for "scheme", サーフェイサー vs プライマー, grim).
+- Visual pass (owner): spacing, typography scale, editor layout on tablets.
+- Mobile editor: no pinch-to-zoom yet (buttons only).
+- Zone names are created in the UI language at creation time and are not re-translated.
+- Hosted share links + real analytics endpoint need a small backend (decision for later).
+- Push to GitHub needs the owner to re-authenticate (`gh auth login`), remote is already set.
+
+## Dev environment notes
+
+- WSL + Node 22: npm hangs with ETIMEDOUT because of IPv4/IPv6 auto-selection. Fix:
+  `export NODE_OPTIONS=--no-network-family-autoselection`.
 
 ## How to run
 

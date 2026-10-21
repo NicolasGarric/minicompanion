@@ -14,7 +14,7 @@ export function rgbToHex([r, g, b]: RGB): string {
   return `#${c(r)}${c(g)}${c(b)}`;
 }
 
-/** Table sRGB 8 bits -> linéaire, partagée par le moteur de rendu. */
+/** 8-bit sRGB -> linear lookup table, shared with the renderer. */
 export const SRGB_TO_LINEAR = new Float32Array(256);
 for (let i = 0; i < 256; i++) {
   const c = i / 255;
@@ -28,7 +28,7 @@ export function linearToSrgb8(v: number): number {
   return Math.round(c * 255);
 }
 
-/** Table inverse pour accélérer la conversion en sortie (4096 entrées). */
+/** Inverse table to speed up output conversion (4096 entries). */
 export const LINEAR_TO_SRGB_LUT = new Uint8ClampedArray(4097);
 for (let i = 0; i <= 4096; i++) LINEAR_TO_SRGB_LUT[i] = linearToSrgb8(i / 4096);
 
@@ -113,20 +113,19 @@ export function isDark(hex: string): boolean {
   return r * 0.299 + g * 0.587 + b * 0.114 < 140;
 }
 
+/** Labels and descriptions live in i18n (`harmony.<id>`, `harmony.<id>.desc`). */
 export interface Harmony {
   id: string;
-  label: string;
-  description: string;
   offsets: number[];
 }
 
 export const HARMONIES: Harmony[] = [
-  { id: 'complementary', label: 'Complémentaire', description: 'Contraste maximal, idéal pour un point focal (lentilles, gemmes).', offsets: [180] },
-  { id: 'split', label: 'Complémentaires adjacentes', description: 'Contraste fort mais plus doux que le complémentaire pur.', offsets: [150, 210] },
-  { id: 'analogous', label: 'Analogue', description: 'Couleurs voisines : schéma harmonieux et cohérent.', offsets: [-30, 30] },
-  { id: 'triadic', label: 'Triadique', description: 'Trois teintes équilibrées, vibrant et lisible.', offsets: [120, 240] },
-  { id: 'tetradic', label: 'Tétradique', description: 'Quatre teintes, riche : gardez-en une dominante.', offsets: [90, 180, 270] },
-  { id: 'mono', label: 'Monochrome', description: 'Ombres et lumières de la même teinte.', offsets: [] },
+  { id: 'complementary', offsets: [180] },
+  { id: 'split', offsets: [150, 210] },
+  { id: 'analogous', offsets: [-30, 30] },
+  { id: 'triadic', offsets: [120, 240] },
+  { id: 'tetradic', offsets: [90, 180, 270] },
+  { id: 'mono', offsets: [] },
 ];
 
 export function harmonyColors(hex: string, h: Harmony): string[] {
@@ -154,10 +153,4 @@ export function nearestPaints(hex: string, paints: Paint[], count = 3, filter?: 
   }
   out.sort((a, b) => a.dE - b.dE);
   return out.slice(0, count);
-}
-
-export function matchQuality(dE: number): { label: string; tone: 'good' | 'ok' | 'far' } {
-  if (dE < 6) return { label: 'Très proche', tone: 'good' };
-  if (dE < 14) return { label: 'Proche', tone: 'ok' };
-  return { label: 'Approximatif', tone: 'far' };
 }

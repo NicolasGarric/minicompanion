@@ -1,8 +1,8 @@
 import type { Brand, Paint, PaintType } from '../types';
 
 /**
- * Valeurs hexadécimales approximatives (rendu écran des pots).
- * Elles servent de référence visuelle, pas de correspondance colorimétrique exacte.
+ * Paint references are TEXT ONLY: brand, product line, paint name and an approximate on-screen
+ * hex value. No product images, no copied descriptions. Names are used for identification only.
  */
 type Row = [name: string, hex: string, type?: PaintType];
 
@@ -401,24 +401,25 @@ export const PAINTS: Paint[] = [
   ...range('Army Painter', 'Speedpaint', 'contrast', apSpeedpaint),
 ].filter((p, i, all) => all.findIndex((q) => q.id === p.id) === i);
 
-export const PAINT_TYPE_LABEL: Record<PaintType, string> = {
-  base: 'Base',
-  layer: 'Layer',
-  shade: 'Lavis',
-  contrast: 'Contrast',
-  dry: 'Dry',
-  technical: 'Technique',
-  metallic: 'Métal',
-  air: 'Air',
-};
+export const PAINT_TYPES: PaintType[] = ['base', 'layer', 'shade', 'contrast', 'dry', 'technical', 'metallic'];
 
-export const BRANDS: Brand[] = ['Citadel', 'Vallejo', 'Army Painter', 'Perso'];
+export const BRANDS: Brand[] = ['Citadel', 'Vallejo', 'Army Painter', 'Custom'];
 
-/** Recherche par nom exact (insensible à la casse), utile pour les presets. */
+/** Case-insensitive lookup by exact name, used by presets. */
 export function paintByName(name: string, brand: Brand = 'Citadel'): Paint | undefined {
   const n = name.toLowerCase();
   return (
     PAINTS.find((p) => p.brand === brand && p.name.toLowerCase() === n) ??
     PAINTS.find((p) => p.name.toLowerCase() === n)
   );
+}
+
+/**
+ * Neutral search link for a paint: a general web search by default, or the user's chosen
+ * retailer search URL (with `{q}` placeholder). No affiliate parameters.
+ */
+export function paintSearchUrl(p: Pick<Paint, 'brand' | 'name'>, template?: string): string {
+  const q = encodeURIComponent(`${p.brand} ${p.name} paint`);
+  if (template && template.includes('{q}')) return template.replace('{q}', q);
+  return `https://duckduckgo.com/?q=${q}`;
 }

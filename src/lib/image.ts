@@ -2,6 +2,16 @@ import type { ProjectRecord, Zone } from '../types';
 import { engine } from '../engine/engine';
 
 export const MAX_SIDE = 1600;
+export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const MAX_FILE_BYTES = 25 * 1024 * 1024;
+
+export type ImageCheck = 'ok' | 'type' | 'size';
+
+export function checkImageFile(file: File): ImageCheck {
+  if (!ACCEPTED_TYPES.includes(file.type)) return 'type';
+  if (file.size > MAX_FILE_BYTES) return 'size';
+  return 'ok';
+}
 
 export async function fileToImageData(file: Blob, maxSide = MAX_SIDE): Promise<ImageData> {
   const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -28,13 +38,14 @@ function canvasOf(img: ImageData) {
   return c;
 }
 
-export function imageDataToBlob(img: ImageData, type = 'image/png'): Promise<Blob> {
+/** Images are stored as JPEG q=0.85: a 1600 px photo is typically 200–400 KB. */
+export function imageDataToBlob(img: ImageData, type = 'image/jpeg'): Promise<Blob> {
   return new Promise((resolve, reject) =>
-    canvasOf(img).toBlob((b) => (b ? resolve(b) : reject(new Error('Encodage impossible'))), type, 0.92),
+    canvasOf(img).toBlob((b) => (b ? resolve(b) : reject(new Error('Image encoding failed'))), type, 0.85),
   );
 }
 
-/** Rend les zones dans un buffer séparé (ne touche pas l'affichage principal). */
+/** Renders zones into a separate buffer (the on-screen canvas is untouched). */
 export function renderOffscreen(zones: Zone[]): ImageData {
   const target = new ImageData(engine.width, engine.height);
   return engine.render(zones, undefined, target);
@@ -53,6 +64,16 @@ export function renderThumb(zones: Zone[], size: number): string {
   return c.toDataURL('image/jpeg', 0.8);
 }
 
+/** Rescales a mask to new dimensions (used when the reference image is replaced). */
+export function resampleMask(m: Uint8Array, w: number, h: number, nw: number, nh: number): Uint8Array {
+  const out = new Uint8Array(nw * nh);
+  for (let y = 0; y < nh; y++) {
+    const sy = Math.min(h - 1, Math.floor((y / nh) * h));
+    for (let x = 0; x < nw; x++) out[y * nw + x] = m[sy * w + Math.min(w - 1, Math.floor((x / nw) * w))];
+  }
+  return out;
+}
+
 export function download(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -68,7 +89,7 @@ export const slug = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'schema';
 
 export async function exportRenderPNG(zones: Zone[], name: string) {
-  const blob = await imageDataToBlob(renderOffscreen(zones));
+  const blob = await imageDataToBlob(renderOffscreen(zones), 'image/png');
   download(blob, `${slug(name)}.png`);
 }
 
@@ -78,73 +99,7 @@ export interface RecipeLine {
   steps: { label: string; name: string; hex: string; brand?: string }[];
 }
 
-/** Fiche : rendu + recette par zone, dessinée sur un canvas. */
-export async function exportSheetPNG(zones: Zone[], lines: RecipeLine[], title: string, subtitle: string) {
-  const render = canvasOf(renderOffscreen(zones));
-  const W = 1800;
-  const pad = 60;
-  const imgW = 820;
-  const imgH = Math.round((render.height / render.width) * imgW);
-  const lineH = 44;
-  const listH = lines.reduce((acc, l) => acc + 64 + l.steps.length * lineH + 24, 0);
-  const H = Math.max(imgH, listH) + pad * 2 + 140;
-  const c = document.createElement('canvas');
-  c.width = W;
-  c.height = H;
-  const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#121419';
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#e3b04b';
-  ctx.font = '700 46px Cinzel, serif';
-  ctx.fillText(title, pad, pad + 40);
-  ctx.fillStyle = '#9aa0ab';
-  ctx.font = '400 22px Inter, sans-serif';
-  ctx.fillText(subtitle, pad, pad + 80);
-  const top = pad + 120;
-  ctx.drawImage(render, pad, top, imgW, imgH);
-  ctx.strokeStyle = '#2a2e38';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(pad, top, imgW, imgH);
-
-  let y = top;
-  const x = pad + imgW + 60;
-  for (const l of lines) {
-    ctx.fillStyle = '#f2f3f5';
-    ctx.font = '600 28px Inter, sans-serif';
-    ctx.fillText(l.zone, x, y + 30);
-    ctx.fillStyle = '#7d8492';
-    ctx.font = '400 18px Inter, sans-serif';
-    ctx.fillText(l.role, x, y + 54);
-    y += 64;
-    for (const s of l.steps) {
-      ctx.fillStyle = s.hex;
-      roundRect(ctx, x, y + 6, 32, 32, 8);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.stroke();
-      ctx.fillStyle = '#9aa0ab';
-      ctx.font = '500 18px Inter, sans-serif';
-      ctx.fillText(s.label, x + 48, y + 28);
-      ctx.fillStyle = '#e6e8eb';
-      ctx.font = '500 21px Inter, sans-serif';
-      ctx.fillText(`${s.name}${s.brand ? `  ·  ${s.brand}` : ''}`, x + 210, y + 29);
-      y += lineH;
-    }
-    y += 24;
-  }
-  ctx.fillStyle = '#4b505c';
-  ctx.font = '400 16px Inter, sans-serif';
-  ctx.fillText('Généré avec Chromaforge — couleurs indicatives, rendu écran.', pad, H - 30);
-  const blob = await new Promise<Blob>((res) => c.toBlob((b) => res(b!), 'image/png'));
-  download(blob, `${slug(title)}-fiche.png`);
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-}
-
-// --- Fichier projet portable (.chroma.json) -------------------------------------------------
+// --- Portable project file (.chroma.json) ---------------------------------------------------
 
 function bytesToBase64(bytes: Uint8Array): string {
   let bin = '';
@@ -160,7 +115,7 @@ function base64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
-/** Compression RLE simple : les masques sont très majoritairement à 0 ou 255. */
+/** Simple RLE: masks are mostly runs of 0 or 255. */
 function rle(m: Uint8Array): Uint8Array {
   const out: number[] = [];
   let i = 0;
@@ -193,7 +148,7 @@ export async function exportProjectFile(rec: ProjectRecord) {
 
 export async function parseProjectFile(file: File): Promise<ProjectRecord> {
   const data = JSON.parse(await file.text());
-  if (data.format !== 'chromaforge') throw new Error('Fichier non reconnu');
+  if (data.format !== 'chromaforge') throw new Error('Unrecognised file');
   const size = data.width * data.height;
   const masks: Record<string, Uint8Array> = {};
   for (const [k, v] of Object.entries(data.masks as Record<string, string>)) masks[k] = unrle(base64ToBytes(v), size);
@@ -202,5 +157,6 @@ export async function parseProjectFile(file: File): Promise<ProjectRecord> {
     image: new Blob([base64ToBytes(data.image)], { type: data.imageType || 'image/png' }),
     masks,
     variants: data.variants ?? [],
+    palette: data.palette ?? [],
   };
 }

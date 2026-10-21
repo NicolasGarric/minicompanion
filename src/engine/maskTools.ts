@@ -2,17 +2,17 @@ import type { Rect } from './engine';
 import { engine } from './engine';
 
 export interface BrushOptions {
-  size: number; // diamètre en pixels image
+  size: number; // diameter in image pixels
   hardness: number; // 0..1
-  flow: number; // 0..1 opacité maximale du coup
+  flow: number; // 0..1 max opacity of one stroke
   erase: boolean;
-  smart: boolean; // limite au voisinage colorimétrique du point de départ
+  smart: boolean; // limits painting to colours close to the stroke start
   smartTolerance: number; // 0..100
 }
 
 /**
- * Un coup de pinceau : accumule la couverture dans un tampon (max) pour qu'une
- * même zone repassée dans le même coup ne dépasse pas l'opacité choisie.
+ * One brush stroke: coverage is accumulated in a max buffer so that going over the same
+ * spot within one stroke never exceeds the chosen opacity.
  */
 export class BrushStroke {
   private before: Uint8Array;
@@ -30,7 +30,7 @@ export class BrushStroke {
     return this.before;
   }
 
-  /** Ajoute un segment jusqu'à (x, y) et renvoie le rectangle modifié. */
+  /** Adds a segment up to (x, y) and returns the changed rectangle. */
   to(x: number, y: number): Rect | null {
     if (this.opts.smart && !this.ref) this.ref = engine.sampleSource(Math.round(x), Math.round(y), 1);
     const from = this.last ?? { x, y };
@@ -103,7 +103,7 @@ export function combine(mask: Uint8Array, sel: Uint8Array, mode: CombineMode) {
   }
 }
 
-/** Baguette magique : sélection par similarité de couleur, contiguë ou globale. */
+/** Magic wand: selection by colour similarity, contiguous or global. */
 export function magicWand(x: number, y: number, tolerance: number, contiguous: boolean): Uint8Array {
   const { width: w, height: h, src } = engine;
   const out = new Uint8Array(w * h);
@@ -178,7 +178,7 @@ export function feather(mask: Uint8Array, radius: number): Uint8Array {
   return out;
 }
 
-/** Dilatation (px > 0) ou érosion (px < 0) par filtre max/min séparable. */
+/** Dilation (px > 0) or erosion (px < 0) with a separable max/min filter. */
 export function growShrink(mask: Uint8Array, px: number): Uint8Array {
   const { width: w, height: h } = engine;
   const r = Math.abs(Math.round(px));

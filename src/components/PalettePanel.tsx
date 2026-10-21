@@ -1,32 +1,48 @@
 import { useMemo, useState } from 'react';
 import { allPaints, uid, useStore } from '../store';
-import { BRANDS, PAINT_TYPE_LABEL } from '../data/paints';
+import { BRANDS, PAINT_TYPES, paintSearchUrl } from '../data/paints';
 import type { Brand, Paint, PaintType, SlotId } from '../types';
-import { isDark, matchQuality, nearestPaints } from '../lib/color';
+import { isDark, nearestPaints } from '../lib/color';
+import { similarity } from '../lib/beginner';
+import { k, useT } from '../i18n';
 import { Icon, IconButton, Swatch, Toggle } from './ui';
 
-const SLOT_LABEL: Record<SlotId, string> = { base: 'Base', wash: 'Lavis', highlight: 'Éclaircissement', drybrush: 'Brossage à sec' };
+const SLOTS: SlotId[] = ['base', 'wash', 'highlight', 'drybrush'];
+
+export const brandLabel = (b: Brand, t: ReturnType<typeof useT>) => (b === 'Custom' ? t('brand.Custom') : b);
 
 export function SlotTarget() {
+  const t = useT();
   const zone = useStore((s) => s.zones.find((z) => z.id === s.activeZoneId));
   const slot = useStore((s) => s.activeSlot);
   const set = useStore((s) => s.set);
-  if (!zone) return <div className="target-bar muted">Aucune zone active</div>;
+  if (!zone) return <div className="target-bar muted">{t('palette.noZone')}</div>;
   return (
     <div className="target-bar">
-      <span className="muted">Appliquer à</span>
+      <span className="muted">{t('palette.applyTo')}</span>
       <strong>{zone.name}</strong>
       <span className="muted">›</span>
       <select className="select slim" value={slot} onChange={(e) => set({ activeSlot: e.target.value as SlotId })}>
-        {(Object.keys(SLOT_LABEL) as SlotId[]).map((k) => (
-          <option key={k} value={k}>{SLOT_LABEL[k]}</option>
-        ))}
+        {SLOTS.map((s) => <option key={s} value={s}>{t(k(`slot.${s}`))}</option>)}
       </select>
     </div>
   );
 }
 
+/** Neutral search link: general web search, or the retailer chosen by the user on the About page. */
+export function PaintSearchLink({ paint }: { paint: Paint }) {
+  const t = useT();
+  const template = useStore((s) => s.library.retailerTemplate);
+  if (paint.brand === 'Custom') return null;
+  return (
+    <a className="link small" href={paintSearchUrl(paint, template)} target="_blank" rel="noopener noreferrer nofollow">
+      {t('palette.search')} ↗
+    </a>
+  );
+}
+
 export function PalettePanel() {
+  const t = useT();
   const library = useStore((s) => s.library);
   const updateLibrary = useStore((s) => s.updateLibrary);
   const assignPaint = useStore((s) => s.assignPaint);
@@ -51,7 +67,7 @@ export function PalettePanel() {
         (brands.length === 0 || brands.includes(p.brand)) &&
         (type === 'all' || p.type === type) &&
         (!favOnly || favorites.has(p.id)) &&
-        (!library.ownedOnly || owned.has(p.id) || p.brand === 'Perso') &&
+        (!library.ownedOnly || owned.has(p.id) || p.brand === 'Custom') &&
         (!q || p.name.toLowerCase().includes(q) || p.range.toLowerCase().includes(q)),
     );
   }, [paints, brands, type, favOnly, favorites, owned, library.ownedOnly, query]);
@@ -59,12 +75,12 @@ export function PalettePanel() {
   const groups = useMemo(() => {
     const m = new Map<string, Paint[]>();
     for (const p of filtered) {
-      const k = `${p.brand} · ${p.range}`;
-      if (!m.has(k)) m.set(k, []);
-      m.get(k)!.push(p);
+      const key = `${brandLabel(p.brand, t)} · ${p.range}`;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(p);
     }
     return [...m.entries()];
-  }, [filtered]);
+  }, [filtered, t]);
 
   const toggleBrand = (b: Brand) => setBrands((bs) => (bs.includes(b) ? bs.filter((x) => x !== b) : [...bs, b]));
   const toggleIn = (key: 'favorites' | 'owned', id: string) =>
@@ -76,11 +92,11 @@ export function PalettePanel() {
   };
 
   const addCustom = () => {
-    const name = newName.trim() || `Mélange ${library.customPaints.length + 1}`;
-    const p: Paint = { id: `perso-${uid()}`, brand: 'Perso', range: 'Mes couleurs', name, hex: newHex, type: 'base' };
+    const name = newName.trim() || t('palette.customDefault', { n: library.customPaints.length + 1 });
+    const p: Paint = { id: `custom-${uid()}`, brand: 'Custom', range: t('palette.myColors'), name, hex: newHex, type: 'base' };
     updateLibrary((l) => ({ ...l, customPaints: [...l.customPaints, p] }));
     setNewName('');
-    if (!brands.includes('Perso')) setBrands([...brands, 'Perso']);
+    if (!brands.includes('Custom')) setBrands([...brands, 'Custom']);
   };
 
   const pickedMatches = useMemo(
@@ -88,7 +104,13 @@ export function PalettePanel() {
     [pickedColor, paints, brands],
   );
   const equivalents = useMemo(
-    () => (selected ? BRANDS.filter((b) => b !== selected.brand && b !== 'Perso').map((b) => ({ brand: b, m: nearestPaints(selected.hex, paints, 1, (p) => p.brand === b && p.type !== 'shade')[0] })) : []),
+    () =>
+      selected
+        ? BRANDS.filter((b) => b !== selected.brand && b !== 'Custom').map((b) => ({
+            brand: b,
+            m: nearestPaints(selected.hex, paints, 1, (p) => p.brand === b && p.type !== 'shade')[0],
+          }))
+        : [],
     [selected, paints],
   );
 
@@ -98,22 +120,22 @@ export function PalettePanel() {
       <div className="palette-filters">
         <div className="search">
           <Icon name="zoomIn" size={14} />
-          <input placeholder="Rechercher une peinture…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input placeholder={t('palette.searchPlaceholder')} value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="chips">
           {BRANDS.map((b) => (
-            <button key={b} className={`chip ${brands.includes(b) ? 'on' : ''}`} onClick={() => toggleBrand(b)}>{b}</button>
+            <button key={b} className={`chip ${brands.includes(b) ? 'on' : ''}`} onClick={() => toggleBrand(b)}>{brandLabel(b, t)}</button>
           ))}
         </div>
         <div className="chips">
-          <button className={`chip small ${type === 'all' ? 'on' : ''}`} onClick={() => setType('all')}>Tous</button>
-          {(Object.keys(PAINT_TYPE_LABEL) as PaintType[]).filter((t) => t !== 'air').map((t) => (
-            <button key={t} className={`chip small ${type === t ? 'on' : ''}`} onClick={() => setType(t)}>{PAINT_TYPE_LABEL[t]}</button>
+          <button className={`chip small ${type === 'all' ? 'on' : ''}`} onClick={() => setType('all')}>{t('palette.all')}</button>
+          {PAINT_TYPES.map((pt) => (
+            <button key={pt} className={`chip small ${type === pt ? 'on' : ''}`} onClick={() => setType(pt)}>{t(k(`ptype.${pt}`))}</button>
           ))}
         </div>
         <div className="filter-toggles">
-          <Toggle checked={favOnly} onChange={setFavOnly} label="Favoris" />
-          <Toggle checked={library.ownedOnly} onChange={(ownedOnly) => updateLibrary((l) => ({ ...l, ownedOnly }))} label="Mes pots uniquement" />
+          <Toggle checked={favOnly} onChange={setFavOnly} label={t('palette.favorites')} />
+          <Toggle checked={library.ownedOnly} onChange={(ownedOnly) => updateLibrary((l) => ({ ...l, ownedOnly }))} label={t('palette.ownedOnly')} />
         </div>
       </div>
 
@@ -122,17 +144,17 @@ export function PalettePanel() {
           <div className="card-head">
             <Swatch hex={pickedColor} size={28} />
             <div>
-              <strong>Pipette {pickedColor.toUpperCase()}</strong>
-              <small className="muted">Peintures les plus proches</small>
+              <strong>{t('palette.picked', { hex: pickedColor.toUpperCase() })}</strong>
+              <small className="muted">{t('palette.closest')}</small>
             </div>
-            <IconButton icon="x" label="Fermer" size={14} onClick={() => set({ pickedColor: null })} />
+            <IconButton icon="x" label={t('common.close')} size={14} onClick={() => set({ pickedColor: null })} />
           </div>
           <div className="match-list">
             {pickedMatches.map(({ paint, dE }) => (
-              <button key={paint.id} className="match" onClick={() => pick(paint)} title={`ΔE ${dE.toFixed(1)}`}>
+              <button key={paint.id} className="match" onClick={() => pick(paint)}>
                 <Swatch hex={paint.hex} size={20} />
-                <span>{paint.name}<small>{paint.brand} · {paint.range}</small></span>
-                <span className={`quality ${matchQuality(dE).tone}`}>{matchQuality(dE).label}</span>
+                <span>{paint.name}<small>{brandLabel(paint.brand, t)} · {paint.range}</small></span>
+                <span className="similarity">{similarity(dE)}%</span>
               </button>
             ))}
           </div>
@@ -145,20 +167,21 @@ export function PalettePanel() {
             <Swatch hex={selected.hex} size={28} />
             <div>
               <strong>{selected.name}</strong>
-              <small className="muted">{selected.brand} · {selected.range} · {PAINT_TYPE_LABEL[selected.type]}</small>
+              <small className="muted">{brandLabel(selected.brand, t)} · {selected.range} · {t(k(`ptype.${selected.type}`))}</small>
             </div>
-            <IconButton icon="star" label="Favori" size={15} active={favorites.has(selected.id)} onClick={() => toggleIn('favorites', selected.id)} />
-            <IconButton icon="check" label="Je possède ce pot" size={15} active={owned.has(selected.id)} onClick={() => toggleIn('owned', selected.id)} />
+            <IconButton icon="star" label={t('palette.favorite')} size={15} active={favorites.has(selected.id)} onClick={() => toggleIn('favorites', selected.id)} />
+            <IconButton icon="check" label={t('palette.own')} size={15} active={owned.has(selected.id)} onClick={() => toggleIn('owned', selected.id)} />
           </div>
+          <PaintSearchLink paint={selected} />
           {equivalents.some((e) => e.m) && (
             <div className="equivalents">
-              <small className="muted">Équivalences approximatives</small>
+              <small className="muted">{t('palette.equivalents')}</small>
               {equivalents.map(({ brand, m }) =>
                 m ? (
                   <button key={brand} className="match" onClick={() => pick(m.paint)}>
                     <Swatch hex={m.paint.hex} size={18} />
                     <span>{m.paint.name}<small>{brand} · {m.paint.range}</small></span>
-                    <span className={`quality ${matchQuality(m.dE).tone}`}>ΔE {m.dE.toFixed(0)}</span>
+                    <span className="similarity">{similarity(m.dE)}%</span>
                   </button>
                 ) : null,
               )}
@@ -168,7 +191,7 @@ export function PalettePanel() {
       )}
 
       <div className="paint-groups">
-        {groups.length === 0 && <p className="hint">Aucune peinture ne correspond aux filtres.</p>}
+        {groups.length === 0 && <p className="hint">{t('palette.noResult')}</p>}
         {groups.map(([name, list]) => (
           <section key={name}>
             <h4>{name} <span className="muted">{list.length}</span></h4>
@@ -176,14 +199,14 @@ export function PalettePanel() {
               {list.map((p) => (
                 <button
                   key={p.id}
-                  className={`paint ${selected?.id === p.id ? 'sel' : ''} type-${p.type}`}
+                  className={`paint ${selected?.id === p.id ? 'sel' : ''}`}
                   style={{ background: p.hex, color: isDark(p.hex) ? '#fff' : '#111' }}
                   onClick={() => pick(p)}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     toggleIn('favorites', p.id);
                   }}
-                  title={`${p.name} — ${p.brand} ${p.range}\nClic : appliquer · Clic droit : favori`}
+                  title={`${p.name} — ${brandLabel(p.brand, t)} ${p.range}\n${t('palette.tileHint')}`}
                 >
                   {favorites.has(p.id) && <span className="badge fav">★</span>}
                   {owned.has(p.id) && <span className="badge own">✓</span>}
@@ -196,18 +219,18 @@ export function PalettePanel() {
       </div>
 
       <div className="card custom-paint">
-        <strong>Ajouter une couleur perso</strong>
+        <strong>{t('palette.addCustom')}</strong>
         <div className="field-row">
-          <input type="color" value={newHex} onChange={(e) => setNewHex(e.target.value)} className="color-native" aria-label="Couleur" />
-          <input className="text-input grow" placeholder="Nom (ex. Mélange cape)" value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustom()} />
-          <button className="btn small primary" onClick={addCustom}><Icon name="plus" size={14} /></button>
+          <input type="color" value={newHex} onChange={(e) => setNewHex(e.target.value)} className="color-native" aria-label={t('common.customColor')} />
+          <input className="text-input grow" placeholder={t('palette.customName')} value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustom()} />
+          <button className="btn small primary" onClick={addCustom} aria-label={t('palette.addCustom')}><Icon name="plus" size={14} /></button>
         </div>
         {library.customPaints.length > 0 && (
           <div className="custom-list">
             {library.customPaints.map((p) => (
               <span key={p.id} className="custom-item">
                 <button className="link" onClick={() => pick(p)}><Swatch hex={p.hex} size={16} /> {p.name}</button>
-                <IconButton icon="trash" label="Supprimer" size={13} onClick={() => updateLibrary((l) => ({ ...l, customPaints: l.customPaints.filter((x) => x.id !== p.id) }))} />
+                <IconButton icon="trash" label={t('common.delete')} size={13} onClick={() => updateLibrary((l) => ({ ...l, customPaints: l.customPaints.filter((x) => x.id !== p.id) }))} />
               </span>
             ))}
           </div>

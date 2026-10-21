@@ -59,6 +59,8 @@ export interface Library {
   favorites: string[];
   ownedOnly: boolean;
   owned: string[];
+  /** Optional retailer search URL chosen by the user, with a `{q}` placeholder. */
+  retailerTemplate: string;
 }
 
-export const emptyLibrary = (): Library => ({ schemes: [], customPaints: [], favorites: [], owned: [], ownedOnly: false });
+export const emptyLibrary = (): Library => ({ schemes: [], customPaints: [], favorites: [], owned: [], ownedOnly: false, retailerTemplate: '' });
