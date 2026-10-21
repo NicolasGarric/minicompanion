@@ -94,6 +94,17 @@ on desktop (1440×900) and mobile (390×844): demo → editor → eyedropper →
 share cards → shared link page; beginner path with real file upload → plan → shopping → stores →
 editor; stats; legal. No console errors, no horizontal overflow on mobile.
 
+## Next phase: PLAY module (proposal, not started)
+
+The platform grows into two modules sharing one account: PAINT (this app, still the priority) and
+PLAY (tournaments, matches, painting contests, live streams). Goal: show the full customer journey
+discover → paint → share → play → watch → back to physical stores.
+
+- Proposal (architecture, data model, plan, scope check, open decisions): `docs/PLAY_PLAN.md`
+- Out-of-scope features: `ROADMAP.md`
+- **Waiting for the owner's validation before writing any PLAY code.**
+- The app will be renamed (proposal in chat: "Dicebrush"); "forge" names are crowded in this hobby.
+
 ## Open points / next steps
 
 - Japanese terms to validate with a native hobbyist: see `// CHECK:` in `src/i18n/ja.ts`
