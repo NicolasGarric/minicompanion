@@ -1,0 +1,126 @@
+import type { ReactNode } from 'react';
+import { useLang, useT, type Lang, type MessageKey } from '../i18n';
+import type { Route } from '../router';
+import { APP_NAME } from '../brand';
+import { useSession } from '../auth/session';
+import { backendConfigured } from '../auth/supabase';
+import { Avatar } from '../ui/Avatar';
+
+export function Logo() {
+  return (
+    <span className="logo">
+      {/* Original mark, not derived from any brand */}
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden>
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#e3b04b" />
+            <stop offset="1" stopColor="#9a2b2b" />
+          </linearGradient>
+        </defs>
+        <path d="M32 6l22 11v17c0 13-10 21-22 24C20 55 10 47 10 34V17z" fill="url(#lg)" />
+        <circle cx="32" cy="30" r="8" fill="#14161c" />
+      </svg>
+      <span>{APP_NAME}</span>
+    </span>
+  );
+}
+
+export function LangSwitch() {
+  const { lang, setLang } = useLang();
+  const t = useT();
+  const options: { value: Lang; label: string }[] = [
+    { value: 'en', label: 'EN' },
+    { value: 'ja', label: '日本語' },
+  ];
+  return (
+    <div className="lang-switch" role="group" aria-label={t('nav.language')}>
+      {options.map((o) => (
+        <button key={o.value} type="button" className={lang === o.value ? 'on' : ''} aria-pressed={lang === o.value} onClick={() => setLang(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function AccountButton() {
+  const t = useT();
+  const { session, profile } = useSession();
+  if (!backendConfigured) return null;
+  if (!session) return <a className="btn small" href="#/signin">{t('auth.signin.cta')}</a>;
+  return (
+    <a className="account-btn" href="#/account" aria-label={t('nav.account')}>
+      <Avatar name={profile?.display_name ?? session.user.email ?? '?'} size={30} />
+    </a>
+  );
+}
+
+/** Short disclaimer, shown on every page. */
+export function Footer({ compact }: { compact?: boolean }) {
+  const t = useT();
+  return (
+    <footer className={`site-footer ${compact ? 'compact' : ''}`}>
+      <p>
+        {t('legal.short')} <a href="#/legal">{t('nav.legal')}</a>
+      </p>
+    </footer>
+  );
+}
+
+interface NavItem {
+  href: string;
+  key: MessageKey;
+  active: (r: Route) => boolean;
+}
+
+/** The two modules are the top level of the navigation; each has its own sub-navigation. */
+const SECTIONS: NavItem[] = [
+  { href: '#/paint', key: 'nav.paint', active: (r) => r.section === 'paint' },
+  { href: '#/play', key: 'nav.play', active: (r) => r.section === 'play' },
+  { href: '#/stores', key: 'nav.stores', active: (r) => r.name === 'stores' },
+];
+
+const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
+  paint: [
+    { href: '#/paint', key: 'nav.paint.projects', active: (r) => r.name === 'paint' },
+    { href: '#/paint/beginner', key: 'nav.beginner', active: (r) => r.name === 'paint.beginner' },
+  ],
+  play: [{ href: '#/play', key: 'nav.play.tournaments', active: (r) => r.name === 'play' }],
+};
+
+/** Layout for every page except the full-screen PAINT editor. */
+export function Shell({ route, children }: { route: Route; children: ReactNode }) {
+  const t = useT();
+  const sub = route.section === 'none' ? null : SUB_NAV[route.section];
+  return (
+    <div className="shell">
+      <header className="site-header">
+        <a href="#/" className="home-link" aria-label={t('nav.home')}>
+          <Logo />
+        </a>
+        <nav className="site-nav" aria-label={t('nav.main')}>
+          {SECTIONS.map((n) => (
+            <a key={n.href} href={n.href} className={n.active(route) ? 'on' : ''} aria-current={n.active(route) ? 'page' : undefined}>
+              {t(n.key)}
+            </a>
+          ))}
+        </nav>
+        <div className="header-tools">
+          <LangSwitch />
+          <AccountButton />
+        </div>
+      </header>
+      {sub && (
+        <nav className={`sub-nav ${route.section}`} aria-label={t(route.section === 'paint' ? 'nav.paint' : 'nav.play')}>
+          {sub.map((n) => (
+            <a key={n.href} href={n.href} className={n.active(route) ? 'on' : ''} aria-current={n.active(route) ? 'page' : undefined}>
+              {t(n.key)}
+            </a>
+          ))}
+        </nav>
+      )}
+      <main className="page">{children}</main>
+      <Footer />
+    </div>
+  );
+}

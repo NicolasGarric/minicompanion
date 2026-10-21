@@ -1,16 +1,21 @@
 import { useEffect } from 'react';
-import { useStore } from './store';
-import { navigate, useRoute } from './lib/router';
-import { Shell } from './components/Shell';
-import { Home } from './pages/Home';
-import { Editor } from './pages/Editor';
-import { Beginner } from './pages/Beginner';
-import { Stores } from './pages/Stores';
-import { Legal } from './pages/Legal';
-import { Stats } from './pages/Stats';
-import { SharedScheme } from './pages/SharedScheme';
+import { useStore } from './paint/store';
+import { navigate, useRoute, type Route } from './core/router';
+import { useSession } from './core/auth/session';
+import { Shell } from './core/layout/Shell';
+import { Home } from './core/pages/Home';
+import { Legal } from './core/pages/Legal';
+import { Stats } from './core/pages/Stats';
+import { Stores } from './core/stores/StoresPage';
+import { SignInPage } from './core/auth/SignInPage';
+import { AccountPage } from './core/auth/AccountPage';
+import { PaintHome } from './paint/pages/PaintHome';
+import { Editor } from './paint/pages/Editor';
+import { Beginner } from './paint/pages/Beginner';
+import { SharedScheme } from './paint/pages/SharedScheme';
+import { PlayHome } from './play/pages/PlayHome';
 
-/** Saves the open project 1.5 s after the last change, and on tab close. */
+/** Saves the open PAINT project 1.5 s after the last change, and on tab close. */
 function useAutosave() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -46,21 +51,37 @@ function Toasts() {
   );
 }
 
+function Page({ route }: { route: Route }) {
+  switch (route.name) {
+    case 'paint': return <PaintHome />;
+    case 'paint.beginner': return <Beginner />;
+    case 'paint.shared': return <SharedScheme param={route.params.data ?? ''} />;
+    case 'play': return <PlayHome />;
+    case 'stores': return <Stores />;
+    case 'signin': return <SignInPage />;
+    case 'account': return <AccountPage />;
+    case 'legal': return <Legal />;
+    case 'stats': return <Stats />;
+    default: return <Home />;
+  }
+}
+
 export default function App() {
   const route = useRoute();
   const projectId = useStore((s) => s.projectId);
 
   useEffect(() => {
     useStore.getState().loadLibrary();
+    useSession.getState().init();
   }, []);
   useAutosave();
 
-  // A project cannot exist without its reference image: no project open -> back to home.
+  // A PAINT project cannot exist without its reference image: no project open -> PAINT home.
   useEffect(() => {
-    if (route.name === 'editor' && !projectId) navigate('');
+    if (route.name === 'paint.editor' && !projectId) navigate('paint', { replace: true });
   }, [route.name, projectId]);
 
-  if (route.name === 'editor' && projectId) {
+  if (route.name === 'paint.editor' && projectId) {
     return (
       <>
         <Editor />
@@ -69,20 +90,11 @@ export default function App() {
     );
   }
 
-  const page = (() => {
-    switch (route.name) {
-      case 'beginner': return <Beginner />;
-      case 'stores': return <Stores />;
-      case 'legal': return <Legal />;
-      case 'stats': return <Stats />;
-      case 'shared': return <SharedScheme param={route.param ?? ''} />;
-      default: return <Home />;
-    }
-  })();
-
   return (
     <>
-      <Shell current={route.name}>{page}</Shell>
+      <Shell route={route}>
+        <Page route={route} />
+      </Shell>
       <Toasts />
     </>
   );

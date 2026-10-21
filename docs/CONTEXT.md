@@ -94,16 +94,43 @@ on desktop (1440×900) and mobile (390×844): demo → editor → eyedropper →
 share cards → shared link page; beginner path with real file upload → plan → shopping → stores →
 editor; stats; legal. No console errors, no horizontal overflow on mobile.
 
-## Next phase: PLAY module (proposal, not started)
+## Phase 2: PLAY module (in progress)
 
-The platform grows into two modules sharing one account: PAINT (this app, still the priority) and
-PLAY (tournaments, matches, painting contests, live streams). Goal: show the full customer journey
+The platform grows into two modules sharing one account: PAINT (still the priority) and PLAY
+(tournaments, matches, painting contests, live streams). Goal: show the full customer journey
 discover → paint → share → play → watch → back to physical stores.
 
-- Proposal (architecture, data model, plan, scope check, open decisions): `docs/PLAY_PLAN.md`
-- Out-of-scope features: `ROADMAP.md`
-- **Waiting for the owner's validation before writing any PLAY code.**
-- The app will be renamed (proposal in chat: "Dicebrush"); "forge" names are crowded in this hobby.
+- Plan, data model, scope check: `docs/PLAY_PLAN.md`. Out of scope: `ROADMAP.md`.
+- Validated by the owner (2026-10-21): keep Vite + add **hosted Supabase**; dependencies
+  `@supabase/supabase-js`, `leaflet`, `qrcode` approved.
+- Still open: Twitch credentials + production domain (needed by step 9), single elimination
+  (bonus or roadmap), privacy of signed-in events, app name (proposal: "Dicebrush"; one-line change
+  in `src/core/brand.ts`).
+- Owner action needed: create the Supabase project → `docs/SUPABASE_SETUP.md`.
+
+### PLAY progress
+
+- [x] Step 1 — code split into `src/core` (shared), `src/paint`, `src/play`; `core` never imports
+      `paint`. Nested hash routes, legacy `#/editor` and `#/beginner` redirect, `#/s/…` unchanged.
+      Paint / Play navigation with sub-navigation. New platform home (customer journey).
+- [x] Step 2 (code) — Supabase client (PKCE), session store, sign in / sign up / Google, profile page
+      (display name, username, home city, language, free-text factions). App runs without backend.
+- [x] Step 2 (database) — migrations `supabase/migrations/` (all PLAY tables, enums, indexes, RLS,
+      search / register / withdraw / army list functions) + demo seed (9 stores, 50 users,
+      20 tournaments). **27 RLS tests pass** on local Postgres (`supabase/tests/local/run.sh`).
+- [x] Pure TS engines with tests (`npm test`, 18 tests): army list parser, standings + tie-breakers,
+      Swiss pairings (no rematch, byes, backtracking), round-robin schedule.
+- [ ] Step 2 — verify on the real Supabase project (auth flows, RLS with two accounts)
+- [ ] Step 3 — tournament list, filters, map (Leaflet), tournament page
+- [ ] Steps 4–9 — see `docs/PLAY_PLAN.md`
+
+### Conventions for PLAY
+
+- Write operations with business rules go through `SECURITY DEFINER` SQL functions; tables only get
+  the policies needed for reads and simple owner edits. Execute is revoked from `public, anon`
+  (Supabase also grants `anon` explicitly by default).
+- Every new SQL rule gets a test in `supabase/tests/*.sql` (run with the local harness).
+- Seeded data is fictional; demo accounts use `demo-password-2026` (demo project only).
 
 ## Open points / next steps
 
