@@ -34,7 +34,9 @@ from (
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-  confirmation_token, recovery_token, email_change_token_new, email_change
+  -- Supabase Auth reads these as strings: NULL makes sign-in fail for SQL-created users.
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  email_change_token_current, phone_change, phone_change_token, reauthentication_token
 )
 select '00000000-0000-0000-0000-000000000000',
        md5('demo-user-' || n)::uuid,
@@ -44,7 +46,7 @@ select '00000000-0000-0000-0000-000000000000',
        '{"provider": "email", "providers": ["email"]}',
        jsonb_build_object('display_name', display_name, 'preferred_lang', lang),
        now() - (n || ' days')::interval, now(),
-       '', '', '', ''
+       '', '', '', '', '', '', '', ''
 from seed_people;
 
 insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)

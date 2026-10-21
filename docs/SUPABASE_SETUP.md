@@ -11,7 +11,10 @@ secret key: the app only uses the **public** anon key, and data is protected by 
 
 ## 2. Create the database
 
-In the dashboard, open **SQL Editor** → **New query**, then paste and run each file **in this order**:
+Fastest: run `scripts/copy-setup-sql.sh` (WSL) — it copies the two migrations and the seed, in order,
+to the Windows clipboard. Paste into **SQL Editor** → **New query** and click **Run**.
+
+Or paste and run each file manually, **in this order**:
 
 1. `supabase/migrations/20261021000001_core.sql`
 2. `supabase/migrations/20261021000002_play.sql`
