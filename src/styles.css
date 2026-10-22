@@ -520,7 +520,7 @@ th:first-child, td:first-child { text-align: left; }
 .colour-actions, .refine-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .free-colour { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; color: var(--text-2); }
 .background-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem; border: 1px dashed var(--border); border-radius: var(--radius); }
-.background-row > span { flex: 1; display: grid; line-height: 1.3; }
+.background-row > span:not(.swatch) { flex: 1; display: grid; line-height: 1.3; }
 .zone-effects { display: grid; gap: 0.6rem; padding-top: 0.25rem; border-top: 1px solid var(--border); }
 .slot-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; border: 0; background: none; color: var(--text); cursor: pointer; text-align: left; padding: 0; }
 
@@ -582,3 +582,12 @@ th:first-child, td:first-child { text-align: left; }
 .primer-chips .chip { display: inline-flex; align-items: center; gap: 0.35rem; }
 .chip-swatch { width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3); display: inline-block; }
 .chip-swatch.bw { background: linear-gradient(90deg, #111 50%, #eee 50%); }
+
+/* Priority badge, painting steps */
+.badge-priority { color: var(--accent); margin-right: 0.3rem; font-size: 0.75rem; }
+.painting-steps { display: grid; gap: 0.4rem; }
+.painting-steps input[type=range] { width: 100%; accent-color: var(--accent); }
+.stage-labels { list-style: none; display: flex; justify-content: space-between; gap: 0.25rem; margin: 0; padding: 0; }
+.stage-labels button { border: 0; background: none; color: var(--muted); font-size: 0.7rem; cursor: pointer; padding: 0.15rem; }
+.stage-labels .done button { color: var(--text-2); }
+.stage-labels .on button { color: var(--accent); font-weight: 700; }

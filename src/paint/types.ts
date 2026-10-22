@@ -52,6 +52,8 @@ export interface Zone {
   refHex?: string;
   /** The automatic zone detected as the photo background (excluded by default = hidden). */
   isBackground?: boolean;
+  /** Painted over every other colour and drawn area wherever it overlaps them. */
+  priority?: boolean;
 }
 
 export type SlotId = 'base' | 'wash' | 'highlight' | 'drybrush';
@@ -70,7 +72,7 @@ export type RoleId =
   | 'other';
 
 /** A zone's recipe, reusable across projects (schemes, presets). */
-export type ZoneRecipe = Omit<Zone, 'id' | 'name' | 'role' | 'visible' | 'source' | 'refHex' | 'isBackground'>;
+export type ZoneRecipe = Omit<Zone, 'id' | 'name' | 'role' | 'visible' | 'source' | 'refHex' | 'isBackground' | 'priority'>;
 
 export interface Scheme {
   id: string;

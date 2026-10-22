@@ -6,7 +6,7 @@ import { similarity } from '../lib/beginner';
 import { k, useT } from '../../core/i18n';
 import { usePrefs } from '../../core/prefs';
 import { BRANDS } from '../data/paints';
-import { ColorInput, Icon, IconButton, Modal, pct, Slider, Swatch } from '../../core/ui/ui';
+import { ColorInput, Icon, IconButton, Modal, pct, Slider, Swatch, Toggle } from '../../core/ui/ui';
 import { PalettePanel } from './PalettePanel';
 import { ZoneEffects } from './ZoneEffects';
 
@@ -49,7 +49,8 @@ export function StepColours() {
     <div className="step-colours">
       <PrimerCard onCatalog={() => setCatalog('primer')} />
 
-      <div className="colour-count">
+      {!greyscale && (
+        <div className="colour-count">
         <div>
           <strong>{t('colours.count')}</strong>
           <small className="muted">{t('colours.countHint')}</small>
@@ -60,9 +61,11 @@ export function StepColours() {
           <IconButton icon="plus" label={t('colours.more')} onClick={() => changeCount(count + 1)} disabled={count >= MAX_COLOURS} />
         </div>
       </div>
+      )}
       <BrandSelect />
       {greyscale ? (
         <div className="notice">
+          <strong>{t('tone.title')}</strong>
           <p>{t('colours.greyscale')}</p>
           <div className="field-row">
             <button className="btn small primary" onClick={() => useStore.getState().set({ tool: 'part' })}>
@@ -173,7 +176,10 @@ function ColourZoneItem({
           {zone.refHex && <span className="arrow" aria-hidden>→</span>}
           <Swatch hex={zone.base.hex} size={30} ring={changed} />
           <span className="colour-text">
-            <strong>{zone.name}</strong>
+            <strong>
+              {zone.priority && <span className="badge-priority" title={t('colours.priority')}>▲</span>}
+              {zone.name}
+            </strong>
             <small className="muted">{paint ? `${paint.name} · ${paint.brand}` : changed ? zone.base.hex.toUpperCase() : t('colours.unchanged')}</small>
           </span>
         </button>
@@ -218,6 +224,9 @@ function ColourZoneItem({
               </button>
             )}
           </div>
+
+          <Toggle checked={!!zone.priority} onChange={(priority) => updateZone(zone.id, { priority })} label={t('colours.priority')} />
+          {zone.priority && <p className="hint">{t('colours.priorityHint')}</p>}
 
           <Slider
             label={t('zones.shading')}

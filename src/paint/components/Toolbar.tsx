@@ -35,6 +35,7 @@ export function ToolOptions() {
   const lassoMode = useStore((s) => s.lassoMode);
   const partSensitivity = useStore((s) => s.partSensitivity);
   const partMode = useStore((s) => s.partMode);
+  const protectBackground = useStore((s) => s.protectBackground);
   const zone = useStore((s) => s.zones.find((z) => z.id === s.activeZoneId));
   const set = useStore((s) => s.set);
   const modes: { value: CombineMode; label: string }[] = (['add', 'subtract', 'replace'] as CombineMode[]).map((m) => ({ value: m, label: t(k(`mode.${m}`)) }));
@@ -88,6 +89,9 @@ export function ToolOptions() {
           <Slider label={t('part.sensitivity')} value={partSensitivity} min={1} max={10} step={1} onChange={(v) => set({ partSensitivity: v })} />
           <span className="hint">{t('part.hint')}</span>
         </>
+      )}
+      {(tool === 'brush' || tool === 'lasso' || tool === 'wand' || tool === 'part') && (
+        <Toggle checked={protectBackground} onChange={(v) => set({ protectBackground: v })} label={t('tools.protectBackground')} />
       )}
       {tool === 'picker' && <span className="hint">{t('picker.hint')}</span>}
       {tool === 'hand' && <span className="hint">{t('hand.hint')}</span>}

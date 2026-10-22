@@ -419,7 +419,7 @@ export function applyRecipe(zone: Zone, recipe: Partial<ZoneRecipe> | undefined)
 }
 
 export function recipeOf(zone: Zone): ZoneRecipe {
-  const { id: _id, name: _n, role: _r, visible: _v, source: _s, refHex: _h, isBackground: _b, ...rest } = zone;
+  const { id: _id, name: _n, role: _r, visible: _v, source: _s, refHex: _h, isBackground: _b, priority: _p, ...rest } = zone;
   return structuredClone(rest);
 }
 

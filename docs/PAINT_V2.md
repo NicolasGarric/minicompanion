@@ -60,3 +60,18 @@ only; their pixels inside the figure (highlights of the same grey) stay figure c
 
 Fixed bugs reported by the owner: a primer drawn with the lasso hid every colour painted later
 (drawn areas are above colours), and "tap a part" grew the open area instead of creating one.
+
+## Round 3 (2026-10-22, from the owner's tests on a real photo)
+
+- **Priority** toggle per zone: painted over every colour and drawn area it overlaps (render order),
+  outside the partition blending.
+- **Protected background** (default on): brush, lasso, wand and "tap a part" never paint the excluded
+  background. **Enclosed pockets** of backdrop (behind a plume, between arm and body) are detected:
+  same colour as the backdrop, perfectly flat, not tiny.
+- **Colourless photos** are split into soft **light levels** (shadows / mid-tones / highlights) from
+  lightness percentiles of the figure, with smooth transitions — painting "Highlights" reads as a
+  real highlight, not blotches. The colour-count control is hidden in that case.
+- **Auto-crop** on import when the miniature leaves wide margins (frame + 6 %).
+- **Outline** ("marching ants") of the open zone; skipped for diffuse zones (light levels).
+- **Painting steps** slider in step 3: primer → base coats → wash → drybrush → highlights, replayed
+  on the image.

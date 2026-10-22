@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useStore } from '../store';
 import { buildRecipe, paintsUsed } from '../lib/recipe';
 import { useT } from '../../core/i18n';
 import { Icon, Swatch } from '../../core/ui/ui';
 import { PaintSearchLink } from './PalettePanel';
 import { VariantsPanel } from './VariantsPanel';
+import { STAGES } from '../lib/stages';
+import { k } from '../../core/i18n';
 import { SchemesPanel } from './SchemesPanel';
 
 /** Step 3: the recipe per zone, the live shopping list, sharing and extra options. */
@@ -27,6 +29,8 @@ export function StepFinish() {
       <button className="btn primary wide" onClick={() => set({ shareOpen: true })}>
         <Icon name="share" size={16} /> {t('share.title')}
       </button>
+
+      <PaintingSteps />
 
       <section>
         <h4>{t('finish.recipe')}</h4>
@@ -75,5 +79,39 @@ export function StepFinish() {
         <SchemesPanel />
       </details>
     </div>
+  );
+}
+
+/**
+ * Painting steps: a slider replays the scheme as it is painted (primer, base coats, wash, drybrush,
+ * highlights), on the image itself. Leaving the step restores the final render.
+ */
+function PaintingSteps() {
+  const t = useT();
+  const stage = useStore((s) => s.previewStage);
+  const set = useStore((s) => s.set);
+  const current = stage ?? STAGES.length - 1;
+  useEffect(() => () => set({ previewStage: null }), [set]);
+  return (
+    <section className="painting-steps">
+      <h4>{t('stages.title')}</h4>
+      <input
+        type="range"
+        min={0}
+        max={STAGES.length - 1}
+        step={1}
+        value={current}
+        onChange={(e) => set({ previewStage: Number(e.target.value) === STAGES.length - 1 ? null : Number(e.target.value) })}
+        aria-label={t('stages.title')}
+      />
+      <ol className="stage-labels">
+        {STAGES.map((st, i) => (
+          <li key={st} className={i === current ? 'on' : i < current ? 'done' : ''}>
+            <button onClick={() => set({ previewStage: i === STAGES.length - 1 ? null : i })}>{t(k(`stages.${st}`))}</button>
+          </li>
+        ))}
+      </ol>
+      <p className="hint">{t(k(`stages.${STAGES[current]}.hint`))}</p>
+    </section>
   );
 }

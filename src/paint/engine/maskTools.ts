@@ -8,6 +8,8 @@ export interface BrushOptions {
   erase: boolean;
   smart: boolean; // limits painting to colours close to the stroke start
   smartTolerance: number; // 0..100
+  /** Pixels to keep untouched, 0..255 (e.g. the excluded background). */
+  protect?: Uint8Array | null;
 }
 
 /**
@@ -76,6 +78,7 @@ export class BrushStroke {
           f *= 1 - Math.max(0, (dc - tol * 0.6) / (tol * 0.4));
         }
         f *= flow;
+        if (this.opts.protect) f *= (255 - this.opts.protect[i]) / 255;
         if (f <= cover[i]) continue;
         cover[i] = f;
         const b = before[i];

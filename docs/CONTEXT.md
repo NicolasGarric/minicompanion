@@ -149,6 +149,8 @@ discover → paint → share → play → watch → back to physical stores.
       transparent, drawn areas are reorderable layers, border flood-fill background (see PAINT_V2.md).
 - [x] Tap a part, mobile bottom sheet, long press / hold to see the original, split / merge colours,
       preferred brand, before / after card, popular colours for grey or drawn zones.
+- [x] Round 3: priority toggle, protected background + enclosed pockets, soft light levels on grey
+      photos, auto-crop, active-zone outline, painting-steps slider (see PAINT_V2.md).
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 

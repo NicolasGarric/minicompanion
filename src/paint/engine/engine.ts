@@ -171,7 +171,9 @@ export class PaintEngine {
       o.set(s.subarray(a, b), a);
     }
 
-    const prepared = zones
+    // Priority zones are painted last, over everything they overlap.
+    const ordered = [...zones.filter((z) => !z.priority), ...zones.filter((z) => z.priority)];
+    const prepared = ordered
       .filter((z) => z.visible && z.opacity > 0 && this.masks.has(z.id) && !isUnpaintedColour(z))
       .map((z) => prepareZone(z, this.zoneCache(z.id), this.masks.get(z.id)!))
       .filter((p) => p.bbox && intersects(p.bbox, r));
@@ -399,7 +401,7 @@ function prepareZone(z: Zone, c: ZoneCache, mask: Uint8Array): PreparedZone {
     wash: layer(z.wash),
     hl: layer(z.highlight),
     dry: layer(z.drybrush),
-    exclusive: z.source === 'auto',
+    exclusive: z.source === 'auto' && !z.priority,
   };
 }
 

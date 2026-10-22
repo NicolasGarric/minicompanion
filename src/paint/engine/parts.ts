@@ -56,6 +56,67 @@ export function growFromBorder(maps: LumaMaps, sensitivity = 5): Uint8Array {
   return finish(flood(maps, seeds, sensitivity), w, h);
 }
 
+/**
+ * Adds pockets of backdrop enclosed by the figure (between an arm and the body, behind a plume…),
+ * which the walk from the border cannot reach. A pocket must look exactly like the backdrop: same
+ * colour, perfectly flat (no edge) and not tiny, so a white highlight on a sculpted part is kept.
+ */
+export function addEnclosedBackdrop(
+  img: { data: Uint8ClampedArray | Uint8Array },
+  maps: LumaMaps,
+  bg: Uint8Array,
+): Uint8Array {
+  const { edge, width: w, height: h } = maps;
+  const { data } = img;
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let i = 0; i < bg.length; i++) {
+    if (bg[i] < 230) continue;
+    r += data[i * 4];
+    g += data[i * 4 + 1];
+    b += data[i * 4 + 2];
+    n++;
+  }
+  if (n === 0) return bg;
+  r /= n; g /= n; b /= n;
+
+  const candidate = new Uint8Array(w * h);
+  for (let i = 0; i < candidate.length; i++) {
+    if (bg[i] >= 128 || edge[i] > POCKET_MAX_EDGE) continue;
+    const p = i * 4;
+    if (Math.hypot(data[p] - r, data[p + 1] - g, data[p + 2] - b) <= POCKET_MAX_COLOUR) candidate[i] = 1;
+  }
+  const pockets = new Uint8Array(w * h);
+  const seen = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  const minArea = Math.max(40, Math.round(w * h * POCKET_MIN_AREA));
+  for (let start = 0; start < candidate.length; start++) {
+    if (!candidate[start] || seen[start]) continue;
+    // Collect one connected component of backdrop-like pixels
+    let head = 0, tail = 0;
+    queue[tail++] = start;
+    seen[start] = 1;
+    while (head < tail) {
+      const i = queue[head++];
+      const x = i % w;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) {
+        if (j < 0 || j >= w * h || seen[j] || !candidate[j]) continue;
+        seen[j] = 1;
+        queue[tail++] = j;
+      }
+    }
+    if (tail < minArea) continue;
+    for (let k = 0; k < tail; k++) pockets[queue[k]] = 255;
+  }
+  const soft = finish(pockets, w, h);
+  const out = new Uint8Array(bg);
+  for (let i = 0; i < out.length; i++) if (soft[i] > out[i]) out[i] = soft[i];
+  return out;
+}
+
+const POCKET_MAX_EDGE = 0.08; // perfectly flat
+const POCKET_MAX_COLOUR = 16; // RGB distance to the backdrop colour
+const POCKET_MIN_AREA = 0.0004; // of the image (~ 380 px on a 1600 × 600 photo)
+
 /** 4-connected walk: a neighbour joins if the lightness step is small and it is not on a strong edge. */
 function flood(maps: LumaMaps, seeds: number[], sensitivity: number): Uint8Array {
   const { lum, edge, width: w, height: h } = maps;
@@ -181,3 +242,44 @@ function soften(m: Uint8Array, w: number, h: number): Uint8Array {
   }
   return out;
 }
+
+export interface CropRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Frame around the miniature (everything that is not backdrop) plus a margin, or null when cropping
+ * would not help (no clear backdrop, or the figure already fills most of the photo).
+ */
+export function subjectCrop(img: { data: Uint8ClampedArray | Uint8Array; width: number; height: number }): CropRect | null {
+  const { width: w, height: h } = img;
+  const maps = lumaMaps(img);
+  const bg = addEnclosedBackdrop(img, maps, growFromBorder(maps));
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (bg[y * w + x] >= 128) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return null;
+  const margin = Math.round(Math.max(x1 - x0, y1 - y0) * CROP_MARGIN);
+  const rect = {
+    x: Math.max(0, x0 - margin),
+    y: Math.max(0, y0 - margin),
+    width: Math.min(w, x1 + margin + 1) - Math.max(0, x0 - margin),
+    height: Math.min(h, y1 + margin + 1) - Math.max(0, y0 - margin),
+  };
+  const kept = (rect.width * rect.height) / (w * h);
+  return kept > CROP_MAX_KEPT || kept < CROP_MIN_KEPT ? null : rect;
+}
+
+const CROP_MARGIN = 0.06; // around the figure, relative to its larger side
+const CROP_MAX_KEPT = 0.8; // not worth cropping if we would keep more than this
+const CROP_MIN_KEPT = 0.03; // a "figure" this small is more likely a detection error

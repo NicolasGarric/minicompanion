@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { engine, type Rect } from '../engine/engine';
 import { BrushStroke, feather, magicWand, polygonMask, type CombineMode } from '../engine/maskTools';
 import { copyRect } from '../engine/maskPatch';
+import { zonesAtStage } from '../lib/stages';
 import { Icon, IconButton } from '../../core/ui/ui';
 import { translate as tr, useT } from '../../core/i18n';
 
@@ -21,6 +22,7 @@ export function CanvasView() {
   const height = useStore((s) => s.height);
   const zones = useStore((s) => s.zones);
   const primer = useStore((s) => s.primer);
+  const previewStage = useStore((s) => s.previewStage);
   const maskVersion = useStore((s) => s.maskVersion);
   const tool = useStore((s) => s.tool);
   const brush = useStore((s) => s.brush);
@@ -125,37 +127,94 @@ export function CanvasView() {
   }, []);
 
   // --- Rendu ----------------------------------------------------------------------------
+  /**
+   * Overlay of the open zone: a "marching ants" outline (two frames swapped by a timer), plus the
+   * filled mask when "show mask" is on.
+   */
+  const overlayFrames = useRef<ImageData[] | null>(null);
   const drawOverlay = useCallback(() => {
     const c = overlayRef.current;
+    overlayFrames.current = null;
     if (!c || !engine.loaded) return;
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, c.width, c.height);
     const s = useStore.getState();
-    if (!s.showMask || !s.activeZoneId) return;
+    if (!s.activeZoneId) return;
     const m = engine.masks.get(s.activeZoneId);
     if (!m) return;
-    const img = ctx.createImageData(c.width, c.height);
-    const d = img.data;
-    for (let i = 0; i < m.length; i++) {
-      const a = m[i];
-      if (!a) continue;
-      const p = i * 4;
-      d[p] = 255;
-      d[p + 1] = 40;
-      d[p + 2] = 110;
-      d[p + 3] = a * 0.55;
+    const w = c.width;
+    const h = c.height;
+    const frames = [ctx.createImageData(w, h), ctx.createImageData(w, h)];
+    if (s.showMask) {
+      for (const f of frames) {
+        const d = f.data;
+        for (let i = 0; i < m.length; i++) {
+          if (!m[i]) continue;
+          d[i * 4] = 255;
+          d[i * 4 + 1] = 40;
+          d[i * 4 + 2] = 110;
+          d[i * 4 + 3] = m[i] * 0.55;
+        }
+      }
     }
-    ctx.putImageData(img, 0, 0);
+    // Outline: inside pixels touching the outside, and that outside neighbour (2 px, readable zoomed out).
+    // Diffuse zones (light levels, scattered highlights) get no outline: it would hatch the whole figure.
+    let inside = 0;
+    let border = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (m[i] < 128) continue;
+        inside++;
+        if ((x > 0 && m[i - 1] < 128) || (x < w - 1 && m[i + 1] < 128) || (y > 0 && m[i - w] < 128) || (y < h - 1 && m[i + w] < 128)) border++;
+      }
+    }
+    const diffuse = inside === 0 || border / inside > 0.15;
+    const mark = (i: number) => {
+      const x = i % w;
+      const dash = (((x + Math.floor(i / w)) >> 3) & 1) === 1;
+      frames.forEach((f, k) => {
+        const v = dash !== (k === 1) ? 255 : 20;
+        f.data.set([v, v, v, 255], i * 4);
+      });
+    };
+    for (let y = 0; y < h && !diffuse; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (m[i] < 128) continue;
+        for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+          if (j >= 0 && m[j] < 128) {
+            mark(i);
+            mark(j);
+          }
+        }
+      }
+    }
+    overlayFrames.current = frames;
+    ctx.putImageData(frames[0], 0, 0);
+  }, []);
+
+  useEffect(() => {
+    let k = 0;
+    const timer = window.setInterval(() => {
+      const frames = overlayFrames.current;
+      if (!frames || !overlayRef.current) return;
+      k = 1 - k;
+      overlayRef.current.getContext('2d')!.putImageData(frames[k], 0, 0);
+    }, 450);
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
     if (!engine.loaded || !resultRef.current) return;
     const id = requestAnimationFrame(() => {
-      engine.render(zones, undefined, undefined, primer);
+      // Painting-steps preview shows the zones as they are at that step.
+      const shown = previewStage === null ? zones : zonesAtStage(zones, previewStage);
+      engine.render(shown, undefined, undefined, primer);
       resultRef.current!.getContext('2d')!.putImageData(engine.out!, 0, 0);
     });
     return () => cancelAnimationFrame(id);
-  }, [zones, primer, maskVersion, width, height]);
+  }, [zones, primer, previewStage, maskVersion, width, height]);
 
   useEffect(() => {
     if (!engine.loaded || !sourceRef.current) return;
@@ -236,6 +295,7 @@ export function CanvasView() {
       const stroke = new BrushStroke(mask, {
         ...s.brush,
         erase: effectiveTool === 'eraser',
+        protect: s.backgroundGuard(zone.id),
       });
       strokeRef.current = { stroke, zoneId: zone.id, pending: null, raf: 0 };
       const r = stroke.to(p.x, p.y);

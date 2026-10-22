@@ -2,17 +2,17 @@ import { create } from 'zustand';
 import type { Paint, Primer, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
 import { engine, type Rect } from './engine/engine';
 import { segmentImage, splitMask } from './engine/segment';
-import { growPart } from './engine/parts';
+import { growPart, subjectCrop } from './engine/parts';
 import { copyRect, pasteRect, bboxOf, type MaskPatch } from './engine/maskPatch';
 import { applyRecipe, defaultRecipe, recipeOf, ROLES, roleLabel, schemeName } from './data/presets';
 import { PAINTS } from './data/paints';
 import { db, emptyLibrary, type Library } from './storage/db';
-import { blobToImageData, imageDataToBlob } from '../core/lib/image';
+import { blobToImageData, cropImageData, imageDataToBlob } from '../core/lib/image';
 import { renderThumb, resampleMask } from './lib/render';
 import { colourName, uniqueNames } from './lib/colourName';
 import { deltaE, hexToRgb, rgbToHex } from '../core/lib/color';
 import { track } from '../core/analytics';
-import { translate as tr } from '../core/i18n';
+import { k, translate as tr } from '../core/i18n';
 import { combine, feather, growShrink, type CombineMode } from './engine/maskTools';
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -76,6 +76,10 @@ interface State {
   partSensitivity: number;
   /** "Tap a part" creates a new area, or adds to the open drawn area. */
   partMode: 'new' | 'add';
+  /** Brush, lasso, wand and "tap a part" never paint the excluded background. */
+  protectBackground: boolean;
+  /** Painting-steps preview: 0 primer, 1 base, 2 wash, 3 drybrush, 4 highlight; null = final. */
+  previewStage: number | null;
   showMask: boolean;
   split: number | null;
   compareOpen: boolean;
@@ -114,6 +118,7 @@ interface Actions {
   setZoneColour: (id: string, colour: Paint | string) => void;
   resetZoneColour: (id: string) => void;
   tapPart: (x: number, y: number) => void;
+  backgroundGuard: (zoneId: string | null) => Uint8Array | null;
   setPrimer: (primer: Primer | null) => void;
   moveDrawnZone: (id: string, dir: 1 | -1) => void;
   mergeZones: (targetId: string, sourceId: string) => void;
@@ -256,6 +261,8 @@ export const useStore = create<State & Actions>((set, get) => {
     lassoMode: 'add',
     partSensitivity: 5,
     partMode: 'new',
+    protectBackground: true,
+    previewStage: null,
     showMask: false,
     split: null,
     compareOpen: false,
@@ -278,7 +285,10 @@ export const useStore = create<State & Actions>((set, get) => {
     },
     dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-    newProject: async (image, name, opts = {}) => {
+    newProject: async (sourceImage, name, opts = {}) => {
+      // Photos with wide margins are cropped around the miniature (not the ready-made demo).
+      const crop = opts.masks ? null : subjectCrop(sourceImage);
+      const image = crop ? cropImageData(sourceImage, crop) : sourceImage;
       engine.load(image);
       const blob = await imageDataToBlob(image);
       set({
@@ -307,11 +317,14 @@ export const useStore = create<State & Actions>((set, get) => {
         await get().analyseColours(DEFAULT_COLOURS);
         if (opts.scheme) applySchemeBySize(opts.scheme);
       }
+      if (crop) get().toast(tr('toast.cropped'), 'info');
       track('scheme_created');
       await get().saveNow();
     },
 
-    replaceImage: async (image) => {
+    replaceImage: async (sourceImage) => {
+      const crop = subjectCrop(sourceImage);
+      const image = crop ? cropImageData(sourceImage, crop) : sourceImage;
       const { width: ow, height: oh, zones, variants, colourCount } = get();
       const hasAuto = zones.some(isAuto);
       // Manual zones are resampled to the new framing; automatic ones are re-detected.
@@ -410,13 +423,18 @@ export const useStore = create<State & Actions>((set, get) => {
       set({ analysing: true });
       // Let the spinner paint before the (synchronous) analysis.
       await new Promise((r) => setTimeout(r, 30));
+      // On a colourless photo (primed miniature) this returns soft light levels instead of colours.
       const seg = segmentImage({ data: engine.src, width: engine.width, height: engine.height }, count);
 
       const previous = get().zones.filter(isAuto);
       const manual = get().zones.filter((z) => !isAuto(z));
       const used = new Set<string>();
       // The background gets its own label, so it does not take a colour name ("Light grey") from the figure.
-      const names = uniqueNames(seg.clusters.map((c, i) => (i === seg.background ? tr('colours.background') : colourName(c.hex))));
+      const names = uniqueNames(
+        seg.clusters.map((c, i) =>
+          i === seg.background ? tr('colours.background') : c.tone ? tr(k(`tone.${c.tone}`)) : colourName(c.hex),
+        ),
+      );
 
       const autoZones = seg.clusters.map((c, i): Zone => {
         const isBackground = i === seg.background;
@@ -468,11 +486,11 @@ export const useStore = create<State & Actions>((set, get) => {
       const s = get();
       const now = Date.now();
       // Consecutive edits of the same field (slider drags, colour wheel) are merged into one undo step.
-      const k = key ? `${id}:${key}` : `${id}:${Object.keys(patch).join(',')}`;
-      if (k !== s.lastCommitKey || now - s.lastCommitAt > 900) push(snapshot());
+      const commitKey = key ? `${id}:${key}` : `${id}:${Object.keys(patch).join(',')}`;
+      if (commitKey !== s.lastCommitKey || now - s.lastCommitAt > 900) push(snapshot());
       set((st) => ({
         zones: st.zones.map((z) => (z.id === id ? { ...z, ...patch } : z)),
-        lastCommitKey: k,
+        lastCommitKey: commitKey,
         lastCommitAt: now,
       }));
     },
@@ -547,7 +565,9 @@ export const useStore = create<State & Actions>((set, get) => {
      * to the open drawn area.
      */
     tapPart: (x, y) => {
-      const sel = growPart({ lum: engine.lumG, edge: engine.edge, width: engine.width, height: engine.height }, x, y, get().partSensitivity);
+      const grown = growPart({ lum: engine.lumG, edge: engine.edge, width: engine.width, height: engine.height }, x, y, get().partSensitivity);
+      const guard = get().backgroundGuard(null);
+      const sel = guard ? grown.map((v, i) => Math.round((v * (255 - guard[i])) / 255)) : grown;
       if (!bboxOf(sel, engine.width, engine.height)) return;
       const active = get().zones.find((z) => z.id === get().activeZoneId);
       if (get().partMode === 'add' && active && active.source !== 'auto') {
@@ -561,6 +581,14 @@ export const useStore = create<State & Actions>((set, get) => {
       set((s) => ({ zones: [...s.zones, z], activeZoneId: z.id, maskVersion: s.maskVersion + 1 }));
     },
 
+    /** The mask edits on `zoneId` must leave untouched (the excluded background), if protected. */
+    backgroundGuard: (zoneId) => {
+      const { zones, protectBackground } = get();
+      const bg = zones.find((z) => z.isBackground);
+      if (!protectBackground || !bg || bg.visible || bg.id === zoneId) return null;
+      return engine.masks.get(bg.id) ?? null;
+    },
+
     setPrimer: (primer) => {
       push(snapshot());
       set({ primer });
@@ -570,11 +598,11 @@ export const useStore = create<State & Actions>((set, get) => {
     moveDrawnZone: (id, dir) => {
       const zones = [...get().zones];
       const drawn = zones.map((z, i) => ({ z, i })).filter(({ z }) => !isAuto(z));
-      const k = drawn.findIndex(({ z }) => z.id === id);
-      const other = drawn[k + dir];
-      if (k < 0 || !other) return;
+      const pos = drawn.findIndex(({ z }) => z.id === id);
+      const other = drawn[pos + dir];
+      if (pos < 0 || !other) return;
       push(snapshot());
-      const i = drawn[k].i;
+      const i = drawn[pos].i;
       [zones[i], zones[other.i]] = [zones[other.i], zones[i]];
       set({ zones });
     },
@@ -668,9 +696,11 @@ export const useStore = create<State & Actions>((set, get) => {
       get().bumpMasks();
     },
 
-    applySelection: (sel, mode) => {
+    applySelection: (input, mode) => {
       const id = get().activeZoneId;
       if (!id) return;
+      const guard = get().backgroundGuard(id);
+      const sel = guard ? input.map((v, i) => Math.round((v * (255 - guard[i])) / 255)) : input;
       const rect = mode === 'replace' ? fullRect() : bboxOf(sel, engine.width, engine.height);
       if (!rect) return;
       const mask = engine.ensureMask(id);

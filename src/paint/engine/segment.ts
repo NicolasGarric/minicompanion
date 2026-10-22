@@ -12,7 +12,7 @@
  */
 
 // Explicit .ts extension: Node resolves it when the unit tests import this file directly.
-import { dilate, growFromBorder, lumaMaps } from './parts.ts';
+import { addEnclosedBackdrop, dilate, growFromBorder, lumaMaps } from './parts.ts';
 
 export interface ImageLike {
   data: Uint8ClampedArray | Uint8Array;
@@ -20,11 +20,15 @@ export interface ImageLike {
   height: number;
 }
 
+export type Tone = 'shadows' | 'mid' | 'highlights';
+
 export interface ColourCluster {
   hex: string;
   /** Share of the image, 0..1 */
   weight: number;
   mask: Uint8Array;
+  /** Set on colourless photos, where zones are light levels instead of colours. */
+  tone?: Tone;
 }
 
 export interface Segmentation {
@@ -82,9 +86,9 @@ export function segmentImage(img: ImageLike, count: number): Segmentation {
   let chroma = 0;
   for (let i = 0; i < n; i++) chroma += Math.hypot(sLab[i * 3 + 1], sLab[i * 3 + 2]);
   const greyscale = chroma / n < GREYSCALE_CHROMA;
-  // Without colour, lightness is all we have: give it full weight.
-  const lWeight = greyscale ? 1 : L_WEIGHT;
-  if (greyscale) samples.forEach((p, i) => lab(data[p], data[p + 1], data[p + 2], sLab, i * 3, lWeight));
+  // Without colour, parts cannot be told apart: split into soft light levels instead.
+  if (greyscale) return toneSplit(img);
+  const lWeight = L_WEIGHT;
 
   const centres = seedCentres(sLab, n, k);
   const assign = new Int32Array(n);
@@ -142,7 +146,8 @@ export function segmentImage(img: ImageLike, count: number): Segmentation {
   //    out of the colour masks, so the masks still add up to 255 everywhere.
   clusters.sort((a, b) => b.weight - a.weight);
   let background = -1;
-  const bgMask = growFromBorder(lumaMaps(img));
+  const maps = lumaMaps(img);
+  const bgMask = addEnclosedBackdrop(img, maps, growFromBorder(maps));
   let bgSum = 0;
   for (let i = 0; i < bgMask.length; i++) bgSum += bgMask[i];
   const bgShare = bgSum / (255 * w * h);
@@ -341,4 +346,78 @@ export function splitMask(img: ImageLike, mask: Uint8Array): { masks: [Uint8Arra
   if (rgb[3] / total < 0.02 || rgb[7] / total < 0.02) return null;
   const hex = (c: number) => `#${hex2(rgb[c * 4] / rgb[c * 4 + 3])}${hex2(rgb[c * 4 + 1] / rgb[c * 4 + 3])}${hex2(rgb[c * 4 + 2] / rgb[c * 4 + 3])}`;
   return { masks: [m1, m2], hexes: [hex(0), hex(1)] };
+}
+
+/**
+ * Colourless photo (e.g. a grey-primed miniature): three soft light levels — shadows, mid-tones,
+ * highlights — computed from the lightness of each pixel, not hard clusters. A pixel near a
+ * threshold belongs partly to both levels, so painting "Highlights" looks like a real, gradual
+ * highlight. Thresholds follow the photo (lightness percentiles of the figure). Masks still add up
+ * to 255 with the background.
+ */
+function toneSplit(img: ImageLike): Segmentation {
+  const { data, width: w, height: h } = img;
+  const maps = lumaMaps(img);
+  const fromBorder = addEnclosedBackdrop(img, maps, growFromBorder(maps));
+  let bgSum = 0;
+  for (let i = 0; i < fromBorder.length; i++) bgSum += fromBorder[i];
+  const bgShare = bgSum / (255 * w * h);
+  const bg = bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT ? fromBorder : new Uint8Array(w * h);
+
+  // Lightness percentiles of the figure
+  const hist = new Float64Array(256);
+  let total = 0;
+  for (let i = 0; i < w * h; i++) {
+    const weight = 255 - bg[i];
+    if (!weight) continue;
+    hist[Math.min(255, Math.round(maps.lum[i] * 255))] += weight;
+    total += weight;
+  }
+  const percentile = (p: number) => {
+    let acc = 0;
+    for (let v = 0; v < 256; v++) {
+      acc += hist[v];
+      if (acc >= total * p) return v / 255;
+    }
+    return 1;
+  };
+  const [p15, p45, p60, p90] = [percentile(0.15), percentile(0.45), percentile(0.6), percentile(0.9)];
+  const smooth = (a: number, b: number, x: number) => {
+    const t = Math.min(1, Math.max(0, (x - a) / Math.max(1e-3, b - a)));
+    return t * t * (3 - 2 * t);
+  };
+
+  const masks: Record<Tone, Uint8Array> = { shadows: new Uint8Array(w * h), mid: new Uint8Array(w * h), highlights: new Uint8Array(w * h) };
+  for (let i = 0; i < w * h; i++) {
+    const figure = 255 - bg[i];
+    if (!figure) continue;
+    const l = maps.lum[i];
+    const sh = Math.round(figure * (1 - smooth(p15, p45, l)));
+    const hi = Math.round(figure * smooth(p60, p90, l));
+    masks.shadows[i] = sh;
+    masks.highlights[i] = hi;
+    masks.mid[i] = Math.max(0, figure - sh - hi);
+  }
+
+  const cluster = (mask: Uint8Array, tone?: Tone): ColourCluster & { label: number } => {
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+      const v = mask[i];
+      if (!v) continue;
+      r += data[p] * v;
+      g += data[p + 1] * v;
+      b += data[p + 2] * v;
+      n += v;
+    }
+    const hex = n ? `#${hex2(r / n)}${hex2(g / n)}${hex2(b / n)}` : '#808080';
+    return { hex, weight: n / (255 * w * h), mask, tone, label: tone ? 0 : -1 };
+  };
+  const clusters = (['shadows', 'mid', 'highlights'] as Tone[]).map((t) => cluster(masks[t], t)).filter((c) => c.weight > 0);
+  const hasBg = bg === fromBorder;
+  if (hasBg) clusters.push(cluster(bg));
+  return {
+    clusters: clusters.map(({ hex, weight, mask, tone }) => ({ hex, weight, mask, tone })),
+    background: hasBg ? clusters.length - 1 : -1,
+    greyscale: true,
+  };
 }

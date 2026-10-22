@@ -42,6 +42,16 @@ export function imageDataToBlob(img: ImageData, type = 'image/jpeg'): Promise<Bl
   );
 }
 
+/** Copy of a rectangle of an image (e.g. the frame around the miniature). */
+export function cropImageData(img: ImageData, r: { x: number; y: number; width: number; height: number }): ImageData {
+  const out = new ImageData(r.width, r.height);
+  for (let y = 0; y < r.height; y++) {
+    const from = ((r.y + y) * img.width + r.x) * 4;
+    out.data.set(img.data.subarray(from, from + r.width * 4), y * r.width * 4);
+  }
+  return out;
+}
+
 export function download(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

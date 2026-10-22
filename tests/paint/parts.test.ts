@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { growPart } from '../../src/paint/engine/parts.ts';
+import { addEnclosedBackdrop, growFromBorder, growPart, lumaMaps, subjectCrop } from '../../src/paint/engine/parts.ts';
 import { splitMask } from '../../src/paint/engine/segment.ts';
 
 /**
@@ -73,4 +73,43 @@ test('a tap right on an outline still selects the part next to it', () => {
   // x = 48 sits on the strong edge just before the recess (x 49..51)
   const part = growPart(maps, 48, 40);
   assert.ok(part[40 * maps.width + 30] > 200, 'the left part is selected');
+});
+
+
+/** White backdrop, a grey figure with a ring (an enclosed pocket of backdrop inside it). */
+function ringPhoto() {
+  const w = 200, h = 200;
+  const data = new Uint8ClampedArray(w * h * 4).fill(255);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const d = Math.hypot(x - 100, y - 100);
+      if (d < 40 && d > 18) data.set([110, 110, 112, 255], (y * w + x) * 4); // the ring
+      if (x > 95 && x < 105 && y >= 140 && y < 170) data.set([90, 90, 92, 255], (y * w + x) * 4); // a stem
+    }
+  }
+  return { data, width: w, height: h };
+}
+
+test('a pocket of backdrop enclosed by the figure is background', () => {
+  const img = ringPhoto();
+  const maps = lumaMaps(img);
+  const fromBorder = growFromBorder(maps);
+  assert.ok(fromBorder[100 * 200 + 100] < 128, 'the walk from the border cannot reach the hole');
+  const bg = addEnclosedBackdrop(img, maps, fromBorder);
+  assert.ok(bg[100 * 200 + 100] > 200, 'the hole is backdrop');
+  assert.ok(bg[100 * 200 + 70] < 30, 'the ring itself is not');
+});
+
+test('crops to the figure with a margin', () => {
+  const crop = subjectCrop(ringPhoto());
+  assert.ok(crop, 'crop proposed');
+  assert.ok(crop!.x > 40 && crop!.x < 62 && crop!.y > 40 && crop!.y < 62, `top-left ${crop!.x},${crop!.y}`);
+  assert.ok(crop!.x + crop!.width > 140 && crop!.y + crop!.height > 170, 'figure fully inside');
+});
+
+test('no crop when the figure already fills the photo', () => {
+  const w = 60, h = 60;
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) data.set([120, 60, 40, 255], i * 4);
+  assert.equal(subjectCrop({ data, width: w, height: h }), null);
 });
