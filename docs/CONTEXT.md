@@ -128,7 +128,9 @@ discover → paint → share → play → watch → back to physical stores.
       20 tournaments). **27 RLS tests pass** on local Postgres (`supabase/tests/local/run.sh`).
 - [x] Pure TS engines with tests (`npm test`, 18 tests): army list parser, standings + tie-breakers,
       Swiss pairings (no rematch, byes, backtracking), round-robin schedule.
-- [ ] Step 2 — verify on the real Supabase project (auth flows, RLS with two accounts)
+- [x] Step 2 — verified on the live Supabase project (2026-10-22): `node scripts/check-supabase.mjs`
+      20/20 (auth, profile trigger, RLS, PostGIS search, registration, organiser drafts). Migration
+      `20261022000003` applied (fix for INSERT … RETURNING on tournaments).
 - [ ] Step 3 — tournament list, filters, map (Leaflet), tournament page
 - [ ] Steps 4–9 — see `docs/PLAY_PLAN.md`
 
