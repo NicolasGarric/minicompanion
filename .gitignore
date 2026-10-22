@@ -4,3 +4,8 @@ dist
 # Local secrets (Supabase keys)
 .env.local
 .env.*.local
+
+# Any env file may hold secrets: never commit them (only .env.example is shared)
+.env
+.env.*
+!.env.example

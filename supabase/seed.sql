@@ -6,18 +6,22 @@
 --   organiser@demo.example  — owner of "Kanda Miniature Hall", organises most events
 --   player@demo.example     — a regular player
 -- Dates are relative to now() so the tournaments are always upcoming.
+--
+-- Helper data lives in a throwaway `demo_seed` schema (not temporary tables): the Supabase SQL
+-- Editor may run each statement on a different connection, where temporary tables do not exist.
 -- =============================================================================================
 
 -- ---------------------------------------------------------------------------------------------
 -- Users (auth.users + identities); profiles are created by the on_auth_user_created trigger
 -- ---------------------------------------------------------------------------------------------
-create temporary table seed_people (n int, email text, display_name text, lang text, city text, factions text[]);
+create schema if not exists demo_seed;
+create table demo_seed.people (n int, email text, display_name text, lang text, city text, factions text[]);
 
-insert into seed_people values
+insert into demo_seed.people values
   (0, 'organiser@demo.example', 'Kanda Hall Staff', 'ja', 'Tokyo', '{}'),
   (1, 'player@demo.example', 'Demo Player', 'en', 'Tokyo', '{"Space knights"}');
 
-insert into seed_people
+insert into demo_seed.people
 select i, format('player%s@demo.example', i), name, case when i % 3 = 0 then 'en' else 'ja' end, city, factions
 from (
   select i,
@@ -47,19 +51,19 @@ select '00000000-0000-0000-0000-000000000000',
        jsonb_build_object('display_name', display_name, 'preferred_lang', lang),
        now() - (n || ' days')::interval, now(),
        '', '', '', '', '', '', '', ''
-from seed_people;
+from demo_seed.people;
 
 insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
 select md5('demo-identity-' || n)::uuid, md5('demo-user-' || n)::uuid, md5('demo-user-' || n)::uuid::text,
        jsonb_build_object('sub', md5('demo-user-' || n)::uuid::text, 'email', email),
        'email', now(), now(), now()
-from seed_people;
+from demo_seed.people;
 
 update public.profiles p
    set home_city = sp.city,
        factions = sp.factions,
        handle = case when sp.n = 0 then 'kanda_hall' when sp.n = 1 then 'demo_player' else 'demo_' || sp.n end
-  from seed_people sp
+  from demo_seed.people sp
  where p.id = md5('demo-user-' || sp.n)::uuid;
 
 -- ---------------------------------------------------------------------------------------------
@@ -83,13 +87,13 @@ insert into public.store_staff (store_id, user_id, role) values
 -- 20 upcoming tournaments
 --   d = days from now, h = start hour (JST), fill = share of seats already taken
 -- ---------------------------------------------------------------------------------------------
-create temporary table seed_events (
+create table demo_seed.events (
   slug text, name text, store int, d int, h int, format text, type public.tournament_type,
   lang public.event_language, max_players int, fill numeric, pairing public.pairing_system,
   vis public.lists_visibility
 );
 
-insert into seed_events values
+insert into demo_seed.events values
   ('kanda-first-steps-1',     'First Steps Night',              1,  2, 19, 'skirmish', 'beginner',         'both', 12, 0.50, 'swiss',       'public'),
   ('shibuya-weekday-clash',   'Weekday Clash',                  2,  3, 18, 'clash',    'casual',           'ja',   16, 0.75, 'swiss',       'hidden_until_start'),
   ('ikebukuro-grand-battle',  'Ikebukuro Grand Battle',         3,  5, 10, 'battle',   'competitive',      'ja',   32, 0.90, 'swiss',       'hidden_until_start'),
@@ -123,7 +127,7 @@ select e.slug, e.name, md5('demo-user-0')::uuid, s.id, s.name, s.address, s.loca
        start_at - interval '1 hour',
        start_at - interval '1 day',
        e.pairing, f.default_rounds, e.vis, 'published'
-from seed_events e
+from demo_seed.events e
 join public.stores s on s.id = md5('store-' || e.store)::uuid
 join public.formats f on f.id = e.format
 cross join lateral (
@@ -135,7 +139,7 @@ cross join lateral (
 -- Registrations: each event is filled to its `fill` ratio with seeded players (never the demo player).
 insert into public.registrations (tournament_id, user_id, status, created_at)
 select t.id, p.id, 'registered', now() - (p.rn || ' hours')::interval
-from seed_events e
+from demo_seed.events e
 join public.tournaments t on t.slug = e.slug
 cross join lateral (
   select pr.id, row_number() over () as rn
@@ -152,5 +156,4 @@ from public.tournaments t
 cross join (values ('single'::public.contest_kind), ('squad'), ('vehicle'), ('beginner')) k(kind)
 where t.type = 'painting_contest';
 
-drop table seed_people;
-drop table seed_events;
+drop schema demo_seed cascade;
