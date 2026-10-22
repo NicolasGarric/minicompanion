@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { useStore } from './paint/store';
 import { navigate, useRoute, type Route } from './core/router';
 import { useSession } from './core/auth/session';
@@ -86,6 +87,7 @@ export default function App() {
       <>
         <Editor />
         <Toasts />
+        <Analytics />
       </>
     );
   }
@@ -96,6 +98,7 @@ export default function App() {
         <Page route={route} />
       </Shell>
       <Toasts />
+      <Analytics />
     </>
   );
 }
