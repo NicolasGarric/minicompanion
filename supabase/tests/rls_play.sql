@@ -151,10 +151,12 @@ do $$ begin
 exception when insufficient_privilege then raise notice 'ok - cannot organise in someone else''s name';
 end $$;
 
+-- RETURNING like PostgREST does: the new row must also pass the SELECT policy (regression test).
 insert into public.tournaments (slug, name, organiser_id, venue_name, address, location, starts_at, ends_at,
   format_id, type, max_players, registration_deadline, list_deadline, rounds_planned)
 values ('my-draft-event', 'My draft event', pg_temp.uid(1), 'Home', 'Tokyo', 'SRID=4326;POINT(139.7 35.7)',
-  now() + interval '2 days', now() + interval '3 days', 'clash', 'casual', 8, now() + interval '1 day', now() + interval '1 day', 3);
+  now() + interval '2 days', now() + interval '3 days', 'clash', 'casual', 8, now() + interval '1 day', now() + interval '1 day', 3)
+returning id;
 select pg_temp.ok(exists (select 1 from public.tournaments where slug = 'my-draft-event'), 'organiser sees their draft');
 select pg_temp.as_user(pg_temp.uid(3));
 select pg_temp.ok(not exists (select 1 from public.tournaments where slug = 'my-draft-event'), 'drafts are invisible to others');
