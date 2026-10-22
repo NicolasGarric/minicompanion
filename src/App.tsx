@@ -14,6 +14,10 @@ import { Editor } from './paint/pages/Editor';
 import { Beginner } from './paint/pages/Beginner';
 import { SharedScheme } from './paint/pages/SharedScheme';
 import { PlayHome } from './play/pages/PlayHome';
+import { QuickPlay } from './play/pages/QuickPlay';
+import { MyGames } from './play/pages/MyGames';
+import { GameNew } from './play/pages/GameNew';
+import { GameDetail } from './play/pages/GameDetail';
 
 /** Saves the open PAINT project 1.5 s after the last change, and on tab close. */
 function useAutosave() {
@@ -57,6 +61,10 @@ function Page({ route }: { route: Route }) {
     case 'paint.beginner': return <Beginner />;
     case 'paint.shared': return <SharedScheme param={route.params.data ?? ''} />;
     case 'play': return <PlayHome />;
+    case 'play.quick': return <QuickPlay />;
+    case 'play.mine': return <MyGames />;
+    case 'play.new': return <GameNew />;
+    case 'play.game': return <GameDetail id={route.params.id ?? ''} />;
     case 'stores': return <Stores />;
     case 'signin': return <SignInPage />;
     case 'account': return <AccountPage />;

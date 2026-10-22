@@ -605,3 +605,38 @@ th:first-child, td:first-child { text-align: left; }
 .stage-labels button { border: 0; background: none; color: var(--muted); font-size: 0.7rem; cursor: pointer; padding: 0.15rem; }
 .stage-labels .done button { color: var(--text-2); }
 .stage-labels .on button { color: var(--accent); font-weight: 700; }
+
+/* ---------- PLAY: quick play, games ---------- */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.page-head h1 { margin: 0; }
+.page-head .lead { margin: 0.25rem 0 0; }
+.game-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+.quick-play .chips { margin-bottom: 0.75rem; }
+.game-list { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: 0.5rem; }
+.game-card {
+  display: grid; gap: 0.25rem 1rem; grid-template-columns: minmax(0, 1fr); padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: inherit; text-decoration: none;
+}
+a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.game-card.cancelled, .game-card.past { opacity: 0.6; }
+.game-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; min-width: 0; }
+.game-when { font-weight: 600; font-size: 0.875rem; }
+.game-where { font-size: 0.8125rem; }
+.game-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.tag.ok { color: var(--ok); }
+.tag.mine-accepted { color: var(--ok); }
+.tag.mine-pending { color: var(--accent); }
+.small { font-size: 0.8125rem; }
+@media (min-width: 48rem) {
+  .game-card { grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.5fr); align-items: center; }
+  .game-tags { grid-column: 1 / -1; }
+}
+.field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; }
+.game-form h2 { font-size: 1rem; margin: 0.75rem 0 0; }
+.game-form h2:first-child { margin-top: 0; }
+.game-facts p { display: flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0; }
+.game-note { white-space: pre-wrap; }
+.player-list, .request-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.request-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-top: 1px solid var(--border); }
+.request-list li > span:first-child { display: grid; min-width: 0; }
+.game-actions { display: grid; gap: 0.6rem; justify-items: start; }

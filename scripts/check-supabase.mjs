@@ -105,5 +105,61 @@ if (orgIn.data.user) {
   ok((hijack.data ?? []).length === 0, 'player cannot edit someone else\'s tournament');
 }
 
+// --- Quick play (migration 20261024000005) ---------------------------------------------------
+{
+  const games = await anon.from('games').select('id, game_system, status');
+  ok(!games.error && games.data.length >= 8, 'anon lists the demo quick play games', games.error?.message ?? `${games.data?.length} rows`);
+  const addr = await anon.from('game_private').select('address');
+  ok(!addr.error && addr.data.length === 0, 'anon sees no exact address', addr.error?.message);
+  if (playerId) {
+    const mine = await player.from('game_private').select('game_id');
+    ok(!mine.error && mine.data.length === 1, 'player sees only the address of the game they were accepted to', `${mine.data?.length} rows`);
+  }
+  if (playerId && orgIn.data.user) {
+    const start = new Date(Date.now() + 3 * 864e5).toISOString();
+    const created = await organiser.rpc('create_game', {
+      p_game_system: 'Automated check', p_format: null, p_points: null, p_starts_at: start, p_duration_minutes: 60,
+      p_max_players: 2, p_level: 'casual', p_language: 'en', p_country: 'JP', p_city: 'Tokyo', p_area: 'Check',
+      p_address: 'Check address 1-2-3', p_store: null, p_note: 'Created and cancelled by scripts/check-supabase.mjs',
+    });
+    ok(!created.error, 'organiser hosts a game through create_game', created.error?.message);
+    const id = created.data;
+    if (id) {
+      const req = await player.rpc('request_join_game', { p_game: id, p_message: 'check' });
+      ok(!req.error && req.data === 'pending', 'player asks to join', req.error?.message ?? req.data);
+      const hidden = await player.from('game_private').select('address').eq('game_id', id);
+      ok(hidden.data?.length === 0, 'no address while pending');
+      const acc = await organiser.rpc('respond_join_game', { p_game: id, p_player: playerId, p_accept: true });
+      ok(!acc.error && acc.data === 'accepted', 'host accepts', acc.error?.message ?? acc.data);
+      const shown = await player.from('game_private').select('address').eq('game_id', id);
+      ok(shown.data?.length === 1, 'address visible once accepted');
+      await player.rpc('leave_game', { p_game: id });
+      const can = await organiser.rpc('cancel_game', { p_game: id });
+      ok(!can.error, 'host cancels the check game (cleanup)', can.error?.message);
+    }
+  }
+}
+
+// --- Gallery (migration 20261023000004) ----------------------------------------------------
+if (playerId) {
+  // 1×1 transparent PNG
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const path = `${playerId}/${crypto.randomUUID()}.png`;
+  const up = await player.storage.from('gallery').upload(path, png, { contentType: 'image/png' });
+  ok(!up.error, 'player uploads into their gallery folder', up.error?.message);
+  const row = await player.from('gallery_items').insert({ owner_id: playerId, title: 'Check', image_path: path, paints: [] }).select('id').single();
+  ok(!row.error, 'player records the gallery item', row.error?.message);
+  const foreign = await organiser.from('gallery_items').select('id').eq('id', row.data?.id ?? '');
+  ok((foreign.data ?? []).length === 0, 'another player cannot see it');
+  const signed = await player.storage.from('gallery').createSignedUrl(path, 60);
+  ok(!signed.error && !!signed.data?.signedUrl, 'owner gets a signed URL', signed.error?.message);
+  const sneaky = await organiser.storage.from('gallery').createSignedUrl(path, 60);
+  ok(!!sneaky.error, 'another player gets no signed URL', sneaky.error?.message);
+  if (row.data) await player.from('gallery_items').delete().eq('id', row.data.id);
+  await player.storage.from('gallery').remove([path]);
+  const gone = await player.from('gallery_items').select('id').eq('id', row.data?.id ?? '');
+  ok((gone.data ?? []).length === 0, 'player deletes it (cleanup)');
+}
+
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll live checks passed.');
 process.exit(failures ? 1 : 0);

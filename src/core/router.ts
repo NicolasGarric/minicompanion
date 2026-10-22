@@ -11,6 +11,10 @@ export type RouteName =
   | 'paint.beginner'
   | 'paint.shared'
   | 'play'
+  | 'play.quick'
+  | 'play.mine'
+  | 'play.new'
+  | 'play.game'
   | 'stores'
   | 'account'
   | 'signin'
@@ -34,6 +38,10 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   // Public scheme links are already shared in the wild: this path must never change.
   { pattern: 's/*data', name: 'paint.shared', section: 'paint' },
   { pattern: 'play', name: 'play', section: 'play' },
+  { pattern: 'play/quick', name: 'play.quick', section: 'play' },
+  { pattern: 'play/mine', name: 'play.mine', section: 'play' },
+  { pattern: 'play/new', name: 'play.new', section: 'play' },
+  { pattern: 'play/game/:id', name: 'play.game', section: 'play' },
   { pattern: 'stores', name: 'stores', section: 'none' },
   { pattern: 'account', name: 'account', section: 'none' },
   { pattern: 'signin', name: 'signin', section: 'none' },

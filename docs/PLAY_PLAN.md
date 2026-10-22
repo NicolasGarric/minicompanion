@@ -268,3 +268,46 @@ Each step ends with: type-check, build, headless smoke tests (PAINT included), a
 6. **Privacy**: signed-in users' events will be stored with their user ID (needed for retention and the
    cross-module funnel). The privacy page will say so. Anonymous PAINT use stays local and anonymous. OK?
 7. **App name** (see the proposal in chat).
+
+## 6. Quick play and the wider PLAY roadmap (decided 2026-10-24)
+
+Owner decisions:
+
+| Topic | Decision |
+|---|---|
+| Navigation | PLAY tabs: **Tournaments** · **Quick play** · **My games** |
+| Game and format | **Free text** typed by players; suggestions come from what other players typed (`popular_game_texts`). The app ships no list of official games or formats. |
+| Games in scope | Every game system players type (40k family, Age of Sigmar family, specialist and other games) |
+| Joining | **On request**: the host accepts or declines. Country, city and district are public; the **exact address** is visible to the host and accepted players only (`game_private` + RLS). |
+| Priorities | Opponent finder, battle report + share card, friendly rating + badges, leagues / stores / calendar |
+
+### Phase 1 — done (2026-10-24)
+- Migration `20261024000005_quick_play.sql`: `games`, `game_private`, `game_players`, functions
+  `create_game`, `request_join_game`, `respond_join_game`, `leave_game`, `cancel_game`, `popular_game_texts`.
+  All writes go through the functions (capacity, host rights, 20 upcoming games per host).
+- Demo data `seed_games.sql` (8 games around Tokyo); RLS tests `supabase/tests/rls_games.sql` (21 checks);
+  live checks in `scripts/check-supabase.mjs`.
+- UI: Tournaments tab (list), Quick play (filters: game, format chips, country, city, level, seats left),
+  Host a game form (game, format, points, level, players, language, date, duration, store, country,
+  city, district, private address, note), game page (players, requests, accept / decline, leave, cancel),
+  My games (upcoming / played).
+
+### Phase 2 — Opponent finder
+"Looking for a game" posts (game, area, date window, level); matching posts and games are listed
+together; optional alert when a matching game is published (in-app first, e-mail later).
+
+### Phase 3 — Battle report and share card
+After a game: score and winner, confirmed by both players (same pattern as tournament matches),
+photos (Storage), link to the painted army from the PAINT gallery, and a result card to share
+(reusing the share-card renderer).
+
+### Phase 4 — Friendly rating and badges
+Per-game rating (Elo-like, only on confirmed reports), head-to-head history, badges (first game,
+10 games, fully painted army, first hosted game…). Visible on the profile.
+
+### Phase 5 — Leagues, stores, calendar
+Store leagues over several weeks (standings from confirmed reports), store pages with free tables and
+regular nights, `.ics` export and reminders the day before.
+
+Open questions for later phases: e-mail notifications (provider, opt-in), moderation of free-text
+games (report button, admin review), public player profiles.

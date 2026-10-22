@@ -25,8 +25,10 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
   echo "== $(basename "$f")"
   adapt "$f" | "${PSQL[@]}" -d cftest
 done
-echo "== seed.sql"
-"${PSQL[@]}" -d cftest -f "$ROOT/supabase/seed.sql"
+for s in "$ROOT"/supabase/seed.sql "$ROOT"/supabase/seed_*.sql; do
+  echo "== $(basename "$s")"
+  "${PSQL[@]}" -d cftest -f "$s"
+done
 for t in "$ROOT"/supabase/tests/*.sql; do
   echo "== $(basename "$t")"
   "${PSQL[@]}" -d cftest -f "$t" 2>&1 | grep -E "ok -|FAIL|ERROR|passed"

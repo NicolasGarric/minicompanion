@@ -22,6 +22,7 @@ declare -A GUARD=(
   # Idempotent fixes: always run.
   [20261022000003_fix_tournament_select_policy.sql]="true"
   [20261023000004_gallery.sql]="to_regclass('public.gallery_items') is null"
+  [20261024000005_quick_play.sql]="to_regclass('public.games') is null"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label
@@ -45,6 +46,7 @@ OUT="$(mktemp --suffix=.sql)"
   done
   if [ "$SEED" = 1 ]; then
     wrap "$ROOT/supabase/seed.sql" "not exists (select 1 from public.stores)" "seed.sql (demo data)"
+    wrap "$ROOT/supabase/seed_games.sql" "not exists (select 1 from public.games) and exists (select 1 from public.stores)" "seed_games.sql (demo quick play games)"
   fi
 } > "$OUT"
 

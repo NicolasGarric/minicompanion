@@ -85,7 +85,11 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
     { href: '#/paint', key: 'nav.paint.projects', active: (r) => r.name === 'paint' },
     { href: '#/paint/beginner', key: 'nav.beginner', active: (r) => r.name === 'paint.beginner' },
   ],
-  play: [{ href: '#/play', key: 'nav.play.tournaments', active: (r) => r.name === 'play' }],
+  play: [
+    { href: '#/play', key: 'nav.play.tournaments', active: (r) => r.name === 'play' },
+    { href: '#/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
+    { href: '#/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
+  ],
 };
 
 /** Layout for every page except the full-screen PAINT editor. */
