@@ -1,10 +1,12 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useLang, useT, type Lang, type MessageKey } from '../i18n';
 import type { Route } from '../router';
 import { APP_NAME } from '../brand';
 import { useSession } from '../auth/session';
 import { backendConfigured } from '../auth/supabase';
 import { Avatar } from '../ui/Avatar';
+import { Icon } from '../ui/ui';
+import { useUnread } from '../social/unread';
 
 export function Logo() {
   return (
@@ -47,11 +49,32 @@ export function AccountButton() {
   const t = useT();
   const { session, profile } = useSession();
   if (!backendConfigured) return null;
+  const unread = useUnread((s) => s.notifications);
+  useEffect(() => {
+    if (!session) return;
+    const refresh = () => useUnread.getState().refresh();
+    refresh();
+    const id = setInterval(refresh, 60000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [session]);
   if (!session) return <a className="btn small" href="#/signin">{t('auth.signin.cta')}</a>;
   return (
-    <a className="account-btn" href="#/account" aria-label={t('nav.account')}>
-      <Avatar name={profile?.display_name ?? session.user.email ?? '?'} size={30} />
-    </a>
+    <>
+      <a className="header-icon" href="#/messages" aria-label={t('msg.title')} title={t('msg.title')}>
+        <Icon name="chat" size={20} />
+      </a>
+      <a className="header-icon" href="#/notifications" aria-label={t('notif.title')} title={t('notif.title')}>
+        <Icon name="bell" size={20} />
+        {unread > 0 && <span className="badge-count">{unread > 9 ? '9+' : unread}</span>}
+      </a>
+      <a className="account-btn" href="#/account" aria-label={t('nav.account')}>
+        <Avatar name={profile?.display_name ?? session.user.email ?? '?'} size={30} />
+      </a>
+    </>
   );
 }
 
@@ -88,6 +111,7 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
   play: [
     { href: '#/play', key: 'nav.play.tournaments', active: (r) => r.name === 'play' || r.name === 'play.tournament' },
     { href: '#/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
+    { href: '#/play/leagues', key: 'nav.play.leagues', active: (r) => r.name === 'play.leagues' || r.name === 'play.league' },
     { href: '#/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
   ],
 };

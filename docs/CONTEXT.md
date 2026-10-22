@@ -160,6 +160,9 @@ discover → paint → share → play → watch → back to physical stores.
 - [x] PLAY tabs (Tournaments / Quick play / My games) and quick play games: free-text game and
       format, join on request, private address (migration 20261024000005 + seed_games.sql to apply).
       Roadmap phases 2–5 in PLAY_PLAN.md §6.
+- [x] PLAY social (phases 2–5): battle reports + result card, friendly rating + badges, public /
+      private player page, looking-for-a-game posts, in-app notifications, messages, leagues, store
+      nights, .ics (migration 20261025000006 + seed_social.sql to apply in Supabase).
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 

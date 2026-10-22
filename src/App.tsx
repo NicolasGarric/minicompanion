@@ -19,6 +19,11 @@ import { MyGames } from './play/pages/MyGames';
 import { GameNew } from './play/pages/GameNew';
 import { GameDetail } from './play/pages/GameDetail';
 import { TournamentDetail } from './play/pages/TournamentDetail';
+import { LeagueDetail, Leagues } from './play/pages/Leagues';
+import { StorePage } from './play/pages/StorePage';
+import { PlayerProfile } from './play/pages/PlayerProfile';
+import { Inbox, MessageThread } from './play/pages/Messages';
+import { Notifications } from './play/pages/Notifications';
 
 /** Saves the open PAINT project 1.5 s after the last change, and on tab close. */
 function useAutosave() {
@@ -67,6 +72,13 @@ function Page({ route }: { route: Route }) {
     case 'play.new': return <GameNew />;
     case 'play.game': return <GameDetail id={route.params.id ?? ''} />;
     case 'play.tournament': return <TournamentDetail slug={route.params.slug ?? ''} />;
+    case 'play.leagues': return <Leagues />;
+    case 'play.league': return <LeagueDetail id={route.params.id ?? ''} />;
+    case 'play.store': return <StorePage id={route.params.id ?? ''} />;
+    case 'player': return <PlayerProfile handle={route.params.handle ?? ''} />;
+    case 'messages': return <Inbox />;
+    case 'messages.thread': return <MessageThread userId={route.params.id ?? ''} />;
+    case 'notifications': return <Notifications />;
     case 'stores': return <Stores />;
     case 'signin': return <SignInPage />;
     case 'account': return <AccountPage />;

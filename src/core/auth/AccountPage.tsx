@@ -6,6 +6,8 @@ import { backendConfigured } from './supabase';
 import { BackendNotice } from './BackendNotice';
 import { Avatar } from '../ui/Avatar';
 import { GallerySection } from '../gallery/GallerySection';
+import { setProfilePublic } from '../../play/lib/social';
+import { Toggle } from '../ui/ui';
 
 export function AccountPage() {
   const t = useT();
@@ -54,8 +56,22 @@ export function AccountPage() {
         <div>
           <h1>{profile.display_name}</h1>
           <p className="muted">@{profile.handle} · {session?.user.email}</p>
+          <a className="small" href={`#/u/${profile.handle}`}>{t('profile.viewPublic')} →</a>
         </div>
       </div>
+
+      <section className="card field-col">
+        <h2>{t('profile.privacy')}</h2>
+        <Toggle
+          checked={!!profile.is_public}
+          onChange={async (v) => {
+            await setProfilePublic(profile.id, v);
+            await useSession.getState().refreshProfile();
+          }}
+          label={t('profile.publicToggle')}
+        />
+        <small className="hint">{t(profile.is_public ? 'profile.publicOn' : 'profile.publicOff')}</small>
+      </section>
 
       <form className="card field-col" onSubmit={save}>
         <h2>{t('profile.title')}</h2>

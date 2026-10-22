@@ -24,6 +24,7 @@ export interface Game {
   store_id: string | null;
   note: string | null;
   status: GameStatus;
+  league_id: string | null;
   host?: { display_name: string; handle: string } | null;
   store?: { name: string } | null;
 }
@@ -115,6 +116,7 @@ export interface NewGame {
   address: string;
   store_id: string | null;
   note: string;
+  league_id: string | null;
 }
 
 export async function createGame(g: NewGame): Promise<string> {
@@ -133,6 +135,7 @@ export async function createGame(g: NewGame): Promise<string> {
     p_address: g.address,
     p_store: g.store_id,
     p_note: g.note,
+    p_league: g.league_id,
   });
   if (error) throw error;
   return data as string;
@@ -171,7 +174,11 @@ export function playError(e: unknown): string | null {
   const m = err?.message ?? '';
   // PostgREST: unknown table / function (schema cache), Postgres: undefined table / function
   if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(err?.code ?? '') || m.includes('schema cache')) return 'not_installed';
-  const known = ['not_authenticated', 'starts_in_past', 'too_many_games', 'not_open', 'is_host', 'not_host', 'no_request', 'game_full', 'registration_closed'];
+  const known = [
+    'not_authenticated', 'starts_in_past', 'too_many_games', 'not_open', 'is_host', 'not_host', 'no_request', 'game_full',
+    'registration_closed', 'not_participant', 'not_played_yet', 'already_confirmed', 'bad_results', 'bad_photos', 'no_report',
+    'no_opponent', 'rate_limited', 'not_league_member',
+  ];
   return known.find((k) => m.includes(k)) ?? null;
 }
 export const gameError = playError;

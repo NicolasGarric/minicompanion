@@ -5,6 +5,7 @@ import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { GameCard } from '../components/GameCard';
 import { myGames, playError, type Game, type JoinStatus } from '../lib/games';
+import { closePost, listPosts, type LfgPost } from '../lib/social';
 
 /** The games I host and the ones I asked to join, upcoming first, then past ones. */
 export function MyGames() {
@@ -12,10 +13,14 @@ export function MyGames() {
   const { ready, session } = useSession();
   const [data, setData] = useState<{ hosted: Game[]; joined: (Game & { my_status: JoinStatus })[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [posts, setPosts] = useState<LfgPost[]>([]);
 
   useEffect(() => {
     if (ready && !session) requireSignIn();
-    if (session && backendConfigured) myGames(session.user.id).then(setData, (e) => setError(playError(e) ?? 'generic'));
+    if (session && backendConfigured) {
+      myGames(session.user.id).then(setData, (e) => setError(playError(e) ?? 'generic'));
+      listPosts({ author: session.user.id }).then((p) => setPosts(p.filter((x) => x.is_open)), () => undefined);
+    }
   }, [ready, session]);
 
   if (!backendConfigured) return <BackendNotice />;
@@ -47,6 +52,19 @@ export function MyGames() {
               <p className="hint">{t('mine.none')} <a href="#/play/quick">{t('nav.play.quick')}</a></p>
             );
           })()}
+          {posts.length > 0 && (
+            <>
+              <h2>{t('mine.posts')}</h2>
+              <ul className="notif-list">
+                {posts.map((p) => (
+                  <li key={p.id}>
+                    <span>{p.game_system} · {p.city ?? p.country} · {p.from_date} → {p.to_date}</span>
+                    <button className="btn small ghost" onClick={() => closePost(p.id).then(() => setPosts((l) => l.filter((x) => x.id !== p.id)))}>{t('lfg.close')}</button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <h2>{t('mine.past')}</h2>
           {(() => {
             const items = [

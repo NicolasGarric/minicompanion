@@ -7,6 +7,7 @@ import { requireSignIn, useSession } from '../../core/auth/session';
 import { CITIES } from '../../core/data/cities';
 import { sortedCountries } from '../lib/countries';
 import { createGame, gameError, listStores, popularTexts, type NewGame } from '../lib/games';
+import { listLeagues, myLeagues, type League } from '../lib/social';
 
 /** Tomorrow 18:00, as the value of a datetime-local input. */
 function defaultStart() {
@@ -26,16 +27,28 @@ export function GameNew() {
   const [stores, setStores] = useState<{ id: string; name: string; city: string }[]>([]);
   const [popular, setPopular] = useState<string[]>([]);
   const [formats, setFormats] = useState<string[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({
     game_system: '', format: '', points: '', starts_at: defaultStart(), duration_minutes: '120', max_players: '2',
     level: 'casual', language: lang, country: 'JP', city: profile?.home_city ?? '', area: '', address: '', store_id: '', note: '',
+    league_id: new URLSearchParams(location.hash.split('?')[1] ?? '').get('league') ?? '',
   });
 
   useEffect(() => {
     if (ready && !session) requireSignIn();
   }, [ready, session]);
+  // Leagues I play in (current ones): a game can count for one of them.
+  useEffect(() => {
+    if (!session || !backendConfigured) return;
+    Promise.all([listLeagues({ current: true }), myLeagues(session.user.id)]).then(([all, mine]) => {
+      const list = all.filter((l) => mine.includes(l.id));
+      setLeagues(list);
+      const pre = list.find((l) => l.id === f.league_id);
+      if (pre) setF((x) => ({ ...x, game_system: x.game_system || pre.game_system, store_id: x.store_id || pre.store_id || '' }));
+    }, () => undefined);
+  }, [session]);
   useEffect(() => {
     if (!backendConfigured) return;
     listStores().then(setStores);
@@ -69,6 +82,7 @@ export function GameNew() {
         level: f.level as NewGame['level'],
         language: f.language as NewGame['language'],
         store_id: f.store_id || null,
+        league_id: f.league_id || null,
       };
       const id = await createGame(game);
       navigate(`play/game/${id}`);
@@ -122,6 +136,16 @@ export function GameNew() {
             </select>
           </label>
         </div>
+
+        {leagues.length > 0 && (
+          <label className="field">
+            <span>{t('games.league')}</span>
+            <select className="select" value={f.league_id} onChange={(e) => set({ league_id: e.target.value })}>
+              <option value="">{t('games.noLeague')}</option>
+              {leagues.map((l) => <option key={l.id} value={l.id}>{l.name} · {l.game_system}</option>)}
+            </select>
+          </label>
+        )}
 
         <h2>{t('games.sectionWhen')}</h2>
         <div className="field-grid">

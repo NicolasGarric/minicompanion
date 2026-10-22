@@ -112,8 +112,9 @@ if (orgIn.data.user) {
   const addr = await anon.from('game_private').select('address');
   ok(!addr.error && addr.data.length === 0, 'anon sees no exact address', addr.error?.message);
   if (playerId) {
-    const mine = await player.from('game_private').select('game_id');
-    ok(!mine.error && mine.data.length === 1, 'player sees only the address of the game they were accepted to', `${mine.data?.length} rows`);
+    const upcoming = (await anon.from('games').select('id').gt('starts_at', new Date().toISOString())).data?.map((g) => g.id) ?? [];
+    const mine = await player.from('game_private').select('game_id').in('game_id', upcoming);
+    ok(!mine.error && mine.data.length === 1, 'player sees only the address of the upcoming game they were accepted to', `${mine.data?.length} rows`);
   }
   if (playerId && orgIn.data.user) {
     const start = new Date(Date.now() + 3 * 864e5).toISOString();
@@ -159,6 +160,32 @@ if (playerId) {
   await player.storage.from('gallery').remove([path]);
   const gone = await player.from('gallery_items').select('id').eq('id', row.data?.id ?? '');
   ok((gone.data ?? []).length === 0, 'player deletes it (cleanup)');
+}
+
+// --- Social layer (migration 20261025000006): read-only checks on the demo data -----------------
+{
+  const league = await anon.from('leagues').select('id').eq('name', 'Autumn Kill Team League').maybeSingle();
+  ok(!league.error && !!league.data, 'anon sees the demo league', league.error?.message);
+  if (league.data) {
+    const table = await anon.rpc('league_standings', { p_league: league.data.id });
+    ok(!table.error && table.data.length === 6 && table.data[0].points >= table.data[5].points, 'league standings (6 members, sorted)', table.error?.message);
+  }
+  const posts = await anon.from('lfg_posts').select('id');
+  ok(!posts.error && posts.data.length >= 3, 'anon lists "looking for a game" posts', posts.error?.message);
+  const reports = await anon.from('game_reports').select('game_id').eq('status', 'confirmed');
+  ok(!reports.error && reports.data.length >= 6, 'confirmed battle reports are public', reports.error?.message);
+  if (playerId) {
+    const ratings = await anon.from('player_ratings').select('rating').eq('player_id', playerId);
+    ok(!ratings.error && ratings.data.length === 1 && ratings.data[0].rating > 1000, 'public profile: rating visible to anon', ratings.error?.message);
+    const stats = await anon.rpc('player_stats', { p_user: orgIn.data.user?.id });
+    ok(!stats.error && stats.data === null, 'private profile: stats hidden from anon', stats.error?.message);
+    const notes = await anon.from('notifications').select('id');
+    ok(!notes.error && notes.data.length === 0, 'anon reads no notification');
+    const dms = await player.from('direct_messages').select('sender_id, recipient_id');
+    ok(!dms.error && dms.data.length >= 3 && dms.data.every((m) => m.sender_id === playerId || m.recipient_id === playerId), 'player reads only their own messages', dms.error?.message);
+    const stranger = await organiser.from('direct_messages').select('id').or(`sender_id.eq.${playerId},recipient_id.eq.${playerId}`);
+    ok((stranger.data ?? []).length === 0, 'another player cannot read them');
+  }
 }
 
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll live checks passed.');

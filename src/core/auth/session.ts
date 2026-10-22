@@ -13,6 +13,8 @@ export interface Profile {
   preferred_lang: Lang;
   factions: string[];
   is_admin: boolean;
+  /** Public profile page (#/u/handle); private by default. Missing before the social migration. */
+  is_public?: boolean;
 }
 
 export type ProfileUpdate = Partial<Pick<Profile, 'handle' | 'display_name' | 'home_city' | 'preferred_lang' | 'factions'>> & {
@@ -72,7 +74,8 @@ export const useSession = create<SessionState>((set, get) => ({
     if (!supabase || !uid) return;
     const { data } = await supabase
       .from('profiles')
-      .select('id, handle, display_name, avatar_path, home_city, preferred_lang, factions, is_admin')
+      // '*' keeps working whichever optional columns the database has (e.g. is_public).
+      .select('*')
       .eq('id', uid)
       .single();
     if (!data) return;

@@ -292,7 +292,34 @@ Owner decisions:
   city, district, private address, note), game page (players, requests, accept / decline, leave, cancel),
   My games (upcoming / played).
 
-### Phase 2 — Opponent finder
+### Phases 2–5 — done (2026-10-25), migration `20261025000006_play_social.sql` + `seed_social.sql`
+
+Owner decisions: alerts **in the app only** (no e-mail), **messages** between players, profile
+**public or private** (private by default), start with the battle report, then the rest.
+
+- **Battle report** (game page, after the start): every player's placement (same = draw), score,
+  army, painted army from the gallery (made public), photos (public `reports` bucket, 4 max), summary.
+  The other players confirm or dispute; a disputed report is corrected and confirmed again; a
+  confirmed report is final. **Result card** (1080², share sheet or download).
+- **Friendly rating** per game (Elo 1000, K 32, pairwise for multiplayer), applied on confirmation
+  only (`apply_report_ratings`); **badges** computed from `player_stats` (nothing stored).
+- **Player page** `#/u/<handle>`: badges, ratings, recent confirmed games, public gallery; hidden when
+  the profile is private (`profile_is_visible`). Toggle in the account page; per-image "show on my
+  profile" in the gallery.
+- **Looking for a game** posts (Quick play → second view): a new matching game (same game, country,
+  city if given, dates ±1 day) notifies the author (`games_notify_matches`).
+- **Notifications** (bell in the header, unread count every minute): join requests / answers,
+  matching games, reports to confirm / answers, messages, game chat. Reminders of the next 24 h are
+  computed on the page.
+- **Messages**: direct messages (allowed with a reason: public profile, open post, shared game, or the
+  other person wrote first; 60 / hour), game chat for the host and accepted players.
+- **Leagues** (tab): season, members, games counted for a league (`create_game(…, p_league)`),
+  standings from confirmed reports (win 3, draw 1). **Store page** `#/play/store/<id>`: regular nights
+  edited by the store staff, upcoming games, tournaments, leagues. **Calendar** `.ics` export on games
+  and tournaments (alarm the day before).
+- Tests: `supabase/tests/rls_social.sql` (29 checks), live read-only checks in `scripts/check-supabase.mjs`.
+
+### Phase 2 — Opponent finder (original plan)
 "Looking for a game" posts (game, area, date window, level); matching posts and games are listed
 together; optional alert when a matching game is published (in-app first, e-mail later).
 

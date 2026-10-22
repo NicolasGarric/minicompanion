@@ -7,6 +7,7 @@ import { translate, type Lang } from '../../core/i18n';
 import { buildRecipe } from './recipe';
 
 import { APP_NAME } from '../../core/brand';
+import { drawCover, fitText, FONT, wrap } from '../../core/lib/card';
 export { APP_NAME };
 
 // --- Public scheme links ---------------------------------------------------------------------
@@ -129,7 +130,6 @@ export function schemeToZones(s: Scheme): Zone[] {
 export type CardFormat = 'story' | 'square' | 'compare';
 export const CARD_SIZE: Record<CardFormat, [number, number]> = { story: [1080, 1920], square: [1080, 1080], compare: [1080, 1080] };
 
-const FONT = '"Noto Sans JP", system-ui, sans-serif';
 
 function canvasFromImageData(img: ImageData) {
   const c = document.createElement('canvas');
@@ -139,20 +139,7 @@ function canvasFromImageData(img: ImageData) {
   return c;
 }
 
-/** Draws `src` to cover the target box (centre crop). */
-function drawCover(ctx: CanvasRenderingContext2D, src: CanvasImageSource & { width: number; height: number }, x: number, y: number, w: number, h: number) {
-  const s = Math.max(w / src.width, h / src.height);
-  const sw = w / s;
-  const sh = h / s;
-  ctx.drawImage(src, (src.width - sw) / 2, (src.height - sh) / 2, sw, sh, x, y, w, h);
-}
 
-function fitText(ctx: CanvasRenderingContext2D, text: string, maxW: number) {
-  if (ctx.measureText(text).width <= maxW) return text;
-  let t = text;
-  while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
-  return t + '…';
-}
 
 export async function generateCard(opts: {
   format: CardFormat;
@@ -340,16 +327,3 @@ function drawCompare(
   });
 }
 
-function wrap(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number) {
-  // Japanese has no spaces: fall back to per-character wrapping.
-  const tokens = text.includes(' ') ? text.split(/(\s+)/) : [...text];
-  let line = '';
-  for (const tok of tokens) {
-    if (ctx.measureText(line + tok).width > maxW && line) {
-      ctx.fillText(line.trim(), x, y);
-      y += lh;
-      line = tok.trimStart();
-    } else line += tok;
-  }
-  if (line) ctx.fillText(line.trim(), x, y);
-}

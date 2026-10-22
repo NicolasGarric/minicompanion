@@ -16,6 +16,8 @@ export interface GalleryItem {
   image_path: string;
   paints: GalleryPaint[];
   created_at: string;
+  /** Shown on the public profile and on battle reports (missing before the social migration) */
+  is_public?: boolean;
   /** Signed URL, valid one hour */
   url?: string;
 }
@@ -24,9 +26,14 @@ const BUCKET = 'gallery';
 
 export async function listGallery(): Promise<GalleryItem[]> {
   if (!supabase) return [];
+  const { data: auth } = await supabase.auth.getSession();
+  const uid = auth.session?.user.id;
+  if (!uid) return [];
+  // Public items of other players are readable too: keep only mine.
   const { data, error } = await supabase
     .from('gallery_items')
-    .select('id, title, image_path, paints, created_at')
+    .select('*')
+    .eq('owner_id', uid)
     .order('created_at', { ascending: false });
   if (error) throw error;
   const items = (data ?? []) as GalleryItem[];

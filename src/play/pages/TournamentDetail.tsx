@@ -7,6 +7,7 @@ import { Icon } from '../../core/ui/ui';
 import { osmEmbedUrl, osmLink } from '../../core/stores/stores';
 import { formatWhen } from '../components/GameCard';
 import { playError } from '../lib/games';
+import { downloadIcs } from '../lib/ics';
 
 interface Tournament {
   id: string;
@@ -121,6 +122,14 @@ export function TournamentDetail({ slug }: { slug: string }) {
         <p className="muted">{t('tour.deadline', { date: formatWhen(tour.registration_deadline, lang) })}</p>
         {tour.description && <p className="game-note">{tour.description}</p>}
         {tour.twitch_channel && <p><Icon name="link" size={16} /> {t('tour.stream', { channel: tour.twitch_channel })}</p>}
+        <p>
+          <button
+            className="btn small"
+            onClick={() => downloadIcs({ id: tour.id, title: tour.name, start: tour.starts_at, end: tour.ends_at, location: `${tour.venue_name}, ${tour.address}`, url: location.href })}
+          >
+            <Icon name="calendar" size={14} /> {t('games.addToCalendar')}
+          </button>
+        </p>
       </section>
 
       {place && (

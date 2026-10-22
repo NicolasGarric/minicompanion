@@ -7,6 +7,7 @@ import { Icon } from '../../core/ui/ui';
 import { GameCard } from '../components/GameCard';
 import { listGames, playError, popularTexts, type Game, type GameFilters } from '../lib/games';
 import { sortedCountries } from '../lib/countries';
+import { LfgPanel } from '../components/LfgPanel';
 
 /** Quick play: upcoming casual games, filtered by game, format and place. */
 export function QuickPlay() {
@@ -19,6 +20,7 @@ export function QuickPlay() {
   const [popular, setPopular] = useState<string[]>([]);
   const [formats, setFormats] = useState<string[]>([]);
   const countries = useMemo(() => sortedCountries(lang), [lang]);
+  const [view, setView] = useState<'games' | 'lfg'>(() => (location.hash.includes('view=lfg') ? 'lfg' : 'games'));
 
   useEffect(() => {
     if (!backendConfigured) return;
@@ -55,6 +57,14 @@ export function QuickPlay() {
         </a>
       </div>
 
+      <div className="segmented view-switch" role="tablist">
+        {(['games', 'lfg'] as const).map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'on' : ''} onClick={() => setView(v)}>
+            {t(v === 'games' ? 'quick.viewGames' : 'quick.viewLfg')}
+          </button>
+        ))}
+      </div>
+
       <div className="game-filters">
         <input className="text-input" list="popular-games" placeholder={t('quick.gamePlaceholder')} value={filters.game ?? ''} onChange={(e) => set({ game: e.target.value, format: '' })} aria-label={t('games.game')} />
         <datalist id="popular-games">{popular.map((g) => <option key={g} value={g} />)}</datalist>
@@ -71,7 +81,7 @@ export function QuickPlay() {
           <input type="checkbox" checked={!!filters.openOnly} onChange={(e) => set({ openOnly: e.target.checked })} /> {t('quick.openOnly')}
         </label>
       </div>
-      {formats.length > 0 && (
+      {view === 'games' && formats.length > 0 && (
         <div className="chips" role="group" aria-label={t('games.format')}>
           <button className={`chip ${!filters.format ? 'on' : ''}`} onClick={() => set({ format: '' })}>{t('quick.allFormats')}</button>
           {formats.map((f) => (
@@ -80,10 +90,16 @@ export function QuickPlay() {
         </div>
       )}
 
-      {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
-      {!games && !error && <span className="spinner" />}
-      {games?.length === 0 && <p className="hint">{t('quick.none')}</p>}
-      {!!games?.length && <ul className="game-list">{games.map((g) => <GameCard key={g.id} game={g} />)}</ul>}
+      {view === 'lfg' ? (
+        <LfgPanel filters={filters} />
+      ) : (
+        <>
+          {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
+          {!games && !error && <span className="spinner" />}
+          {games?.length === 0 && <p className="hint">{t('quick.none')}</p>}
+          {!!games?.length && <ul className="game-list">{games.map((g) => <GameCard key={g.id} game={g} />)}</ul>}
+        </>
+      )}
     </div>
   );
 }

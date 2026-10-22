@@ -16,9 +16,9 @@ set client_min_messages = notice;
 -- Anonymous visitors browse games but never see an address or pending requests.
 set role anon;
 select pg_temp.as_user(null);
-select pg_temp.ok((select count(*) from public.games) = 8, 'anon sees the 8 demo games');
+select pg_temp.ok((select count(*) from public.games where starts_at > now()) = 8, 'anon sees the 8 upcoming demo games');
 select pg_temp.ok((select count(*) from public.game_private) = 0, 'anon sees no address');
-select pg_temp.ok((select count(*) from public.game_players) = 1, 'anon sees accepted players only');
+select pg_temp.ok((select count(*) from public.game_players gp join public.games g on g.id = gp.game_id where g.starts_at > now()) = 1, 'anon sees accepted players only');
 select pg_temp.ok((select count(*) from public.popular_game_texts()) >= 5, 'anon gets the popular game texts');
 do $$ begin
   perform public.request_join_game(md5('demo-game-3')::uuid, null);

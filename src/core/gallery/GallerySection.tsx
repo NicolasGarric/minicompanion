@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { listGallery, removeFromGallery, type GalleryItem } from './gallery';
 import { useT } from '../i18n';
-import { Icon, IconButton, Swatch } from '../ui/ui';
+import { Icon, IconButton, Swatch, Toggle } from '../ui/ui';
+import { setGalleryItemPublic } from '../../play/lib/social';
 
 /** "My gallery" on the profile page: the renders saved from PAINT, newest first. */
 export function GallerySection() {
@@ -50,6 +51,16 @@ export function GallerySection() {
                   ))}
                 </span>
               </div>
+              {item.is_public !== undefined && (
+                <Toggle
+                  checked={item.is_public}
+                  label={t('gallery.public')}
+                  onChange={async (v) => {
+                    await setGalleryItemPublic(item.id, v).catch(() => setError(true));
+                    setItems((list) => list?.map((i) => (i.id === item.id ? { ...i, is_public: v } : i)) ?? null);
+                  }}
+                />
+              )}
               {confirming === item.id ? (
                 <div className="field-row">
                   <button className="btn small danger-ghost" onClick={() => remove(item)}>{t('gallery.delete')}</button>

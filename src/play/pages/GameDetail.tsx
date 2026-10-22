@@ -7,6 +7,9 @@ import { Icon } from '../../core/ui/ui';
 import { countryName } from '../lib/countries';
 import { cancelGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, type Game, type GamePlayer } from '../lib/games';
 import { formatWhen } from '../components/GameCard';
+import { ReportSection } from '../components/ReportSection';
+import { GameChat } from '../components/GameChat';
+import { downloadIcs } from '../lib/ics';
 
 /** One game: details, players, and the actions of the viewer (host, player or visitor). */
 export function GameDetail({ id }: { id: string }) {
@@ -76,7 +79,38 @@ export function GameDetail({ id }: { id: string }) {
         </p>
         <p><Icon name="globe" size={16} /> {game.language === 'both' ? t('games.lang.both') : game.language === 'ja' ? '日本語' : 'English'}</p>
         {game.note && <p className="game-note">{game.note}</p>}
-        {game.host && <p className="muted">{t('games.hostedBy', { name: game.host.display_name })}</p>}
+        {game.host && (
+          <p className="muted">
+            {t('games.hostedBy', { name: '' })}
+            <a href={`#/u/${game.host.handle}`}>{game.host.display_name}</a>
+          </p>
+        )}
+        {game.league_id && <p><Icon name="star" size={16} /> <a href={`#/play/league/${game.league_id}`}>{t('games.leagueGame')}</a></p>}
+        {game.store_id && game.store && <p><Icon name="home" size={16} /> <a href={`#/play/store/${game.store_id}`}>{game.store.name}</a></p>}
+        <div className="field-row wrap">
+          {game.status !== 'cancelled' && !past && (
+            <button
+              className="btn small"
+              onClick={() =>
+                downloadIcs({
+                  id: game.id,
+                  title: [game.game_system, game.format].filter(Boolean).join(' · '),
+                  start: game.starts_at,
+                  end: new Date(Date.parse(game.starts_at) + game.duration_minutes * 60000).toISOString(),
+                  location: address ?? [game.area, game.city].filter(Boolean).join(', '),
+                  url: location.href,
+                })
+              }
+            >
+              <Icon name="calendar" size={14} /> {t('games.addToCalendar')}
+            </button>
+          )}
+          {session && !isHost && (
+            <a className="btn small" href={`#/messages/${game.host_id}`}>
+              <Icon name="chat" size={14} /> {t('games.contactHost')}
+            </a>
+          )}
+        </div>
       </section>
 
       <section className="card">
@@ -134,6 +168,9 @@ export function GameDetail({ id }: { id: string }) {
           {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
         </section>
       )}
+
+      {past && game.status !== 'cancelled' && <ReportSection game={game} players={players} me={me} />}
+      {me && (isHost || mine?.status === 'accepted') && game.status !== 'cancelled' && <GameChat gameId={game.id} me={me} />}
     </div>
   );
 }
