@@ -111,7 +111,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </div>
       </header>
       {sub && (
-        <nav className={`sub-nav ${route.section}`} aria-label={t(route.section === 'paint' ? 'nav.paint' : 'nav.play')}>
+        <nav className={`sub-nav sub-nav-${route.section}`} aria-label={t(route.section === 'paint' ? 'nav.paint' : 'nav.play')}>
           {sub.map((n) => (
             <a key={n.href} href={n.href} className={n.active(route) ? 'on' : ''} aria-current={n.active(route) ? 'page' : undefined}>
               {t(n.key)}

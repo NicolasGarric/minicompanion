@@ -326,8 +326,8 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .search input { flex: 1; min-height: 2.5rem; border: 0; background: transparent; outline: none; color: var(--text); min-width: 0; }
 .filter-toggles { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .paint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.3rem; }
-.paint { position: relative; aspect-ratio: 1; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.4rem; cursor: pointer; padding: 0.25rem; display: flex; align-items: flex-end; text-align: left; }
-.paint.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.paint-tile { position: relative; aspect-ratio: 1; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.4rem; cursor: pointer; padding: 0.25rem; display: flex; align-items: flex-end; text-align: left; }
+.paint-tile.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
 .paint-name { font-size: 0.625rem; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .badge { position: absolute; top: 0.15rem; font-size: 0.65rem; }
 .badge.fav { right: 0.25rem; }
@@ -443,8 +443,8 @@ th:first-child, td:first-child { text-align: left; }
 .sub-nav { display: flex; gap: 0.25rem; overflow-x: auto; padding: 0.35rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface); }
 .sub-nav a { color: var(--text-2); text-decoration: none; padding: 0.3rem 0.6rem; border-radius: var(--radius); font-size: 0.8125rem; white-space: nowrap; }
 .sub-nav a.on { color: var(--text); background: var(--surface-2); }
-.sub-nav.play a.on { box-shadow: inset 0 -2px 0 var(--play); }
-.sub-nav.paint a.on { box-shadow: inset 0 -2px 0 var(--paint); }
+.sub-nav-play a.on { box-shadow: inset 0 -2px 0 var(--play); }
+.sub-nav-paint a.on { box-shadow: inset 0 -2px 0 var(--paint); }
 .account-btn { display: inline-flex; border-radius: 50%; }
 .account-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .avatar { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; flex: none; line-height: 1; }

@@ -174,7 +174,7 @@ export function PalettePanel({ slot, onPicked }: { slot?: SlotId; onPicked?: () 
               {list.map((p) => (
                 <button
                   key={p.id}
-                  className={`paint ${selected?.id === p.id ? 'sel' : ''}`}
+                  className={`paint-tile ${selected?.id === p.id ? 'sel' : ''}`}
                   style={{ background: p.hex, color: isDark(p.hex) ? '#fff' : '#111' }}
                   onClick={() => pick(p)}
                   onContextMenu={(e) => {
