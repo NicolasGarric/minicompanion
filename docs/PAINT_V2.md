@@ -70,10 +70,30 @@ Fixed bugs reported by the owner: a primer drawn with the lasso hid every colour
 - **Protected background** (default on): brush, lasso, wand and "tap a part" never paint the excluded
   background. **Enclosed pockets** of backdrop (behind a plume, between arm and body) are detected:
   same colour as the backdrop, perfectly flat, not tiny.
-- **Colourless photos** are split into soft **light levels** (shadows / mid-tones / highlights) from
+- (Replaced in round 5) **Colourless photos** are split into soft **light levels** (shadows / mid-tones / highlights) from
   lightness percentiles of the figure, with smooth transitions — painting "Highlights" reads as a
   real highlight, not blotches. The colour-count control is hidden in that case.
 - **Auto-crop** on import when the miniature leaves wide margins (frame + 6 %).
 - **Outline** ("marching ants") of the open zone; skipped for diffuse zones (light levels).
 - **Painting steps** slider in step 3: primer → base coats → wash → drybrush → highlights, replayed
   on the image.
+
+## Round 5 (2026-10-23, owner feedback)
+
+- **Base paints instead of a colour count**: the analysis proposes up to **8** paints (k-means from 8,
+  then centres that are the same paint are merged: same hue, close relative chroma; tiny colours join
+  their neighbour unless clearly different, e.g. a red eye). The user **removes** a paint (its area
+  joins the closest one) or **adds** one by tapping the image (pixels close to the tapped colour and
+  closer to it than to their current paint move to it).
+- **Grey photos** are no longer split into light levels (painting one level left the next one dark,
+  e.g. black patches on a thigh). They are clustered on a blurred copy by lightness: recess lines join
+  their surface, so the zones are materials (light armour, dark cloak, base).
+- **Base coats cover**: the photo's shadows darken a paint by half at most (`MAX_SHADOW`).
+- **Paint on the model alone or the original photo** (step 1). A transparent PNG is detected (its alpha
+  is the background, the file is stored as PNG) and painted alone by default; the render, exports and
+  thumbnails keep the transparency.
+- **Brush** is the default tool; with nothing selected, the first stroke picks the colour under it.
+- **Gallery**: step 3 "Save to my gallery" (signed-in players) stores the render (1600 px, JPEG or PNG)
+  and its paints; the profile page lists them (private bucket, signed URLs, 200 items max).
+- Fixed: the hidden checkbox of toggles escaped the side panel and made the whole editor page scroll.
+

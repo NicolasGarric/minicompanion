@@ -14,6 +14,8 @@ interface ZoneCache {
 }
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+/** Strongest darkening of a paint by the photo's shadows (0.5 = half its brightness at most). */
+const MAX_SHADOW = 0.5;
 
 /**
  * Paint engine: keeps the source image, derived maps (luminance, blurred luminance to detect
@@ -33,6 +35,10 @@ export class PaintEngine {
   masks = new Map<string, Uint8Array>();
   private cache = new Map<string, ZoneCache>();
   out: ImageData | null = null;
+  /** The source has transparent pixels (a cut-out PNG): its alpha is the background. */
+  transparent = false;
+  /** Paint the model alone: the excluded background is rendered transparent. */
+  cutout = false;
 
   load(image: ImageData) {
     const { width: w, height: h, data } = image;
@@ -57,8 +63,18 @@ export class PaintEngine {
     const radius = Math.max(3, Math.round(Math.max(w, h) * 0.012));
     this.blur = boxBlurFloat(this.lumG, w, h, radius, 3);
     this.edge = sobel(boxBlurFloat(this.lumG, w, h, 1, 1), w, h);
+    let clear = 0;
+    for (let i = 3; i < data.length; i += 16) if (data[i] < 128) clear++;
+    this.transparent = clear > n / 4 * 0.01;
     this.masks.clear();
     this.cache.clear();
+  }
+
+  /** Background of a transparent source: the inverse of its alpha. */
+  alphaBackdrop(): Uint8Array {
+    const m = new Uint8Array(this.width * this.height);
+    for (let i = 0; i < m.length; i++) m[i] = 255 - this.src[i * 4 + 3];
+    return m;
   }
 
   get loaded() {
@@ -171,6 +187,26 @@ export class PaintEngine {
       o.set(s.subarray(a, b), a);
     }
 
+    // Background: the model alone (transparent around it), or the whole photo (a transparent PNG
+    // is then shown on white).
+    const backdrop = zones.find((z) => z.isBackground);
+    const cut = this.cutout && backdrop && !backdrop.visible ? this.masks.get(backdrop.id) : undefined;
+    if (cut || this.transparent) {
+      for (let y = r.y0; y < r.y1; y++) {
+        for (let x = r.x0; x < r.x1; x++) {
+          const i = y * w + x;
+          const p = i * 4;
+          if (this.transparent && o[p + 3] < 255) {
+            const a = o[p + 3] / 255;
+            o[p] = o[p] * a + 255 * (1 - a);
+            o[p + 1] = o[p + 1] * a + 255 * (1 - a);
+            o[p + 2] = o[p + 2] * a + 255 * (1 - a);
+          }
+          o[p + 3] = cut ? 255 - cut[i] : 255;
+        }
+      }
+    }
+
     // Priority zones are painted last, over everything they overlap.
     const ordered = [...zones.filter((z) => !z.priority), ...zones.filter((z) => z.priority)];
     const prepared = ordered
@@ -262,6 +298,9 @@ export class PaintEngine {
           // zone's mean so recolouring does not blow them out to white.
           if (z.exclusive && sh > 1) sh = 1 + (sh - 1) / (1 + 0.6 * (sh - 1));
           if (z.metal) sh = Math.pow(sh, 1.45);
+          // A base coat covers: the photo's darkest spots (a black cloak, deep recesses) must not
+          // turn the new paint black. Shadows darken the paint by half at most; washes add depth.
+          if (sh < 1) sh = 1 - (1 - sh) * MAX_SHADOW;
           let pr = z.base[0] * z.bright;
           let pg = z.base[1] * z.bright;
           let pb = z.base[2] * z.bright;

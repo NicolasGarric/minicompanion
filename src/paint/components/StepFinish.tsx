@@ -8,6 +8,7 @@ import { VariantsPanel } from './VariantsPanel';
 import { STAGES } from '../lib/stages';
 import { k } from '../../core/i18n';
 import { SchemesPanel } from './SchemesPanel';
+import { SaveToGallery } from './SaveToGallery';
 
 /** Step 3: the recipe per zone, the live shopping list, sharing and extra options. */
 export function StepFinish() {
@@ -29,6 +30,7 @@ export function StepFinish() {
       <button className="btn primary wide" onClick={() => set({ shareOpen: true })}>
         <Icon name="share" size={16} /> {t('share.title')}
       </button>
+      <SaveToGallery />
 
       <PaintingSteps />
 

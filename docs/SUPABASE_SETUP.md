@@ -11,14 +11,16 @@ secret key: the app only uses the **public** anon key, and data is protected by 
 
 ## 2. Create the database
 
-Fastest: run `scripts/copy-setup-sql.sh` (WSL) — it copies the two migrations and the seed, in order,
-to the Windows clipboard. Paste into **SQL Editor** → **New query** and click **Run**.
+Fastest: run `scripts/copy-setup-sql.sh` (WSL) — it copies every migration and the seed, in order,
+to the Windows clipboard (already-applied parts are skipped automatically). Paste into **SQL Editor** → **New query** and click **Run**.
 
 Or paste and run each file manually, **in this order**:
 
 1. `supabase/migrations/20261021000001_core.sql`
 2. `supabase/migrations/20261021000002_play.sql`
-3. `supabase/seed.sql` — demo data only (fictional stores, players and 20 Tokyo tournaments)
+3. `supabase/migrations/20261022000003_fix_tournament_select_policy.sql`
+4. `supabase/migrations/20261023000004_gallery.sql` — player gallery: table + private Storage bucket `gallery`
+5. `supabase/seed.sql` — demo data only (fictional stores, players and 20 Tokyo tournaments)
 
 Each run should end with "Success. No rows returned".
 

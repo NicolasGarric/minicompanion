@@ -1,8 +1,12 @@
 /**
- * Splits an image into N reference colours, each with a soft mask.
+ * Splits an image into reference colours ("base paints"), each with a soft mask.
  *
  * 1. k-means on a downsampled copy, in Lab space with lightness down-weighted: the shading of one
  *    paint (dark recess → bright edge) should stay in the same colour, hue matters more.
+ *    In 'auto' mode it starts from AUTO_MAX colours and merges the ones too close to be different
+ *    paints, or too small to matter. Colourless photos are clustered on a blurred copy, by
+ *    lightness: recess lines join their surface, so the parts found are materials (light armour,
+ *    dark cloak), not light levels.
  * 2. Every full-resolution pixel gets the label of its nearest centre.
  * 3. A 3×3 majority filter removes isolated pixels, then a 1 px box blur softens the edges.
  *    Masks are a partition of unity: at every pixel they add up to 255.
@@ -20,15 +24,11 @@ export interface ImageLike {
   height: number;
 }
 
-export type Tone = 'shadows' | 'mid' | 'highlights';
-
 export interface ColourCluster {
   hex: string;
   /** Share of the image, 0..1 */
   weight: number;
   mask: Uint8Array;
-  /** Set on colourless photos, where zones are light levels instead of colours. */
-  tone?: Tone;
 }
 
 export interface Segmentation {
@@ -37,7 +37,7 @@ export interface Segmentation {
   background: number;
   /**
    * The photo is (almost) colourless, e.g. a grey-primed miniature: colours cannot tell the parts
-   * apart, so the split follows lightness only and the UI suggests drawing areas instead.
+   * apart, so the split follows (blurred) lightness and the UI suggests drawing areas as well.
    */
   greyscale: boolean;
 }
@@ -46,7 +46,11 @@ const L_WEIGHT = 0.45; // lightness counts less than hue/chroma
 const GREYSCALE_CHROMA = 9; // mean Lab chroma under which a photo counts as colourless
 const BG_MIN_WEIGHT = 0.05; // a backdrop smaller than this is not one
 const BG_MAX_WEIGHT = 0.85; // larger than this: the subject fills the frame, there is no backdrop
-const MAX_TONE_LEVELS = 8; // light levels on a colourless photo
+export const AUTO_MAX = 8; // most base paints the automatic analysis proposes
+const MERGE_DIST = 12; // centres closer than this (weighted Lab) are one paint
+const MERGE_DIST_GREY = 16; // same, on lightness only (colourless photos)
+const MIN_AUTO_SHARE = 0.012;
+const ADD_MAX_DIST = 18; // an added colour only takes pixels this close to the tapped colour // a colour covering less of the samples joins its nearest one
 const MIN_COLOUR_WEIGHT = 0.004; // colours left with less than this after removing the backdrop join it
 const BACKDROP_LOSS = 0.25; // a colour keeping under 25 % of itself outside the backdrop was the backdrop colour
 const SAMPLE_SIDE = 160;
@@ -73,49 +77,40 @@ function lab(r: number, g: number, b: number, out: Float32Array, o: number, lWei
 const hex2 = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
 
 // --- segmentation --------------------------------------------------------------------------
-export function segmentImage(img: ImageLike, count: number): Segmentation {
+/** `backdrop`: a known background (e.g. the alpha of a cut-out PNG), used instead of detecting one. */
+export function segmentImage(img: ImageLike, count: number | 'auto' = 'auto', backdrop?: Uint8Array): Segmentation {
   const { width: w, height: h, data } = img;
-  const k = Math.max(2, Math.min(16, Math.round(count)));
+  const auto = count === 'auto';
+  let k = auto ? AUTO_MAX : Math.max(2, Math.min(16, Math.round(count)));
 
   // 1. Sample and cluster
   const step = Math.max(1, Math.floor(Math.max(w, h) / SAMPLE_SIDE));
   const samples: number[] = [];
-  for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) samples.push((y * w + x) * 4);
+  for (let y = 0; y < h; y += step) {
+    for (let x = 0; x < w; x += step) if (!backdrop || backdrop[y * w + x] < 128) samples.push((y * w + x) * 4);
+  }
   const n = samples.length;
   const sLab = new Float32Array(n * 3);
   samples.forEach((p, i) => lab(data[p], data[p + 1], data[p + 2], sLab, i * 3));
   let chroma = 0;
   for (let i = 0; i < n; i++) chroma += Math.hypot(sLab[i * 3 + 1], sLab[i * 3 + 2]);
   const greyscale = chroma / n < GREYSCALE_CHROMA;
-  // Without colour, parts cannot be told apart: split into soft light levels instead.
-  if (greyscale) return toneSplit(img, k);
-  const lWeight = L_WEIGHT;
+  // Without colour, lightness is all there is: cluster a blurred copy at full lightness weight.
+  const lWeight = greyscale ? 1 : L_WEIGHT;
+  const src = greyscale ? blurredImage(img) : data;
+  if (greyscale) samples.forEach((p, i) => lab(src[p], src[p + 1], src[p + 2], sLab, i * 3, lWeight));
 
-  const centres = seedCentres(sLab, n, k);
-  const assign = new Int32Array(n);
-  for (let it = 0; it < ITERATIONS; it++) {
-    for (let i = 0; i < n; i++) assign[i] = nearest(sLab, i * 3, centres, k);
-    const sum = new Float64Array(k * 4);
-    for (let i = 0; i < n; i++) {
-      const c = assign[i] * 4;
-      sum[c] += sLab[i * 3];
-      sum[c + 1] += sLab[i * 3 + 1];
-      sum[c + 2] += sLab[i * 3 + 2];
-      sum[c + 3]++;
-    }
-    for (let c = 0; c < k; c++) {
-      if (!sum[c * 4 + 3]) continue;
-      centres[c * 3] = sum[c * 4] / sum[c * 4 + 3];
-      centres[c * 3 + 1] = sum[c * 4 + 1] / sum[c * 4 + 3];
-      centres[c * 3 + 2] = sum[c * 4 + 2] / sum[c * 4 + 3];
-    }
+  let centres = kMeans(sLab, n, k);
+  if (auto) {
+    centres = greyscale ? mergeCentres(sLab, n, centres, MERGE_DIST_GREY, plainDist) : mergeCentres(sLab, n, centres, MERGE_DIST, paintDist);
+    k = centres.length / 3;
   }
 
   // 2. Label every pixel
   const labels = new Uint8Array(w * h);
   const px = new Float32Array(3);
   for (let i = 0, p = 0; i < labels.length; i++, p += 4) {
-    lab(data[p], data[p + 1], data[p + 2], px, 0, lWeight);
+    lab(src[p], src[p + 1], src[p + 2], px, 0, lWeight);
     labels[i] = nearest(px, 0, centres, k);
   }
 
@@ -147,12 +142,12 @@ export function segmentImage(img: ImageLike, count: number): Segmentation {
   //    out of the colour masks, so the masks still add up to 255 everywhere.
   clusters.sort((a, b) => b.weight - a.weight);
   let background = -1;
-  const maps = lumaMaps(img);
-  const bgMask = addEnclosedBackdrop(img, maps, growFromBorder(maps));
+  const maps = backdrop ? null : lumaMaps(img);
+  const bgMask = backdrop ? new Uint8Array(backdrop) : addEnclosedBackdrop(img, maps!, growFromBorder(maps!));
   let bgSum = 0;
   for (let i = 0; i < bgMask.length; i++) bgSum += bgMask[i];
   const bgShare = bgSum / (255 * w * h);
-  if (bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT) {
+  if (backdrop ? bgShare > 0 : bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT) {
     // Pixels hugging the backdrop (2 px), used to absorb the anti-aliased rim of backdrop colours.
     const rim = dilate(bgMask, w, h, 2);
     const weightOf = (m: Uint8Array) => m.reduce((acc, v) => acc + v, 0) / (255 * w * h);
@@ -196,6 +191,178 @@ export function segmentImage(img: ImageLike, count: number): Segmentation {
 
   clusters = clusters.map(({ hex, weight, mask }) => ({ hex, weight, mask })) as typeof clusters;
   return { clusters, background, greyscale };
+}
+
+function kMeans(sLab: Float32Array, n: number, k: number): Float32Array {
+  const centres = seedCentres(sLab, n, k);
+  const assign = new Int32Array(n);
+  for (let it = 0; it < ITERATIONS; it++) {
+    for (let i = 0; i < n; i++) assign[i] = nearest(sLab, i * 3, centres, k);
+    const sum = new Float64Array(k * 4);
+    for (let i = 0; i < n; i++) {
+      const c = assign[i] * 4;
+      sum[c] += sLab[i * 3];
+      sum[c + 1] += sLab[i * 3 + 1];
+      sum[c + 2] += sLab[i * 3 + 2];
+      sum[c + 3]++;
+    }
+    for (let c = 0; c < k; c++) {
+      if (!sum[c * 4 + 3]) continue;
+      centres[c * 3] = sum[c * 4] / sum[c * 4 + 3];
+      centres[c * 3 + 1] = sum[c * 4 + 1] / sum[c * 4 + 3];
+      centres[c * 3 + 2] = sum[c * 4 + 2] / sum[c * 4 + 3];
+    }
+  }
+  return centres;
+}
+
+type Dist = (a: number[], b: number[]) => number;
+const plainDist: Dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+/**
+ * How different two colour centres are as *paints*: the shading of one paint changes its lightness
+ * and chroma together but keeps its hue. So the distance weighs hue (as an arc at the smaller
+ * chroma) and relative chroma, and lightness only a little.
+ */
+const paintDist: Dist = (a, b) => {
+  const ca = Math.hypot(a[1], a[2]), cb = Math.hypot(b[1], b[2]);
+  let dh = Math.abs(Math.atan2(a[2], a[1]) - Math.atan2(b[2], b[1]));
+  if (dh > Math.PI) dh = 2 * Math.PI - dh;
+  const hueArc = Math.min(ca, cb) * dh;
+  // Chroma difference relative to the stronger one: a dark and a light blue of one paint differ by
+  // a fraction of their chroma; bone and grey differ by all of it.
+  const relChroma = (Math.abs(ca - cb) / Math.max(ca, cb, 20)) * 25;
+  return Math.hypot((a[0] - b[0]) * 0.5, relChroma, hueArc);
+};
+
+/**
+ * Automatic count: repeatedly merges the closest pair of centres while they are nearer than
+ * `minDist`. A colour covering too few samples joins its nearest one too, unless it is clearly a
+ * different paint (a red eye on blue armour). Merged centres are the sample-weighted mean.
+ */
+function mergeCentres(sLab: Float32Array, n: number, input: Float32Array, minDist: number, dist: Dist): Float32Array {
+  let cs = Array.from({ length: input.length / 3 }, (_, c) => ({ v: [input[c * 3], input[c * 3 + 1], input[c * 3 + 2]], n: 0 }));
+  const flat = () => Float32Array.from(cs.flatMap((c) => c.v));
+  const count = () => {
+    const f = flat();
+    cs.forEach((c) => (c.n = 0));
+    for (let i = 0; i < n; i++) cs[nearest(sLab, i * 3, f, cs.length)].n++;
+  };
+  count();
+  cs = cs.filter((c) => c.n > 0);
+  const nearestTo = (k: number) => cs.reduce((m, c, i) => (i !== k && (m < 0 || dist(c.v, cs[k].v) < dist(cs[m].v, cs[k].v)) ? i : m), -1);
+  while (cs.length > 1) {
+    let bi = 0, bj = 1, bd = Infinity;
+    for (let i = 0; i < cs.length; i++) {
+      for (let j = i + 1; j < cs.length; j++) {
+        const d = dist(cs[i].v, cs[j].v);
+        if (d < bd) { bd = d; bi = i; bj = j; }
+      }
+    }
+    if (bd >= minDist) {
+      // Tiny colours that are not clearly distinct (anti-aliasing blends, noise) join their nearest.
+      const small = cs.findIndex((c, i) => c.n < n * MIN_AUTO_SHARE && dist(c.v, cs[nearestTo(i)].v) < minDist * 1.5);
+      if (small < 0) break;
+      bi = nearestTo(small);
+      bj = small;
+    }
+    const a = cs[bi], b = cs[bj];
+    const t = a.n + b.n || 1;
+    a.v = a.v.map((x, d) => (x * a.n + b.v[d] * b.n) / t);
+    a.n += b.n;
+    cs.splice(bj, 1);
+  }
+  return flat();
+}
+
+/** Copy of the image with a soft blur (≈0.5 % of its size): recess lines fade into their surface. */
+function blurredImage(img: ImageLike): Uint8ClampedArray {
+  const { data, width: w, height: h } = img;
+  const r = Math.max(1, Math.round(Math.max(w, h) / 220));
+  let a = new Uint8ClampedArray(data);
+  let b = new Uint8ClampedArray(data.length);
+  for (let pass = 0; pass < 2; pass++) {
+    // horizontal then vertical box blur, RGB only
+    for (const [len, lines, stride, lineStride] of [[w, h, 4, w * 4], [h, w, w * 4, 4]] as const) {
+      for (let line = 0; line < lines; line++) {
+        const base = line * lineStride;
+        for (let ch = 0; ch < 3; ch++) {
+          let acc = 0;
+          for (let x = -r; x <= r; x++) acc += a[base + Math.min(len - 1, Math.max(0, x)) * stride + ch];
+          for (let x = 0; x < len; x++) {
+            b[base + x * stride + ch] = acc / (2 * r + 1);
+            acc += a[base + Math.min(len - 1, x + r + 1) * stride + ch] - a[base + Math.max(0, x - r) * stride + ch];
+          }
+        }
+      }
+      [a, b] = [b, a];
+    }
+  }
+  return a;
+}
+
+/**
+ * Adds a base paint where the user tapped: every figure pixel close to `seed`, and closer to it
+ * than to the reference colour of the zone it belongs to, moves to the new colour. `masks` (the automatic
+ * zones, background included at `background`) are updated in place and stay a partition.
+ * Returns the new mask and its mean colour, or null when it would cover almost nothing.
+ */
+export function addColour(
+  img: ImageLike,
+  masks: Uint8Array[],
+  refHexes: string[],
+  background: number,
+  seedHex: string,
+  greyscale: boolean,
+): { mask: Uint8Array; hex: string } | null {
+  const { width: w, height: h, data } = img;
+  const lWeight = greyscale ? 1 : L_WEIGHT;
+  const src = greyscale ? blurredImage(img) : data;
+  const toLab = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const v = new Float32Array(3);
+    lab(r, g, b, v, 0, lWeight);
+    return v;
+  };
+  const seed = toLab(seedHex);
+  const refs = refHexes.map(toLab);
+  const hard = new Uint8Array(w * h);
+  const px = new Float32Array(3);
+  let hits = 0;
+  for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+    let owner = 0;
+    for (let z = 1; z < masks.length; z++) if (masks[z][i] > masks[owner][i]) owner = z;
+    if (owner === background || masks[owner][i] === 0) continue;
+    lab(src[p], src[p + 1], src[p + 2], px, 0, lWeight);
+    const ds = d2(px, 0, seed, 0);
+    if (ds < ADD_MAX_DIST * ADD_MAX_DIST && ds < d2(px, 0, refs[owner], 0)) {
+      hard[i] = 1;
+      hits++;
+    }
+  }
+  if (hits < w * h * 0.001) return null;
+  const clean = majorityFilter(hard, w, h, 2);
+  for (let i = 0; i < clean.length; i++) clean[i] = clean[i] ? 255 : 0;
+  const soft = softenMask(clean, w, h);
+  const bg = background >= 0 ? masks[background] : null;
+  let r = 0, g = 0, b = 0, sum = 0;
+  for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+    const room = 255 - (bg ? bg[i] : 0);
+    const m = Math.min(soft[i], room);
+    soft[i] = m;
+    if (!m) continue;
+    // The other colours share what is left, in their previous proportions.
+    let others = 0;
+    for (let z = 0; z < masks.length; z++) if (z !== background) others += masks[z][i];
+    const factor = others > 0 ? (room - m) / others : 0;
+    for (let z = 0; z < masks.length; z++) if (z !== background) masks[z][i] = Math.round(masks[z][i] * factor);
+    r += data[p] * m;
+    g += data[p + 1] * m;
+    b += data[p + 2] * m;
+    sum += m;
+  }
+  if (!sum) return null;
+  return { mask: soft, hex: `#${hex2(r / sum)}${hex2(g / sum)}${hex2(b / sum)}` };
 }
 
 function seedCentres(sLab: Float32Array, n: number, k: number): Float32Array {
@@ -347,80 +514,4 @@ export function splitMask(img: ImageLike, mask: Uint8Array): { masks: [Uint8Arra
   if (rgb[3] / total < 0.02 || rgb[7] / total < 0.02) return null;
   const hex = (c: number) => `#${hex2(rgb[c * 4] / rgb[c * 4 + 3])}${hex2(rgb[c * 4 + 1] / rgb[c * 4 + 3])}${hex2(rgb[c * 4 + 2] / rgb[c * 4 + 3])}`;
   return { masks: [m1, m2], hexes: [hex(0), hex(1)] };
-}
-
-/**
- * Colourless photo (e.g. a grey-primed miniature): `levels` soft light levels, from the shadows to
- * the highlights, computed from the lightness of each pixel instead of hard clusters. Level centres
- * follow the photo (lightness percentiles of the figure) and neighbouring levels blend smoothly, so
- * painting "Highlights" looks like a real, gradual highlight. Masks still add up to 255.
- */
-function toneSplit(img: ImageLike, levels: number): Segmentation {
-  const { data, width: w, height: h } = img;
-  const n = Math.max(2, Math.min(MAX_TONE_LEVELS, levels));
-  const maps = lumaMaps(img);
-  const fromBorder = addEnclosedBackdrop(img, maps, growFromBorder(maps));
-  let bgSum = 0;
-  for (let i = 0; i < fromBorder.length; i++) bgSum += fromBorder[i];
-  const bgShare = bgSum / (255 * w * h);
-  const hasBg = bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT;
-  const bg = hasBg ? fromBorder : new Uint8Array(w * h);
-
-  // Level centres = lightness percentiles of the figure, (k + 0.5) / n
-  const hist = new Float64Array(256);
-  let total = 0;
-  for (let i = 0; i < w * h; i++) {
-    const weight = 255 - bg[i];
-    if (!weight) continue;
-    hist[Math.min(255, Math.round(maps.lum[i] * 255))] += weight;
-    total += weight;
-  }
-  const percentile = (p: number) => {
-    let acc = 0;
-    for (let v = 0; v < 256; v++) {
-      acc += hist[v];
-      if (acc >= total * p) return v / 255;
-    }
-    return 1;
-  };
-  const centres = Array.from({ length: n }, (_, k) => percentile((k + 0.5) / n));
-  for (let k = 1; k < n; k++) centres[k] = Math.max(centres[k], centres[k - 1] + 1e-3); // strictly increasing
-
-  const masks = Array.from({ length: n }, () => new Uint8Array(w * h));
-  for (let i = 0; i < w * h; i++) {
-    const figure = 255 - bg[i];
-    if (!figure) continue;
-    const l = maps.lum[i];
-    // Position between the two surrounding level centres; core of each level is flat, edges blend.
-    let k = 0;
-    while (k < n - 1 && l > centres[k + 1]) k++;
-    if (l <= centres[0] || k === n - 1) {
-      masks[k][i] = figure;
-      continue;
-    }
-    const t = (l - centres[k]) / (centres[k + 1] - centres[k]);
-    const s = Math.min(1, Math.max(0, (t - 0.25) / 0.5));
-    const upper = Math.round(figure * s * s * (3 - 2 * s));
-    masks[k + 1][i] = upper;
-    masks[k][i] = figure - upper;
-  }
-
-  const cluster = (mask: Uint8Array, tone?: Tone): ColourCluster => {
-    let r = 0, g = 0, b = 0, sum = 0;
-    for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-      const v = mask[i];
-      if (!v) continue;
-      r += data[p] * v;
-      g += data[p + 1] * v;
-      b += data[p + 2] * v;
-      sum += v;
-    }
-    const hex = sum ? `#${hex2(r / sum)}${hex2(g / sum)}${hex2(b / sum)}` : '#808080';
-    return { hex, weight: sum / (255 * w * h), mask, tone };
-  };
-  const toneOf = (k: number): Tone => (k === 0 ? 'shadows' : k === n - 1 ? 'highlights' : 'mid');
-  // Dark to light, which is also the order the user reads them in.
-  const clusters = masks.map((m, k) => cluster(m, toneOf(k))).filter((c) => c.weight > 0);
-  if (hasBg) clusters.push(cluster(bg));
-  return { clusters, background: hasBg ? clusters.length - 1 : -1, greyscale: true };
 }

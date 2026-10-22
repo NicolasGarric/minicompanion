@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { segmentImage, type ImageLike } from '../../src/paint/engine/segment.ts';
+import { addColour, segmentImage, type ImageLike } from '../../src/paint/engine/segment.ts';
 
 /**
  * Synthetic "miniature photo": light grey background, a blue body with strong vertical shading
@@ -127,4 +127,64 @@ test('a backdrop with a vignette (several shades) is merged into one background'
     const sum = clusters.reduce((a, c) => a + c.mask[i], 0);
     assert.ok(Math.abs(sum - 255) <= 3, 'still a partition');
   }
+});
+
+test('auto mode finds the distinct paints, 8 at most', () => {
+  const { clusters, background } = segmentImage(figure(), 'auto');
+  const figureColours = clusters.filter((_, i) => i !== background);
+  assert.ok(clusters.length <= 9, `too many colours (${clusters.length})`);
+  // blue armour, gold belt, red eye: the shaded blue is one paint, not several
+  const blues = figureColours.filter((c) => {
+    const [r, g, b] = rgb(c.hex);
+    return b > r + 40 && b > g + 40;
+  });
+  assert.equal(blues.length, 1, `the shaded armour should be one paint (${figureColours.map((c) => c.hex)})`);
+  for (const expected of [[200, 160, 60], [190, 20, 25]]) {
+    assert.ok(Math.min(...figureColours.map((c) => dist(rgb(c.hex), expected))) < 40, `missing ${expected}`);
+  }
+});
+
+test('a colourless figure is split by material, recess lines stay in their surface', () => {
+  const w = 120, h = 160;
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let v = 235; // white backdrop
+      if (x >= 30 && x < 90 && y >= 20 && y < 80) v = y % 8 === 0 ? 70 : 200; // light armour with dark recess lines
+      if (x >= 30 && x < 90 && y >= 80 && y < 140) v = 45; // dark cloak
+      data.set([v, v, v, 255], (y * w + x) * 4);
+    }
+  }
+  const img = { data, width: w, height: h };
+  const { clusters, background, greyscale } = segmentImage(img, 'auto');
+  assert.equal(greyscale, true);
+  const owner = (x: number, y: number) => clusters.reduce((m, c, i) => (c.mask[y * w + x] > clusters[m].mask[y * w + x] ? i : m), 0);
+  assert.notEqual(owner(60, 50), background);
+  assert.equal(owner(60, 48), owner(60, 52), 'a recess line belongs to its armour');
+  assert.notEqual(owner(60, 50), owner(60, 110), 'armour and cloak are different paints');
+});
+
+test('adding a colour takes its pixels from the others and keeps the partition', () => {
+  const img = figure();
+  const { clusters, background } = segmentImage(img, 'auto');
+  const masks = clusters.map((c) => c.mask);
+  const res = addColour(img, masks, clusters.map((c) => c.hex), background, '#c8a03c', false);
+  if (res) {
+    for (let i = 0; i < img.width * img.height; i += 37) {
+      const sum = masks.reduce((a, m) => a + m[i], 0) + res.mask[i];
+      assert.ok(Math.abs(sum - 255) <= 6, `pixel ${i}: ${sum}`);
+    }
+    assert.equal(res.mask[(10) * img.width + 5], 0, 'the background is never taken');
+  }
+});
+
+test('a known backdrop (cut-out PNG alpha) is used as the background', () => {
+  const img = figure();
+  const { width: w, height: h } = img;
+  const backdrop = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (!(x >= 30 && x < 90 && y >= 20 && y < 140)) backdrop[y * w + x] = 255;
+  const { clusters, background } = segmentImage(img, 'auto', backdrop);
+  assert.ok(background >= 0);
+  assert.equal(clusters[background].mask[5 * w + 5], 255);
+  assert.equal(clusters[background].mask[60 * w + 60], 0);
 });

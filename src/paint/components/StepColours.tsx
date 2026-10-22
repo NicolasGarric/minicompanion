@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { allPaints, MAX_COLOURS, MIN_COLOURS, paintById, useStore } from '../store';
+import { allPaints, MAX_BASE_PAINTS, paintById, useStore } from '../store';
 import type { Paint, Primer, SlotId, Tool, Zone } from '../types';
 import { nearestPaints } from '../../core/lib/color';
 import { similarity } from '../lib/beginner';
@@ -21,7 +21,7 @@ export function StepColours() {
   const t = useT();
   const zones = useStore((s) => s.zones);
   const activeZoneId = useStore((s) => s.activeZoneId);
-  const colourCount = useStore((s) => s.colourCount);
+  const pickMode = useStore((s) => s.pickMode);
   const analysing = useStore((s) => s.analysing);
   const greyscale = useStore((s) => s.greyscale);
   const { analyseColours, addManualZone } = useStore.getState();
@@ -34,16 +34,9 @@ export function StepColours() {
   const drawn = zones.filter((z) => z.source !== 'auto').reverse();
   const background = zones.find((z) => z.isBackground);
 
-  // The count control re-analyses after a short pause, so clicking +/- several times is cheap.
-  const [count, setCount] = useState(colourCount);
-  useEffect(() => setCount(colourCount), [colourCount]);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
-  const changeCount = (n: number) => {
-    const next = Math.max(MIN_COLOURS, Math.min(MAX_COLOURS, n));
-    setCount(next);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => analyseColours(next), 450);
-  };
+  const figureColours = colours.filter((z) => !z.isBackground).length;
+  // "+ Add a paint": the next tap on the image picks the new colour (tap again to cancel).
+  const toggleAdd = () => useStore.getState().set(pickMode === 'add' ? { pickMode: 'select' } : { pickMode: 'add', tool: 'picker' });
 
   return (
     <div className="step-colours">
@@ -51,19 +44,22 @@ export function StepColours() {
 
       <div className="colour-count">
         <div>
-          <strong>{t(greyscale ? 'tone.count' : 'colours.count')}</strong>
-          <small className="muted">{t(greyscale ? 'tone.countHint' : 'colours.countHint')}</small>
+          <strong>{t('colours.count', { count: figureColours })}</strong>
+          <small className="muted">{t('colours.countHint')}</small>
         </div>
-        <div className="stepper-input" aria-busy={analysing}>
-          <IconButton icon="minus" label={t('colours.fewer')} onClick={() => changeCount(count - 1)} disabled={count <= MIN_COLOURS} />
-          <output aria-live="polite">{analysing ? <span className="spinner small" /> : count}</output>
-          <IconButton icon="plus" label={t('colours.more')} onClick={() => changeCount(count + 1)} disabled={count >= MAX_COLOURS} />
+        <div className="field-row" aria-busy={analysing}>
+          {analysing && <span className="spinner small" />}
+          <button className={`btn small ${pickMode === 'add' ? 'primary' : ''}`} onClick={toggleAdd} disabled={colours.length >= MAX_BASE_PAINTS} aria-pressed={pickMode === 'add'}>
+            <Icon name="plus" size={14} /> {t('colours.add')}
+          </button>
+          <IconButton icon="sparkle" label={t('colours.redetect')} onClick={() => analyseColours()} disabled={analysing} />
         </div>
       </div>
+      {pickMode === 'add' && <p className="notice small" role="status">{t('colours.addHint')}</p>}
       <BrandSelect />
       {greyscale ? (
         <div className="notice">
-          <strong>{t('tone.title')}</strong>
+          <strong>{t('colours.greyTitle')}</strong>
           <p>{t('colours.greyscale')}</p>
           <div className="field-row">
             <button className="btn small primary" onClick={() => useStore.getState().set({ tool: 'part' })}>
@@ -186,6 +182,9 @@ function ColourZoneItem({
             <IconButton icon="up" label={t('colours.layerUp')} size={15} disabled={layer.top} onClick={() => moveDrawnZone(zone.id, 1)} />
             <IconButton icon="down" label={t('colours.layerDown')} size={15} disabled={layer.bottom} onClick={() => moveDrawnZone(zone.id, -1)} />
           </>
+        )}
+        {zone.source === 'auto' && !zone.isBackground && (
+          <IconButton icon="trash" label={t('colours.remove')} size={15} onClick={() => useStore.getState().removeColour(zone.id)} />
         )}
         <IconButton
           icon={zone.visible ? 'eye' : 'eyeOff'}

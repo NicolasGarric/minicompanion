@@ -21,6 +21,7 @@ declare -A GUARD=(
   [20261021000002_play.sql]="to_regclass('public.tournaments') is null"
   # Idempotent fixes: always run.
   [20261022000003_fix_tournament_select_policy.sql]="true"
+  [20261023000004_gallery.sql]="to_regclass('public.gallery_items') is null"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label

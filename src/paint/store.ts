@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Paint, Primer, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
 import { engine, type Rect } from './engine/engine';
-import { segmentImage, splitMask } from './engine/segment';
+import { addColour, segmentImage, splitMask } from './engine/segment';
 import { growPart, subjectCrop } from './engine/parts';
 import { copyRect, pasteRect, bboxOf, type MaskPatch } from './engine/maskPatch';
 import { applyRecipe, defaultRecipe, recipeOf, ROLES, roleLabel, schemeName } from './data/presets';
@@ -12,7 +12,7 @@ import { renderThumb, resampleMask } from './lib/render';
 import { colourName, uniqueNames } from './lib/colourName';
 import { deltaE, hexToRgb, rgbToHex } from '../core/lib/color';
 import { track } from '../core/analytics';
-import { k, translate as tr } from '../core/i18n';
+import { translate as tr } from '../core/i18n';
 import { combine, feather, growShrink, type CombineMode } from './engine/maskTools';
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -34,9 +34,8 @@ export interface Toast {
 export type Step = 1 | 2 | 3;
 export type MaskOp = 'grow' | 'shrink' | 'feather' | 'invert' | 'clear' | 'fill';
 
-export const DEFAULT_COLOURS = 6;
-export const MIN_COLOURS = 3;
-export const MAX_COLOURS = 12;
+/** Base paints a user can add on top of the automatic analysis. */
+export const MAX_BASE_PAINTS = 16;
 
 export interface NewProjectOptions {
   /** Ready-made masks per role (demo figure). */
@@ -56,6 +55,8 @@ interface State {
   zones: Zone[];
   /** Undercoat on the whole miniature, below every colour (null = the photo as it is). */
   primer: Primer | null;
+  /** Paint the model alone: the background is transparent in the render and the exports. */
+  cutout: boolean;
   activeZoneId: string | null;
   variants: Variant[];
   maskVersion: number;
@@ -63,8 +64,9 @@ interface State {
 
   /** Editor flow: 1 image, 2 colours, 3 paints & share. */
   step: Step;
-  colourCount: number;
   analysing: boolean;
+  /** Picker taps add a base paint instead of selecting one (after "+ Add a paint"). */
+  pickMode: 'select' | 'add';
   /** Last analysis found a colourless photo (primed miniature): suggest drawing areas. */
   greyscale: boolean;
 
@@ -108,7 +110,12 @@ interface Actions {
   saveNow: () => Promise<void>;
   buildRecord: () => Promise<ProjectRecord | null>;
 
-  analyseColours: (count: number) => Promise<void>;
+  /** Detects the base paints of the photo (up to AUTO_MAX), replacing the automatic zones. */
+  analyseColours: () => Promise<void>;
+  /** Adds a base paint from the colour under a point of the image. */
+  addColourAt: (x: number, y: number) => void;
+  /** Removes a base paint: its area joins the closest remaining colour. */
+  removeColour: (id: string) => void;
   addManualZone: () => string;
   updateZone: (id: string, patch: Partial<Zone>, key?: string) => void;
   removeZone: (id: string) => void;
@@ -120,6 +127,7 @@ interface Actions {
   tapPart: (x: number, y: number) => void;
   backgroundGuard: (zoneId: string | null) => Uint8Array | null;
   setPrimer: (primer: Primer | null) => void;
+  setCutout: (cutout: boolean) => void;
   moveDrawnZone: (id: string, dir: 1 | -1) => void;
   mergeZones: (targetId: string, sourceId: string) => void;
   splitZone: (id: string) => boolean;
@@ -251,7 +259,7 @@ export const useStore = create<State & Actions>((set, get) => {
     shareOpen: false,
     maskVersion: 0,
     step: 2,
-    tool: 'picker',
+    tool: 'brush',
     primer: null,
   });
 
@@ -265,17 +273,18 @@ export const useStore = create<State & Actions>((set, get) => {
     height: 0,
     zones: [],
     primer: null,
+    cutout: false,
     activeZoneId: null,
     variants: [],
     maskVersion: 0,
     loading: false,
 
     step: 2,
-    colourCount: DEFAULT_COLOURS,
+    pickMode: 'select',
     analysing: false,
     greyscale: false,
 
-    tool: 'picker',
+    tool: 'brush',
     brush: { size: 40, hardness: 0.6, flow: 0.35, smart: false, smartTolerance: 25 },
     wand: { tolerance: 18, contiguous: true, feather: 1, mode: 'add' },
     lassoMode: 'add',
@@ -309,10 +318,13 @@ export const useStore = create<State & Actions>((set, get) => {
       // Photos with wide margins are cropped around the miniature (not the ready-made demo).
       const { image, cropped: crop } = opts.masks ? { image: sourceImage, cropped: false } : prepareImage(sourceImage);
       engine.load(image);
-      const blob = await imageDataToBlob(image);
+      // A cut-out PNG keeps its transparency (stored as PNG) and is painted alone by default.
+      engine.cutout = engine.transparent;
+      const blob = await imageDataToBlob(image, engine.transparent ? 'image/png' : 'image/jpeg');
       set({
         ...resetProjectState(),
         ...setImage(blob, image),
+        cutout: engine.transparent,
         projectId: uid(),
         projectName: name,
         createdAt: Date.now(),
@@ -331,19 +343,20 @@ export const useStore = create<State & Actions>((set, get) => {
           engine.setMask(z.id, m);
           zones.push(z);
         }
-        set({ zones, activeZoneId: zones[0]?.id ?? null, colourCount: zones.length });
+        set({ zones, activeZoneId: zones[0]?.id ?? null });
       } else {
-        await get().analyseColours(DEFAULT_COLOURS);
+        await get().analyseColours();
         if (opts.scheme) applySchemeBySize(opts.scheme);
       }
       if (crop) get().toast(tr('toast.cropped'), 'info');
+      if (engine.transparent) get().toast(tr('toast.transparentPng'), 'info');
       track('scheme_created');
       await get().saveNow();
     },
 
     replaceImage: async (sourceImage) => {
       const { image } = prepareImage(sourceImage);
-      const { width: ow, height: oh, zones, variants, colourCount } = get();
+      const { width: ow, height: oh, zones, variants } = get();
       const hasAuto = zones.some(isAuto);
       // Manual zones are resampled to the new framing; automatic ones are re-detected.
       const ids = new Set([...zones.filter((z) => !isAuto(z)).map((z) => z.id), ...variants.flatMap((v) => v.zones.map((z) => z.id))]);
@@ -352,9 +365,10 @@ export const useStore = create<State & Actions>((set, get) => {
       for (const [id, m] of old) {
         engine.setMask(id, m ? resampleMask(m, ow, oh, image.width, image.height) : new Uint8Array(image.width * image.height));
       }
-      const blob = await imageDataToBlob(image);
-      set((s) => ({ ...setImage(blob, image), past: [], future: [], maskVersion: s.maskVersion + 1 }));
-      if (hasAuto) await get().analyseColours(colourCount);
+      engine.cutout = engine.transparent;
+      const blob = await imageDataToBlob(image, engine.transparent ? 'image/png' : 'image/jpeg');
+      set((s) => ({ ...setImage(blob, image), cutout: engine.transparent, past: [], future: [], maskVersion: s.maskVersion + 1 }));
+      if (hasAuto) await get().analyseColours();
       get().toast(tr('toast.imageReplaced'), 'success');
       await get().saveNow();
     },
@@ -377,9 +391,9 @@ export const useStore = create<State & Actions>((set, get) => {
     importProject: async (rec) => {
       const img = await blobToImageData(rec.image);
       engine.load(img);
+      engine.cutout = !!rec.cutout;
       for (const [id, m] of Object.entries(rec.masks)) engine.setMask(id, new Uint8Array(m));
       for (const z of rec.zones) engine.ensureMask(z.id);
-      const auto = rec.zones.filter(isAuto).length;
       set({
         ...resetProjectState(),
         ...setImage(rec.image, img),
@@ -388,8 +402,8 @@ export const useStore = create<State & Actions>((set, get) => {
         createdAt: rec.createdAt,
         zones: rec.zones,
         primer: rec.primer ?? null,
+        cutout: !!rec.cutout,
         variants: rec.variants ?? [],
-        colourCount: auto || DEFAULT_COLOURS,
         activeZoneId: rec.zones.find((z) => z.visible)?.id ?? null,
       });
     },
@@ -422,6 +436,7 @@ export const useStore = create<State & Actions>((set, get) => {
         masks,
         variants: s.variants,
         primer: s.primer,
+        cutout: s.cutout,
         thumb: renderThumb(s.zones, 220, s.primer),
       };
     },
@@ -436,13 +451,16 @@ export const useStore = create<State & Actions>((set, get) => {
       }
     },
 
-    analyseColours: async (count) => {
+    analyseColours: async () => {
       if (!engine.loaded) return;
       set({ analysing: true });
       // Let the spinner paint before the (synchronous) analysis.
       await new Promise((r) => setTimeout(r, 30));
-      // On a colourless photo (primed miniature) this returns soft light levels instead of colours.
-      const seg = segmentImage({ data: engine.src, width: engine.width, height: engine.height }, count);
+      const seg = segmentImage(
+        { data: engine.src, width: engine.width, height: engine.height },
+        'auto',
+        engine.transparent ? engine.alphaBackdrop() : undefined,
+      );
 
       const previous = get().zones.filter(isAuto);
       const manual = get().zones.filter((z) => !isAuto(z));
@@ -450,7 +468,7 @@ export const useStore = create<State & Actions>((set, get) => {
       // The background gets its own label, so it does not take a colour name ("Light grey") from the figure.
       const names = uniqueNames(
         seg.clusters.map((c, i) =>
-          i === seg.background ? tr('colours.background') : c.tone ? tr(k(`tone.${c.tone}`)) : colourName(c.hex),
+          i === seg.background ? tr('colours.background') : colourName(c.hex),
         ),
       );
 
@@ -468,8 +486,7 @@ export const useStore = create<State & Actions>((set, get) => {
         return {
           ...structuredClone(match.p),
           id: base.id,
-          // Light levels are named by their position (shadows → highlights): always the fresh name.
-          name: c.tone ? base.name : match.p.name,
+          name: match.p.name,
           refHex: c.hex,
           isBackground,
           base: recolouredBefore ? match.p.base : { hex: c.hex },
@@ -482,7 +499,6 @@ export const useStore = create<State & Actions>((set, get) => {
       // Masks were replaced wholesale: undo history no longer matches them.
       set((s) => ({
         zones: [...autoZones, ...manual],
-        colourCount: seg.clusters.length,
         greyscale: seg.greyscale,
         // Nothing open: the list is the first thing to read.
         activeZoneId: null,
@@ -609,6 +625,11 @@ export const useStore = create<State & Actions>((set, get) => {
       return engine.masks.get(bg.id) ?? null;
     },
 
+    setCutout: (cutout) => {
+      engine.cutout = cutout;
+      set((s) => ({ cutout, maskVersion: s.maskVersion + 1 }));
+    },
+
     setPrimer: (primer) => {
       push(snapshot());
       // Changing the primer colour keeps the chosen look.
@@ -628,6 +649,66 @@ export const useStore = create<State & Actions>((set, get) => {
       const i = drawn[pos].i;
       [zones[i], zones[other.i]] = [zones[other.i], zones[i]];
       set({ zones });
+    },
+
+    addColourAt: (x, y) => {
+      const zones = get().zones;
+      const auto = zones.filter(isAuto);
+      set({ pickMode: 'select' });
+      if (auto.length >= MAX_BASE_PAINTS) {
+        get().toast(tr('colours.addMax', { count: MAX_BASE_PAINTS }), 'info');
+        return;
+      }
+      const [r, g, b] = engine.sampleSource(Math.round(x), Math.round(y), 1);
+      const seedHex = rgbToHex([r, g, b]);
+      const background = auto.findIndex((z) => z.isBackground);
+      const i = Math.round(y) * engine.width + Math.round(x);
+      if (background >= 0 && (engine.masks.get(auto[background].id)?.[i] ?? 0) > 127) {
+        get().toast(tr('colours.addOnBackground'), 'info');
+        return;
+      }
+      push(snapshot(auto.map((z) => ({ id: z.id, rect: fullRect() }))));
+      const masks = auto.map((z) => engine.ensureMask(z.id));
+      const res = addColour(
+        { data: engine.src, width: engine.width, height: engine.height },
+        masks,
+        auto.map((z) => z.refHex ?? z.base.hex),
+        background,
+        seedHex,
+        get().greyscale,
+      );
+      if (!res) {
+        set((s) => ({ past: s.past.slice(0, -1) }));
+        get().toast(tr('colours.addNothing'), 'info');
+        return;
+      }
+      auto.forEach((z) => engine.invalidate(z.id));
+      const taken = new Set(zones.map((z) => z.name));
+      let name = colourName(res.hex);
+      for (let n = 2; taken.has(name); n++) name = `${colourName(res.hex)} ${n}`;
+      const added: Zone = { ...makeZone('other', name), source: 'auto', refHex: res.hex, base: { hex: res.hex } };
+      engine.setMask(added.id, res.mask);
+      set((s) => {
+        const list = [...s.zones];
+        // New colours go after the other figure colours, before the background.
+        const at = list.findIndex((z) => z.isBackground);
+        list.splice(at < 0 ? list.filter(isAuto).length : at, 0, added);
+        return { zones: list, activeZoneId: added.id, maskVersion: s.maskVersion + 1 };
+      });
+    },
+
+    removeColour: (id) => {
+      const zones = get().zones;
+      const zone = zones.find((z) => z.id === id);
+      if (!zone || !isAuto(zone) || zone.isBackground) return;
+      const ref = hexToRgb(zone.refHex ?? zone.base.hex);
+      const target = zones
+        .filter((z) => isAuto(z) && z.id !== id && !z.isBackground)
+        .map((z) => ({ z, d: deltaE(ref, hexToRgb(z.refHex ?? z.base.hex)) }))
+        .sort((a, b) => a.d - b.d)[0]?.z;
+      if (!target) return;
+      get().mergeZones(target.id, id);
+      set({ activeZoneId: null });
     },
 
     /** Adds the area of `sourceId` to `targetId` and removes `sourceId` (target keeps its recipe). */

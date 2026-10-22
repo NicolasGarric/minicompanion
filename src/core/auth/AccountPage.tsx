@@ -5,6 +5,7 @@ import { requireSignIn, useSession } from './session';
 import { backendConfigured } from './supabase';
 import { BackendNotice } from './BackendNotice';
 import { Avatar } from '../ui/Avatar';
+import { GallerySection } from '../gallery/GallerySection';
 
 export function AccountPage() {
   const t = useT();
@@ -96,6 +97,8 @@ export function AccountPage() {
           <button className="btn primary" disabled={status === 'saving'}>{t('common.save')}</button>
         </div>
       </form>
+
+      <GallerySection />
     </div>
   );
 }

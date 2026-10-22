@@ -8,7 +8,9 @@ import { Icon } from '../../core/ui/ui';
 export function StepImage() {
   const t = useT();
   const imageUrl = useStore((s) => s.imageUrl);
-  const { replaceImage, set } = useStore.getState();
+  const cutout = useStore((s) => s.cutout);
+  const transparent = useStore((s) => s.imageBlob?.type === 'image/png');
+  const { replaceImage, set, setCutout } = useStore.getState();
   const [replacing, setReplacing] = useState(false);
 
   return (
@@ -19,6 +21,17 @@ export function StepImage() {
           <Icon name="upload" size={14} /> {t('ref.replace')}
         </button>
       </div>
+      <section className="backdrop-choice">
+        <strong>{t('image.backdrop')}</strong>
+        <div className="segmented" role="radiogroup" aria-label={t('image.backdrop')}>
+          {([false, true] as const).map((v) => (
+            <button key={String(v)} role="radio" aria-checked={cutout === v} className={cutout === v ? 'on' : ''} onClick={() => setCutout(v)}>
+              {t(v ? 'image.backdrop.cutout' : 'image.backdrop.photo')}
+            </button>
+          ))}
+        </div>
+        <small className="muted">{t(transparent ? 'image.backdrop.pngHint' : 'image.backdrop.hint')}</small>
+      </section>
       {replacing && (
         <ImageUpload
           compact

@@ -90,7 +90,8 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .segmented button { border: 0; background: transparent; padding: 0.35rem 0.7rem; border-radius: 0.35rem; cursor: pointer; font-size: 0.8125rem; color: var(--text-2); }
 .segmented button.on { background: var(--surface-2); color: var(--text); }
 
-.toggle { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8125rem; }
+/* position: relative keeps the hidden checkbox inside its scrolling panel (it used to stretch the page). */
+.toggle { position: relative; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8125rem; }
 .toggle input { position: absolute; opacity: 0; pointer-events: none; }
 .toggle .track { width: 2.1rem; height: 1.2rem; border-radius: 1rem; background: var(--border); position: relative; flex: none; transition: background 0.15s; }
 .toggle .thumb { position: absolute; top: 0.15rem; left: 0.15rem; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: #fff; transition: transform 0.15s; }
@@ -248,6 +249,7 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 @media (min-width: 64rem) {
   .editor {
     height: 100dvh;
+    overflow: hidden;
     display: grid;
     grid-template-columns: 3.5rem minmax(0, 1fr) 18rem 22rem;
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -580,6 +582,17 @@ th:first-child, td:first-child { text-align: left; }
 .primer-head { display: grid; gap: 0.15rem; }
 .primer-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .primer-chips .chip { display: inline-flex; align-items: center; gap: 0.35rem; }
+/* Gallery (profile) */
+.account .gallery { margin-top: 1rem; display: grid; gap: 0.75rem; }
+.gallery-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.75rem; }
+.gallery-item { display: grid; gap: 0.4rem; align-content: start; justify-items: start; }
+.gallery-img { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: repeating-conic-gradient(#181a20 0% 25%, #1c1f26 0% 50%) 0 0 / 1rem 1rem; }
+.gallery-img img { width: 100%; height: 100%; object-fit: contain; }
+.gallery-meta { display: grid; gap: 0.15rem; min-width: 0; }
+.gallery-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gallery-paints { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+.save-gallery { display: grid; gap: 0.35rem; justify-items: center; }
+.backdrop-choice { display: grid; gap: 0.4rem; justify-items: start; }
 .primer-look { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .chip-swatch { width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3); display: inline-block; }
 .chip-swatch.bw { background: linear-gradient(90deg, #111 50%, #eee 50%); }

@@ -154,6 +154,9 @@ discover → paint → share → play → watch → back to physical stores.
 - [x] Round 4: build-up brush, colour count everywhere, no on-screen markers, 2048 px detail,
       right-drag pan / pinch zoom.
 - [x] Primer without highlights: two looks, "Photo shadows" (default) and "Flat + recesses".
+- [x] Round 5: base paints (8 max, add / remove), grey photos split by material, covering base
+      coats, model-alone / original photo (transparent PNG), brush by default, profile gallery
+      (migration 20261023000004 to apply in Supabase), footer scroll fix (see PAINT_V2.md).
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 

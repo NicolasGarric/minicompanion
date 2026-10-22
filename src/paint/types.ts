@@ -130,6 +130,8 @@ export interface ProjectRecord extends ProjectMeta {
   masks: Record<string, Uint8Array>;
   variants: Variant[];
   primer?: Primer | null;
+  /** Paint the model alone (background transparent) instead of the whole photo. */
+  cutout?: boolean;
   /** v1 only (reference palette panel); ignored since v2, where reference colours are zones. */
   palette?: PaletteColor[];
 }

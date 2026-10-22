@@ -265,7 +265,9 @@ export function CanvasView() {
       return;
     }
 
-    const zone = s.zones.find((z) => z.id === s.activeZoneId);
+    // Brush with nothing selected (the default tool): paint the colour under the pointer.
+    if (!s.activeZoneId && (effectiveTool === 'brush' || effectiveTool === 'eraser')) s.selectZoneAt(p.x, p.y);
+    const zone = useStore.getState().zones.find((z) => z.id === useStore.getState().activeZoneId);
     if (!zone) {
       s.toast(tr('toast.selectZoneFirst'), 'error');
       return;
@@ -365,8 +367,10 @@ export function CanvasView() {
       if (press.peeked) setPeek(false);
       else if (e.type === 'pointerup') {
         const s = useStore.getState();
-        // Selects the colour zone under the pointer; the panel opens its editor.
-        if (s.selectZoneAt(press.img.x, press.img.y) && s.step !== 2) s.set({ step: 2 });
+        // "+ Add a paint" mode: the tap adds a base paint. Otherwise it selects the colour under the
+        // pointer and the panel opens its editor.
+        if (s.pickMode === 'add') s.addColourAt(press.img.x, press.img.y);
+        else if (s.selectZoneAt(press.img.x, press.img.y) && s.step !== 2) s.set({ step: 2 });
       }
     }
     if (panRef.current) {

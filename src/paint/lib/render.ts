@@ -18,7 +18,8 @@ export function renderThumb(zones: Zone[], size: number, primer: Primer | null =
   const ctx = c.getContext('2d')!;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(full, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.8);
+  // The model alone keeps its transparent background (JPEG would turn it black).
+  return engine.cutout ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.8);
 }
 
 /** Rescales a mask to new dimensions (used when the reference image is replaced). */
