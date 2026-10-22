@@ -398,6 +398,21 @@ function PrimerCard({ onCatalog }: { onCatalog: () => void }) {
         </button>
       </div>
       {current && <small className="muted">{current.name} · {current.brand} {current.range}</small>}
+      {primer?.kind === 'paint' && (
+        <div className="primer-look">
+          <small className="muted">{t('primer.look')}</small>
+          <div className="segmented" role="radiogroup" aria-label={t('primer.look')}>
+            {(['shadows', 'flat'] as const).map((look) => {
+              const on = (primer.look ?? 'shadows') === look;
+              return (
+                <button key={look} role="radio" aria-checked={on} className={on ? 'on' : ''} onClick={() => setPrimer({ ...primer, look })}>
+                  {t(k(`primer.look.${look}`))}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

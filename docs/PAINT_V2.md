@@ -44,8 +44,10 @@ Painting works like a real miniature, bottom to top:
 
 1. **Photo**
 2. **Primer** (`primer` on the project, not a zone): the miniature (everything but the excluded
-   background) is desaturated, then tinted with the primer colour. Shading multiplies the primer, so
-   a black primer stays black with a small sheen. Options: none, black & white, black, grey, white,
+   background) is desaturated, then tinted with the primer colour. A primed miniature has **no
+   highlights** (they are painted by hand), so nothing is lighter than the primer colour. Two looks,
+   chosen by the owner (2026-10-22): **Photo shadows** (default: the photo's shadows only) and
+   **Flat + recesses** (uniform matte coat, only recesses darken). Options: none, black & white, black, grey, white,
    bone, metal (closest paint of the preferred brand), or any paint from the catalogue.
 3. **Colour zones** (automatic): a colour that was never repainted is *transparent* — the primer or
    the photo shows through. Painting it makes it a layer.

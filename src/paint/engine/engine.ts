@@ -184,6 +184,7 @@ export class PaintEngine {
     const bgMask = primer && bgZone && !bgZone.visible ? this.masks.get(bgZone.id) ?? null : null;
     const primerLin = primer?.kind === 'paint' ? hexToLinear(primer.hex) : null;
     const primerMean = primer ? this.figureMean(bgMask) : 1;
+    const flatPrimer = primer?.kind === 'paint' && primer.look === 'flat';
 
     const { lumLin, lumG, blur, edge, noise } = this;
     const exclusive = prepared.filter((z) => z.exclusive);
@@ -205,14 +206,16 @@ export class PaintEngine {
             touched = true;
             let pr: number, pg: number, pb: number;
             if (primerLin) {
-              // Desaturate (luminance only) and tint with the primer, keeping the photo's shading:
-              // shading multiplies the primer colour, so a black primer stays black; bright spots get
-              // a small capped sheen, like the satin of a real spray coat.
-              const sh = lumLin[i] / primerMean;
-              const sheen = sh > 1 ? Math.min(0.12, (sh - 1) * 0.08) : 0;
-              pr = Math.min(1, primerLin[0] * sh) + sheen;
-              pg = Math.min(1, primerLin[1] * sh) + sheen;
-              pb = Math.min(1, primerLin[2] * sh) + sheen;
+              // Desaturate and tint with the primer. A primed miniature has no highlights until they
+              // are painted by hand, so nothing is lighter than the primer colour itself:
+              // 'shadows' keeps the photo's shadows, 'flat' is a uniform coat where only recesses
+              // (darker than their surroundings) darken.
+              const sh = flatPrimer
+                ? 1 - 0.75 * Math.min(1, Math.max(0, (blur[i] - lumG[i]) * 6))
+                : Math.min(1, lumLin[i] / primerMean);
+              pr = primerLin[0] * sh;
+              pg = primerLin[1] * sh;
+              pb = primerLin[2] * sh;
             } else {
               pr = pg = pb = lumLin[i]; // black & white
             }

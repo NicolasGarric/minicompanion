@@ -96,9 +96,12 @@ export interface PaletteColor {
 
 /**
  * Primer (undercoat) applied to the whole miniature before any colour: the photo is desaturated
- * and tinted with the primer colour, keeping its shading. 'greyscale' = desaturated only.
+ * and tinted with the primer colour. 'greyscale' = desaturated only.
+ * `look`: 'shadows' keeps the photo's shadows (never lighter than the primer); 'flat' is a uniform
+ * matte coat where only recesses darken. A primed miniature never shows highlights.
  */
-export type Primer = { kind: 'paint'; hex: string; paintId?: string } | { kind: 'greyscale' };
+export type PrimerLook = 'shadows' | 'flat';
+export type Primer = { kind: 'paint'; hex: string; paintId?: string; look?: PrimerLook } | { kind: 'greyscale' };
 
 export interface Variant {
   id: string;

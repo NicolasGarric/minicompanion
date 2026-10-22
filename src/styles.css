@@ -580,6 +580,7 @@ th:first-child, td:first-child { text-align: left; }
 .primer-head { display: grid; gap: 0.15rem; }
 .primer-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .primer-chips .chip { display: inline-flex; align-items: center; gap: 0.35rem; }
+.primer-look { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .chip-swatch { width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3); display: inline-block; }
 .chip-swatch.bw { background: linear-gradient(90deg, #111 50%, #eee 50%); }
 

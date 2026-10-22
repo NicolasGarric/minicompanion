@@ -611,6 +611,9 @@ export const useStore = create<State & Actions>((set, get) => {
 
     setPrimer: (primer) => {
       push(snapshot());
+      // Changing the primer colour keeps the chosen look.
+      const prev = get().primer;
+      if (primer?.kind === 'paint' && !primer.look && prev?.kind === 'paint' && prev.look) primer = { ...primer, look: prev.look };
       set({ primer });
     },
 

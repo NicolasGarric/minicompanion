@@ -151,6 +151,9 @@ discover → paint → share → play → watch → back to physical stores.
       preferred brand, before / after card, popular colours for grey or drawn zones.
 - [x] Round 3: priority toggle, protected background + enclosed pockets, soft light levels on grey
       photos, auto-crop, active-zone outline, painting-steps slider (see PAINT_V2.md).
+- [x] Round 4: build-up brush, colour count everywhere, no on-screen markers, 2048 px detail,
+      right-drag pan / pinch zoom.
+- [x] Primer without highlights: two looks, "Photo shadows" (default) and "Flat + recesses".
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 
@@ -167,7 +170,6 @@ discover → paint → share → play → watch → back to physical stores.
 - Japanese terms to validate with a native hobbyist: see `// CHECK:` in `src/i18n/ja.ts`
   (エリア for "zone", ウォッシュ, コントラスト系塗料, 配色 for "scheme", サーフェイサー vs プライマー, grim).
 - Visual pass (owner): spacing, typography scale, editor layout on tablets.
-- Mobile editor: no pinch-to-zoom yet (buttons only).
 - Zone names are created in the UI language at creation time and are not re-translated.
 - Hosted share links + real analytics endpoint need a small backend (decision for later).
 - Push to GitHub needs the owner to re-authenticate (`gh auth login`), remote is already set.
