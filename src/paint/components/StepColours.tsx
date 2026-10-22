@@ -49,11 +49,10 @@ export function StepColours() {
     <div className="step-colours">
       <PrimerCard onCatalog={() => setCatalog('primer')} />
 
-      {!greyscale && (
-        <div className="colour-count">
+      <div className="colour-count">
         <div>
-          <strong>{t('colours.count')}</strong>
-          <small className="muted">{t('colours.countHint')}</small>
+          <strong>{t(greyscale ? 'tone.count' : 'colours.count')}</strong>
+          <small className="muted">{t(greyscale ? 'tone.countHint' : 'colours.countHint')}</small>
         </div>
         <div className="stepper-input" aria-busy={analysing}>
           <IconButton icon="minus" label={t('colours.fewer')} onClick={() => changeCount(count - 1)} disabled={count <= MIN_COLOURS} />
@@ -61,7 +60,6 @@ export function StepColours() {
           <IconButton icon="plus" label={t('colours.more')} onClick={() => changeCount(count + 1)} disabled={count >= MAX_COLOURS} />
         </div>
       </div>
-      )}
       <BrandSelect />
       {greyscale ? (
         <div className="notice">

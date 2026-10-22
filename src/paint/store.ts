@@ -7,7 +7,7 @@ import { copyRect, pasteRect, bboxOf, type MaskPatch } from './engine/maskPatch'
 import { applyRecipe, defaultRecipe, recipeOf, ROLES, roleLabel, schemeName } from './data/presets';
 import { PAINTS } from './data/paints';
 import { db, emptyLibrary, type Library } from './storage/db';
-import { blobToImageData, cropImageData, imageDataToBlob } from '../core/lib/image';
+import { blobToImageData, cropImageData, fitImageData, imageDataToBlob, MAX_SIDE } from '../core/lib/image';
 import { renderThumb, resampleMask } from './lib/render';
 import { colourName, uniqueNames } from './lib/colourName';
 import { deltaE, hexToRgb, rgbToHex } from '../core/lib/color';
@@ -151,6 +151,26 @@ const HISTORY_LIMIT = 60;
 /** Colours closer than this (ΔE) keep the recipe the user gave them when re-analysing. */
 const CARRY_OVER_DE = 14;
 
+/**
+ * Uploaded photo → working image: the frame around the miniature is found on a small preview, cut
+ * from the full-resolution photo, then fitted to the working size, so cropping never costs detail.
+ */
+function prepareImage(source: ImageData): { image: ImageData; cropped: boolean } {
+  const preview = fitImageData(source, 800);
+  const crop = subjectCrop(preview);
+  if (!crop) return { image: fitImageData(source, MAX_SIDE), cropped: false };
+  const scale = source.width / preview.width;
+  const x = Math.floor(crop.x * scale);
+  const y = Math.floor(crop.y * scale);
+  const rect = {
+    x,
+    y,
+    width: Math.min(source.width - x, Math.ceil(crop.width * scale)),
+    height: Math.min(source.height - y, Math.ceil(crop.height * scale)),
+  };
+  return { image: fitImageData(cropImageData(source, rect), MAX_SIDE), cropped: true };
+}
+
 const roleColor = (role: RoleId) => ROLES.find((r) => r.id === role)?.color ?? '#888888';
 const fullRect = (): Rect => ({ x0: 0, y0: 0, x1: engine.width, y1: engine.height });
 const isAuto = (z: Zone) => z.source === 'auto';
@@ -256,7 +276,7 @@ export const useStore = create<State & Actions>((set, get) => {
     greyscale: false,
 
     tool: 'picker',
-    brush: { size: 40, hardness: 0.6, flow: 1, smart: false, smartTolerance: 25 },
+    brush: { size: 40, hardness: 0.6, flow: 0.35, smart: false, smartTolerance: 25 },
     wand: { tolerance: 18, contiguous: true, feather: 1, mode: 'add' },
     lassoMode: 'add',
     partSensitivity: 5,
@@ -287,8 +307,7 @@ export const useStore = create<State & Actions>((set, get) => {
 
     newProject: async (sourceImage, name, opts = {}) => {
       // Photos with wide margins are cropped around the miniature (not the ready-made demo).
-      const crop = opts.masks ? null : subjectCrop(sourceImage);
-      const image = crop ? cropImageData(sourceImage, crop) : sourceImage;
+      const { image, cropped: crop } = opts.masks ? { image: sourceImage, cropped: false } : prepareImage(sourceImage);
       engine.load(image);
       const blob = await imageDataToBlob(image);
       set({
@@ -323,8 +342,7 @@ export const useStore = create<State & Actions>((set, get) => {
     },
 
     replaceImage: async (sourceImage) => {
-      const crop = subjectCrop(sourceImage);
-      const image = crop ? cropImageData(sourceImage, crop) : sourceImage;
+      const { image } = prepareImage(sourceImage);
       const { width: ow, height: oh, zones, variants, colourCount } = get();
       const hasAuto = zones.some(isAuto);
       // Manual zones are resampled to the new framing; automatic ones are re-detected.
@@ -450,6 +468,8 @@ export const useStore = create<State & Actions>((set, get) => {
         return {
           ...structuredClone(match.p),
           id: base.id,
+          // Light levels are named by their position (shadows → highlights): always the fresh name.
+          name: c.tone ? base.name : match.p.name,
           refHex: c.hex,
           isBackground,
           base: recolouredBefore ? match.p.base : { hex: c.hex },

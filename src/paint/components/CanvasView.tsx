@@ -127,82 +127,26 @@ export function CanvasView() {
   }, []);
 
   // --- Rendu ----------------------------------------------------------------------------
-  /**
-   * Overlay of the open zone: a "marching ants" outline (two frames swapped by a timer), plus the
-   * filled mask when "show mask" is on.
-   */
-  const overlayFrames = useRef<ImageData[] | null>(null);
+  /** Overlay: the open zone's mask, only when "show mask" is on (nothing drawn while painting). */
   const drawOverlay = useCallback(() => {
     const c = overlayRef.current;
-    overlayFrames.current = null;
     if (!c || !engine.loaded) return;
     const ctx = c.getContext('2d')!;
     ctx.clearRect(0, 0, c.width, c.height);
     const s = useStore.getState();
-    if (!s.activeZoneId) return;
+    if (!s.showMask || !s.activeZoneId) return;
     const m = engine.masks.get(s.activeZoneId);
     if (!m) return;
-    const w = c.width;
-    const h = c.height;
-    const frames = [ctx.createImageData(w, h), ctx.createImageData(w, h)];
-    if (s.showMask) {
-      for (const f of frames) {
-        const d = f.data;
-        for (let i = 0; i < m.length; i++) {
-          if (!m[i]) continue;
-          d[i * 4] = 255;
-          d[i * 4 + 1] = 40;
-          d[i * 4 + 2] = 110;
-          d[i * 4 + 3] = m[i] * 0.55;
-        }
-      }
+    const img = ctx.createImageData(c.width, c.height);
+    const d = img.data;
+    for (let i = 0; i < m.length; i++) {
+      if (!m[i]) continue;
+      d[i * 4] = 255;
+      d[i * 4 + 1] = 40;
+      d[i * 4 + 2] = 110;
+      d[i * 4 + 3] = m[i] * 0.55;
     }
-    // Outline: inside pixels touching the outside, and that outside neighbour (2 px, readable zoomed out).
-    // Diffuse zones (light levels, scattered highlights) get no outline: it would hatch the whole figure.
-    let inside = 0;
-    let border = 0;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (m[i] < 128) continue;
-        inside++;
-        if ((x > 0 && m[i - 1] < 128) || (x < w - 1 && m[i + 1] < 128) || (y > 0 && m[i - w] < 128) || (y < h - 1 && m[i + w] < 128)) border++;
-      }
-    }
-    const diffuse = inside === 0 || border / inside > 0.15;
-    const mark = (i: number) => {
-      const x = i % w;
-      const dash = (((x + Math.floor(i / w)) >> 3) & 1) === 1;
-      frames.forEach((f, k) => {
-        const v = dash !== (k === 1) ? 255 : 20;
-        f.data.set([v, v, v, 255], i * 4);
-      });
-    };
-    for (let y = 0; y < h && !diffuse; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (m[i] < 128) continue;
-        for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
-          if (j >= 0 && m[j] < 128) {
-            mark(i);
-            mark(j);
-          }
-        }
-      }
-    }
-    overlayFrames.current = frames;
-    ctx.putImageData(frames[0], 0, 0);
-  }, []);
-
-  useEffect(() => {
-    let k = 0;
-    const timer = window.setInterval(() => {
-      const frames = overlayFrames.current;
-      if (!frames || !overlayRef.current) return;
-      k = 1 - k;
-      overlayRef.current.getContext('2d')!.putImageData(frames[k], 0, 0);
-    }, 450);
-    return () => clearInterval(timer);
+    ctx.putImageData(img, 0, 0);
   }, []);
 
   useEffect(() => {
@@ -249,6 +193,37 @@ export function CanvasView() {
 
   const effectiveTool = spaceDown || panning ? 'hand' : tool;
 
+  const touchesRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ dist: number; cx: number; cy: number; view: View } | null>(null);
+  const pinchInfo = () => {
+    const [a, b] = [...touchesRef.current.values()];
+    const r = wrapRef.current!.getBoundingClientRect();
+    return { dist: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2 - r.left, cy: (a.y + b.y) / 2 - r.top };
+  };
+  const startPinch = () => {
+    pinchRef.current = { ...pinchInfo(), view: viewRef.current };
+    pressRef.current = null;
+    setLasso(null);
+  };
+  const updatePinch = () => {
+    const p0 = pinchRef.current!;
+    const p = pinchInfo();
+    const z = Math.min(MAX_Z, Math.max(MIN_Z, p0.view.z * (p.dist / Math.max(1, p0.dist))));
+    const k = z / p0.view.z;
+    // Keep the point under the fingers' midpoint under it, and follow the midpoint when it moves.
+    setView({ z, x: p.cx - (p0.cx - p0.view.x) * k, y: p.cy - (p0.cy - p0.view.y) * k });
+  };
+  /** Cancels the stroke in progress (e.g. the first finger of a pinch had started painting). */
+  const abortStroke = () => {
+    const st = strokeRef.current;
+    if (!st) return;
+    if (st.raf) cancelAnimationFrame(st.raf);
+    engine.ensureMask(st.zoneId).set(st.stroke.snapshot);
+    engine.invalidate(st.zoneId);
+    strokeRef.current = null;
+    useStore.getState().bumpMasks();
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (!engine.loaded) return;
     const el = wrapRef.current!;
@@ -256,7 +231,17 @@ export function CanvasView() {
     const s = useStore.getState();
     const p = toImage(e);
 
-    if (e.button === 1 || effectiveTool === 'hand') {
+    // Touch: a second finger turns the gesture into pinch-zoom / pan (and cancels the stroke).
+    if (e.pointerType === 'touch') {
+      touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touchesRef.current.size === 2) {
+        abortStroke();
+        startPinch();
+        return;
+      }
+    }
+    // Right or middle button: drag the view, whatever the tool (left button paints).
+    if (e.button === 1 || e.button === 2 || effectiveTool === 'hand') {
       setPanning(true);
       panRef.current = { sx: e.clientX, sy: e.clientY, vx: viewRef.current.x, vy: viewRef.current.y };
       return;
@@ -327,6 +312,10 @@ export function CanvasView() {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch' && touchesRef.current.has(e.pointerId)) {
+      touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinchRef.current) return updatePinch();
+    }
     const r = wrapRef.current!.getBoundingClientRect();
     setCursor({ x: e.clientX - r.left, y: e.clientY - r.top });
     const press = pressRef.current;
@@ -363,6 +352,11 @@ export function CanvasView() {
   };
 
   const endInteraction = (e: React.PointerEvent) => {
+    touchesRef.current.delete(e.pointerId);
+    if (pinchRef.current) {
+      if (touchesRef.current.size < 2) pinchRef.current = null;
+      return;
+    }
     splitDragRef.current = false;
     const press = pressRef.current;
     if (press) {

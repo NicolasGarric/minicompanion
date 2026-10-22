@@ -46,6 +46,7 @@ const L_WEIGHT = 0.45; // lightness counts less than hue/chroma
 const GREYSCALE_CHROMA = 9; // mean Lab chroma under which a photo counts as colourless
 const BG_MIN_WEIGHT = 0.05; // a backdrop smaller than this is not one
 const BG_MAX_WEIGHT = 0.85; // larger than this: the subject fills the frame, there is no backdrop
+const MAX_TONE_LEVELS = 8; // light levels on a colourless photo
 const MIN_COLOUR_WEIGHT = 0.004; // colours left with less than this after removing the backdrop join it
 const BACKDROP_LOSS = 0.25; // a colour keeping under 25 % of itself outside the backdrop was the backdrop colour
 const SAMPLE_SIDE = 160;
@@ -87,7 +88,7 @@ export function segmentImage(img: ImageLike, count: number): Segmentation {
   for (let i = 0; i < n; i++) chroma += Math.hypot(sLab[i * 3 + 1], sLab[i * 3 + 2]);
   const greyscale = chroma / n < GREYSCALE_CHROMA;
   // Without colour, parts cannot be told apart: split into soft light levels instead.
-  if (greyscale) return toneSplit(img);
+  if (greyscale) return toneSplit(img, k);
   const lWeight = L_WEIGHT;
 
   const centres = seedCentres(sLab, n, k);
@@ -349,22 +350,23 @@ export function splitMask(img: ImageLike, mask: Uint8Array): { masks: [Uint8Arra
 }
 
 /**
- * Colourless photo (e.g. a grey-primed miniature): three soft light levels — shadows, mid-tones,
- * highlights — computed from the lightness of each pixel, not hard clusters. A pixel near a
- * threshold belongs partly to both levels, so painting "Highlights" looks like a real, gradual
- * highlight. Thresholds follow the photo (lightness percentiles of the figure). Masks still add up
- * to 255 with the background.
+ * Colourless photo (e.g. a grey-primed miniature): `levels` soft light levels, from the shadows to
+ * the highlights, computed from the lightness of each pixel instead of hard clusters. Level centres
+ * follow the photo (lightness percentiles of the figure) and neighbouring levels blend smoothly, so
+ * painting "Highlights" looks like a real, gradual highlight. Masks still add up to 255.
  */
-function toneSplit(img: ImageLike): Segmentation {
+function toneSplit(img: ImageLike, levels: number): Segmentation {
   const { data, width: w, height: h } = img;
+  const n = Math.max(2, Math.min(MAX_TONE_LEVELS, levels));
   const maps = lumaMaps(img);
   const fromBorder = addEnclosedBackdrop(img, maps, growFromBorder(maps));
   let bgSum = 0;
   for (let i = 0; i < fromBorder.length; i++) bgSum += fromBorder[i];
   const bgShare = bgSum / (255 * w * h);
-  const bg = bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT ? fromBorder : new Uint8Array(w * h);
+  const hasBg = bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT;
+  const bg = hasBg ? fromBorder : new Uint8Array(w * h);
 
-  // Lightness percentiles of the figure
+  // Level centres = lightness percentiles of the figure, (k + 0.5) / n
   const hist = new Float64Array(256);
   let total = 0;
   for (let i = 0; i < w * h; i++) {
@@ -381,43 +383,44 @@ function toneSplit(img: ImageLike): Segmentation {
     }
     return 1;
   };
-  const [p15, p45, p60, p90] = [percentile(0.15), percentile(0.45), percentile(0.6), percentile(0.9)];
-  const smooth = (a: number, b: number, x: number) => {
-    const t = Math.min(1, Math.max(0, (x - a) / Math.max(1e-3, b - a)));
-    return t * t * (3 - 2 * t);
-  };
+  const centres = Array.from({ length: n }, (_, k) => percentile((k + 0.5) / n));
+  for (let k = 1; k < n; k++) centres[k] = Math.max(centres[k], centres[k - 1] + 1e-3); // strictly increasing
 
-  const masks: Record<Tone, Uint8Array> = { shadows: new Uint8Array(w * h), mid: new Uint8Array(w * h), highlights: new Uint8Array(w * h) };
+  const masks = Array.from({ length: n }, () => new Uint8Array(w * h));
   for (let i = 0; i < w * h; i++) {
     const figure = 255 - bg[i];
     if (!figure) continue;
     const l = maps.lum[i];
-    const sh = Math.round(figure * (1 - smooth(p15, p45, l)));
-    const hi = Math.round(figure * smooth(p60, p90, l));
-    masks.shadows[i] = sh;
-    masks.highlights[i] = hi;
-    masks.mid[i] = Math.max(0, figure - sh - hi);
+    // Position between the two surrounding level centres; core of each level is flat, edges blend.
+    let k = 0;
+    while (k < n - 1 && l > centres[k + 1]) k++;
+    if (l <= centres[0] || k === n - 1) {
+      masks[k][i] = figure;
+      continue;
+    }
+    const t = (l - centres[k]) / (centres[k + 1] - centres[k]);
+    const s = Math.min(1, Math.max(0, (t - 0.25) / 0.5));
+    const upper = Math.round(figure * s * s * (3 - 2 * s));
+    masks[k + 1][i] = upper;
+    masks[k][i] = figure - upper;
   }
 
-  const cluster = (mask: Uint8Array, tone?: Tone): ColourCluster & { label: number } => {
-    let r = 0, g = 0, b = 0, n = 0;
+  const cluster = (mask: Uint8Array, tone?: Tone): ColourCluster => {
+    let r = 0, g = 0, b = 0, sum = 0;
     for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
       const v = mask[i];
       if (!v) continue;
       r += data[p] * v;
       g += data[p + 1] * v;
       b += data[p + 2] * v;
-      n += v;
+      sum += v;
     }
-    const hex = n ? `#${hex2(r / n)}${hex2(g / n)}${hex2(b / n)}` : '#808080';
-    return { hex, weight: n / (255 * w * h), mask, tone, label: tone ? 0 : -1 };
+    const hex = sum ? `#${hex2(r / sum)}${hex2(g / sum)}${hex2(b / sum)}` : '#808080';
+    return { hex, weight: sum / (255 * w * h), mask, tone };
   };
-  const clusters = (['shadows', 'mid', 'highlights'] as Tone[]).map((t) => cluster(masks[t], t)).filter((c) => c.weight > 0);
-  const hasBg = bg === fromBorder;
+  const toneOf = (k: number): Tone => (k === 0 ? 'shadows' : k === n - 1 ? 'highlights' : 'mid');
+  // Dark to light, which is also the order the user reads them in.
+  const clusters = masks.map((m, k) => cluster(m, toneOf(k))).filter((c) => c.weight > 0);
   if (hasBg) clusters.push(cluster(bg));
-  return {
-    clusters: clusters.map(({ hex, weight, mask, tone }) => ({ hex, weight, mask, tone })),
-    background: hasBg ? clusters.length - 1 : -1,
-    greyscale: true,
-  };
+  return { clusters, background: hasBg ? clusters.length - 1 : -1, greyscale: true };
 }

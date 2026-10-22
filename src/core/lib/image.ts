@@ -1,4 +1,7 @@
-export const MAX_SIDE = 1600;
+/** Working resolution of the editor (longest side). */
+export const MAX_SIDE = 2048;
+/** Uploads are decoded up to this size, cropped around the miniature, then fitted to MAX_SIDE. */
+export const DECODE_SIDE = 4096;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
@@ -35,11 +38,26 @@ export function canvasOf(img: ImageData) {
   return c;
 }
 
-/** Images are stored as JPEG q=0.85: a 1600 px photo is typically 200–400 KB. */
+/** Images are stored as JPEG q=0.92 (detail matters here): a 2048 px photo is typically 0.5–1 MB. */
 export function imageDataToBlob(img: ImageData, type = 'image/jpeg'): Promise<Blob> {
   return new Promise((resolve, reject) =>
-    canvasOf(img).toBlob((b) => (b ? resolve(b) : reject(new Error('Image encoding failed'))), type, 0.85),
+    canvasOf(img).toBlob((b) => (b ? resolve(b) : reject(new Error('Image encoding failed'))), type, 0.92),
   );
+}
+
+/** Downscales an image so its longest side is at most `maxSide` (high-quality resampling). */
+export function fitImageData(img: ImageData, maxSide: number): ImageData {
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  if (scale === 1) return img;
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d')!;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(canvasOf(img), 0, 0, w, h);
+  return ctx.getImageData(0, 0, w, h);
 }
 
 /** Copy of a rectangle of an image (e.g. the frame around the miniature). */

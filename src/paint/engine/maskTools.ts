@@ -4,7 +4,8 @@ import { engine } from './engine';
 export interface BrushOptions {
   size: number; // diameter in image pixels
   hardness: number; // 0..1
-  flow: number; // 0..1 max opacity of one stroke
+  /** Paint laid down by one pass of the brush, 0..1. Going over the same spot adds more. */
+  flow: number;
   erase: boolean;
   smart: boolean; // limits painting to colours close to the stroke start
   smartTolerance: number; // 0..100
@@ -13,19 +14,27 @@ export interface BrushOptions {
 }
 
 /**
- * One brush stroke: coverage is accumulated in a max buffer so that going over the same
- * spot within one stroke never exceeds the chosen opacity.
+ * One brush stroke, with paint that builds up like a real brush: each pass over a spot lays down
+ * `flow` of paint, and going over it again adds more until it is fully covered (or removes more,
+ * for the eraser). Coverage is kept as floats during the stroke so light passes are not lost to
+ * rounding.
  */
 export class BrushStroke {
   private before: Uint8Array;
-  private cover: Float32Array;
+  private level: Float32Array;
   private last: { x: number; y: number } | null = null;
   private ref: [number, number, number] | null = null;
+  /** Strength of one stamp, so that one pass (≈ 2r / spacing stamps) lays down `flow`. */
+  private readonly stampAlpha: number;
+  private readonly spacing: number;
   dirty: Rect | null = null;
 
   constructor(private mask: Uint8Array, private opts: BrushOptions) {
     this.before = new Uint8Array(mask);
-    this.cover = new Float32Array(mask.length);
+    this.level = Float32Array.from(mask);
+    const r = opts.size / 2;
+    this.spacing = Math.max(0.5, r * 0.2);
+    this.stampAlpha = 1 - Math.pow(1 - Math.min(0.999, opts.flow), this.spacing / (2 * r));
   }
 
   get snapshot() {
@@ -36,10 +45,8 @@ export class BrushStroke {
   to(x: number, y: number): Rect | null {
     if (this.opts.smart && !this.ref) this.ref = engine.sampleSource(Math.round(x), Math.round(y), 1);
     const from = this.last ?? { x, y };
-    const r = this.opts.size / 2;
-    const spacing = Math.max(0.5, r * 0.2);
     const dist = Math.hypot(x - from.x, y - from.y);
-    const steps = Math.max(1, Math.ceil(dist / spacing));
+    const steps = Math.max(1, Math.ceil(dist / this.spacing));
     let rect: Rect | null = null;
     for (let s = this.last ? 1 : 0; s <= steps; s++) {
       const t = s / steps;
@@ -60,10 +67,9 @@ export class BrushStroke {
     const y1 = Math.min(h, Math.ceil(cy + r + 1));
     if (x1 <= x0 || y1 <= y0) return null;
     const hard = Math.min(0.99, this.opts.hardness);
-    const flow = this.opts.flow;
     const tol = (this.opts.smartTolerance / 100) * 255 * 1.2;
-    const ref = this.ref;
-    const { cover, before, mask } = this;
+    const { ref, level, mask } = this;
+    const protect = this.opts.protect;
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) / r;
@@ -77,12 +83,12 @@ export class BrushStroke {
           if (dc > tol) continue;
           f *= 1 - Math.max(0, (dc - tol * 0.6) / (tol * 0.4));
         }
-        f *= flow;
-        if (this.opts.protect) f *= (255 - this.opts.protect[i]) / 255;
-        if (f <= cover[i]) continue;
-        cover[i] = f;
-        const b = before[i];
-        mask[i] = this.opts.erase ? Math.round(b * (1 - f)) : Math.round(b + (255 - b) * f);
+        if (protect) f *= (255 - protect[i]) / 255;
+        f *= this.stampAlpha;
+        if (f <= 0) continue;
+        const v = level[i];
+        level[i] = this.opts.erase ? v * (1 - f) : v + (255 - v) * f;
+        mask[i] = Math.round(level[i]);
       }
     }
     return { x0, y0, x1, y1 };

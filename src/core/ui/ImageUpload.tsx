@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { useT } from '../i18n';
-import { ACCEPTED_TYPES, checkImageFile, fileToImageData } from '../lib/image';
+import { ACCEPTED_TYPES, checkImageFile, DECODE_SIDE, fileToImageData } from '../lib/image';
 import { track } from '../analytics';
 import { Icon } from './ui';
 
 /**
  * Reference image picker. The rights confirmation must be ticked before a file can be chosen.
- * The image is resized (max 1600 px) and re-encoded as JPEG on the device; nothing is uploaded.
+ * The image is cropped, resized (max 2048 px) and re-encoded as JPEG on the device; nothing is uploaded.
  */
 export function ImageUpload({
   onImage,
@@ -38,7 +38,8 @@ export function ImageUpload({
     }
     setBusy(true);
     try {
-      const img = await fileToImageData(file);
+      // Full detail: the editor crops around the miniature before fitting the working size.
+      const img = await fileToImageData(file, DECODE_SIDE);
       track('image_uploaded');
       await onImage(img, file.name.replace(/\.[^.]+$/, '') || t('upload.defaultName'));
     } catch {
