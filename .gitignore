@@ -9,3 +9,9 @@ dist
 .env
 .env.*
 !.env.example
+
+# Windows download metadata (may contain session tokens)
+*:Zone.Identifier
+
+# TypeScript incremental build cache
+*.tsbuildinfo
