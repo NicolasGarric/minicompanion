@@ -422,7 +422,7 @@ export function MatchRow({ m, regs, table, me, organiser, roundActive, onChange 
       <div className="match-line">
         <span className="match-table">{m.player_b_id ? t('tour.tableN', { n: table ?? '?' }) : t('tour.bye')}</span>
         <span className={`match-player ${m.result === 'a_win' ? 'win' : ''}`}>{nameOf(regs, m.player_a_id)}</span>
-        <span className="match-score">{m.player_b_id ? `${total(m.a_primary, m.a_secondary)} – ${total(m.b_primary, m.b_secondary)}` : ''}</span>
+        <span className="match-score">{!m.player_b_id ? '' : m.status === 'scheduled' ? 'vs' : `${total(m.a_primary, m.a_secondary)} – ${total(m.b_primary, m.b_secondary)}`}</span>
         <span className={`match-player right ${m.result === 'b_win' ? 'win' : ''}`}>{m.player_b_id ? nameOf(regs, m.player_b_id) : ''}</span>
         <span className={`tag match-${m.status}`}>{t(k(`tour.match.${m.status}`))}</span>
       </div>

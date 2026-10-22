@@ -42,5 +42,5 @@ select md5('demo-live-t')::uuid, md5('demo-live-r2')::uuid, md5('demo-live-table
        case when m.st <> 'scheduled' then md5('demo-user-' || m.a)::uuid end,
        case when m.st = 'confirmed' then md5('demo-user-' || m.b)::uuid end
 from (values (1, 1, 4, 13, 5, 11, 4, 'a_win', 'confirmed'), (2, 8, 5, 10, 3, 10, 6, 'b_win', 'confirmed'),
-             (3, 6, 2, 12, 2, 9, 5, 'a_win', 'reported'), (4, 3, 7, null, null, null, null, null, 'scheduled'))
+             (3, 6, 2, 12, 4, 9, 5, 'a_win', 'reported'), (4, 3, 7, null, null, null, null, null, 'scheduled'))
   as m(t, a, b, ap, asec, bp, bsec, res, st);

@@ -190,5 +190,50 @@ if (playerId) {
   }
 }
 
+// --- Tournament flow (migration 20261027000008): a full mini event, hidden afterwards ----------
+if (playerId && orgIn.data.user) {
+  const live = await anon.from('matches').select('id, tournament:tournaments!inner(slug)').eq('tournament.slug', 'kanda-live-friday');
+  ok(!live.error && live.data.length >= 8, 'anon sees the pairings of the demo event in progress', live.error?.message);
+  const qr = await anon.from('game_tables').select('qr_token').limit(1);
+  ok(!qr.error && qr.data.length === 0, 'anon cannot read table QR tokens', qr.error?.message);
+
+  const store = (await anon.from('stores').select('id, name, address, location').eq('name', 'Kanda Miniature Hall').single()).data;
+  const start = new Date(Date.now() + 2 * 864e5);
+  const ins = await organiser.from('tournaments').insert({
+    slug: `check-flow-${Date.now()}`, name: 'Automated check tournament', organiser_id: orgIn.data.user.id, store_id: store.id,
+    venue_name: store.name, address: store.address, location: 'SRID=4326;POINT(139.7712 35.6995)',
+    starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 4 * 36e5).toISOString(),
+    registration_deadline: new Date(start.getTime() - 36e5).toISOString(), list_deadline: new Date(start.getTime() - 864e5).toISOString(),
+    format_id: 'skirmish', type: 'casual', max_players: 4, rounds_planned: 1, status: 'published', game_system: 'Check',
+  }).select('id').single();
+  ok(!ins.error, 'organiser publishes a tournament', ins.error?.message);
+  const tid = ins.data?.id;
+  if (tid) {
+    const r1 = await player.rpc('register_for_tournament', { p_tournament: tid });
+    const r2 = await organiser.rpc('register_for_tournament', { p_tournament: tid });
+    ok(!r1.error && !r2.error, 'two players register', r1.error?.message ?? r2.error?.message);
+    const st = await organiser.rpc('start_tournament', { p_tournament: tid });
+    ok(!st.error && st.data === 1, 'organiser starts it (1 table)', st.error?.message);
+    const tokens = await organiser.from('game_tables').select('qr_token').eq('tournament_id', tid);
+    ok(tokens.data?.length === 1, 'organiser reads the table QR token');
+    const bad = await player.rpc('create_round', { p_tournament: tid, p_pairings: [{ a: playerId, b: orgIn.data.user.id }] });
+    ok(!!bad.error, 'players cannot pair rounds', bad.error?.message);
+    const round = await organiser.rpc('create_round', { p_tournament: tid, p_pairings: [{ a: playerId, b: orgIn.data.user.id }] });
+    ok(!round.error, 'organiser publishes round 1', round.error?.message);
+    const table = await anon.rpc('table_match', { p_token: tokens.data?.[0]?.qr_token });
+    const m = table.data?.[0];
+    ok(!table.error && m?.player_a === playerId, 'the QR page shows the match of the table', table.error?.message);
+    const rep = await player.rpc('report_match', { p_match: m?.match_id, p_a_primary: 10, p_a_secondary: 4, p_b_primary: 8, p_b_secondary: 3, p_result: 'a_win' });
+    ok(!rep.error && rep.data === 'reported', 'player reports the score', rep.error?.message ?? rep.data);
+    const conf = await organiser.rpc('confirm_match', { p_match: m?.match_id, p_agree: true });
+    ok(!conf.error && conf.data === 'confirmed', 'opponent confirms', conf.error?.message ?? conf.data);
+    const fr = await organiser.rpc('finish_round', { p_tournament: tid });
+    const ft = await organiser.rpc('finish_tournament', { p_tournament: tid });
+    ok(!fr.error && !ft.error, 'round and tournament closed', fr.error?.message ?? ft.error?.message);
+    const hide = await organiser.from('tournaments').update({ is_hidden: true }).eq('id', tid);
+    ok(!hide.error, 'check tournament hidden (cleanup)', hide.error?.message);
+  }
+}
+
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll live checks passed.');
 process.exit(failures ? 1 : 0);

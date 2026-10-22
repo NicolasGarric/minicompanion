@@ -76,7 +76,7 @@ export function PlayHome() {
         <section className="card">
           <h2>{t('tour.myEvents')}</h2>
           <ul className="notif-list">
-            {mine.map((m) => (
+            {mine.slice(0, 6).map((m) => (
               <li key={m.slug}>
                 <a href={`#/play/t/${m.slug}`}>{m.name}</a>
                 <span className="tag">{t(k(`tour.status.${m.status}`))}</span>
