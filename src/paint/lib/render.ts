@@ -1,5 +1,6 @@
 import type { Primer, Zone } from '../types';
 import { engine } from '../engine/engine';
+import { renderSmall } from '../engine/progressive';
 import { canvasOf, download, imageDataToBlob, slug } from '../../core/lib/image';
 
 /** Renders zones into a separate buffer (the on-screen canvas is untouched). */
@@ -10,7 +11,8 @@ export function renderOffscreen(zones: Zone[], primer: Primer | null = null): Im
 
 export function renderThumb(zones: Zone[], size: number, primer: Primer | null = null): string {
   if (!engine.loaded) return '';
-  const full = canvasOf(renderOffscreen(zones, primer));
+  // Small thumbnails come from the low-resolution preview engine (no full render on autosave).
+  const full = canvasOf(size <= 640 ? renderSmall(engine, zones, primer) : renderOffscreen(zones, primer));
   const s = size / Math.max(full.width, full.height);
   const c = document.createElement('canvas');
   c.width = Math.round(full.width * s);

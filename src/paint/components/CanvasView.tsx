@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
+import { renderProgressive, warmPreview } from '../engine/progressive';
 import { engine, type Rect } from '../engine/engine';
 import { BrushStroke, feather, magicWand, polygonMask, type CombineMode } from '../engine/maskTools';
 import { copyRect } from '../engine/maskPatch';
@@ -151,18 +152,25 @@ export function CanvasView() {
 
   useEffect(() => {
     if (!engine.loaded || !resultRef.current) return;
+    let cancel = () => undefined as void;
     const id = requestAnimationFrame(() => {
       // Painting-steps preview shows the zones as they are at that step.
       const shown = previewStage === null ? zones : zonesAtStage(zones, previewStage);
-      engine.render(shown, undefined, undefined, primer);
-      resultRef.current!.getContext('2d')!.putImageData(engine.out!, 0, 0);
+      // Instant low-resolution preview, then the full render in bands (large images stay fluid).
+      cancel = renderProgressive(engine, resultRef.current!, shown, primer);
     });
-    return () => cancelAnimationFrame(id);
+    return () => {
+      cancelAnimationFrame(id);
+      cancel();
+    };
   }, [zones, primer, previewStage, maskVersion, width, height]);
 
   useEffect(() => {
     if (!engine.loaded || !sourceRef.current) return;
     sourceRef.current.getContext('2d')!.putImageData(engine.sourceImageData(), 0, 0);
+    // Prepare the low-resolution preview while nothing happens, so the first colour change is instant.
+    const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 300));
+    idle(() => warmPreview(engine));
   }, [width, height, projectId]);
 
   useEffect(() => {

@@ -95,7 +95,11 @@ export class PaintEngine {
     this.invalidate(id);
   }
 
+  /** Bumped whenever a mask is replaced or edited (lets copies such as the preview stay in sync). */
+  epoch = 0;
+
   invalidate(id?: string) {
+    this.epoch++;
     if (id) this.cache.delete(id);
     else this.cache.clear();
     this.figureMeanCache = null;
