@@ -80,7 +80,10 @@ export function MessageThread({ userId }: { userId: string }) {
       clearInterval(id);
     };
   }, [ready, me, userId]);
-  useEffect(() => end.current?.scrollIntoView({ block: 'nearest' }), [msgs.length]);
+  useEffect(() => {
+    // Braces: recent browsers return a Promise from scrollIntoView, which React would take for a cleanup.
+    end.current?.scrollIntoView({ block: 'nearest' });
+  }, [msgs.length]);
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
