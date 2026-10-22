@@ -107,7 +107,10 @@ discover → paint → share → play → watch → back to physical stores.
   including the Japanese UI: the katakana コンパニオン is strongly associated with banquet hostesses.
   Internal storage ids (`chromaforge` IndexedDB, `cf.*` localStorage keys) are kept on purpose so
   existing local projects stay readable; old `.chroma.json` project files are still imported.
-- Hosting: Vercel (Hobby plan), target URL `minicompanion.vercel.app`.
+- Hosting: Vercel (Hobby plan), live at `https://minicompanion.vercel.app` (Google Search Console
+  verified via `public/google697cbb3d751d634f.html`).
+- Code: GitHub `NicolasGarric/minicompanion` (public), local folder `~/sources/minicompanion`
+  (both renamed from `painting` / `painting_scheme` on 2026-10-22).
 - Supabase project created and seeded (2026-10-22). The DB password leaked once in a public commit
   (since removed with a force push): it must be rotated; never keep it in repo files.
 - Still open: Twitch credentials (step 9), single elimination (bonus or roadmap), privacy of
