@@ -12,9 +12,10 @@ export function StepFinish() {
   const t = useT();
   const zones = useStore((s) => s.zones);
   const library = useStore((s) => s.library);
+  const primer = useStore((s) => s.primer);
   const { set, updateLibrary } = useStore.getState();
-  const lines = useMemo(() => buildRecipe(zones, library), [zones, library]);
-  const paints = useMemo(() => paintsUsed(zones, library), [zones, library]);
+  const lines = useMemo(() => buildRecipe(zones, library, undefined, primer), [zones, library, primer]);
+  const paints = useMemo(() => paintsUsed(zones, library, primer), [zones, library, primer]);
   const owned = new Set(library.owned);
   const missing = paints.filter((p) => !owned.has(p.id)).length;
 

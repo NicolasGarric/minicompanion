@@ -34,6 +34,7 @@ export function ToolOptions() {
   const wand = useStore((s) => s.wand);
   const lassoMode = useStore((s) => s.lassoMode);
   const partSensitivity = useStore((s) => s.partSensitivity);
+  const partMode = useStore((s) => s.partMode);
   const zone = useStore((s) => s.zones.find((z) => z.id === s.activeZoneId));
   const set = useStore((s) => s.set);
   const modes: { value: CombineMode; label: string }[] = (['add', 'subtract', 'replace'] as CombineMode[]).map((m) => ({ value: m, label: t(k(`mode.${m}`)) }));
@@ -76,6 +77,14 @@ export function ToolOptions() {
       )}
       {tool === 'part' && (
         <>
+          <Segmented
+            value={partMode}
+            options={[
+              { value: 'new', label: t('part.modeNew') },
+              { value: 'add', label: t('part.modeAdd') },
+            ]}
+            onChange={(v) => set({ partMode: v })}
+          />
           <Slider label={t('part.sensitivity')} value={partSensitivity} min={1} max={10} step={1} onChange={(v) => set({ partSensitivity: v })} />
           <span className="hint">{t('part.hint')}</span>
         </>

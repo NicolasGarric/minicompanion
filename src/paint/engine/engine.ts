@@ -1,4 +1,4 @@
-import type { Zone } from '../types';
+import type { Primer, Zone } from '../types';
 import { hexToLinear, LINEAR_TO_SRGB_LUT, SRGB_TO_LINEAR } from '../../core/lib/color';
 
 export interface Rect {
@@ -82,6 +82,23 @@ export class PaintEngine {
   invalidate(id?: string) {
     if (id) this.cache.delete(id);
     else this.cache.clear();
+    this.figureMeanCache = null;
+  }
+
+  /** Mean linear luminance of the miniature (everything but the excluded background). */
+  private figureMeanCache: { bg: Uint8Array | null; value: number } | null = null;
+  private figureMean(bg: Uint8Array | null): number {
+    if (this.figureMeanCache && this.figureMeanCache.bg === bg) return this.figureMeanCache.value;
+    let sum = 0;
+    let weight = 0;
+    for (let i = 0; i < this.lumLin.length; i++) {
+      const a = bg ? 255 - bg[i] : 255;
+      sum += this.lumLin[i] * a;
+      weight += a;
+    }
+    const value = weight ? Math.max(0.01, sum / weight) : 0.2;
+    this.figureMeanCache = { bg, value };
+    return value;
   }
 
   private zoneCache(id: string): ZoneCache {
@@ -131,8 +148,12 @@ export class PaintEngine {
     return this.zoneCache(id).bbox ? 1 : 0;
   }
 
-  /** Renders zones into `target` (default: the main buffer), limited to `rect` when given. */
-  render(zones: Zone[], rect?: Rect, target?: ImageData): ImageData {
+  /**
+   * Renders into `target` (default: the main buffer), limited to `rect` when given.
+   * Layers, bottom to top: photo → primer (on the miniature) → painted colour zones → drawn areas.
+   * Colour zones that were never repainted are transparent.
+   */
+  render(zones: Zone[], rect?: Rect, target?: ImageData, primer: Primer | null = null): ImageData {
     const w = this.width;
     const h = this.height;
     const out = target ?? this.out!;
@@ -151,10 +172,16 @@ export class PaintEngine {
     }
 
     const prepared = zones
-      .filter((z) => z.visible && z.opacity > 0 && this.masks.has(z.id))
+      .filter((z) => z.visible && z.opacity > 0 && this.masks.has(z.id) && !isUnpaintedColour(z))
       .map((z) => prepareZone(z, this.zoneCache(z.id), this.masks.get(z.id)!))
       .filter((p) => p.bbox && intersects(p.bbox, r));
-    if (prepared.length === 0) return out;
+    if (prepared.length === 0 && !primer) return out;
+
+    // The primer covers the miniature, not the excluded background.
+    const bgZone = zones.find((z) => z.isBackground);
+    const bgMask = primer && bgZone && !bgZone.visible ? this.masks.get(bgZone.id) ?? null : null;
+    const primerLin = primer?.kind === 'paint' ? hexToLinear(primer.hex) : null;
+    const primerMean = primer ? this.figureMean(bgMask) : 1;
 
     const { lumLin, lumG, blur, edge, noise } = this;
     const exclusive = prepared.filter((z) => z.exclusive);
@@ -166,6 +193,32 @@ export class PaintEngine {
         const i = y * w + x;
         let touched = false;
         let cr = 0, cg = 0, cb = 0;
+        if (primer) {
+          const a = bgMask ? 1 - bgMask[i] / 255 : 1;
+          if (a > 0) {
+            const p = i * 4;
+            cr = L[o[p]];
+            cg = L[o[p + 1]];
+            cb = L[o[p + 2]];
+            touched = true;
+            let pr: number, pg: number, pb: number;
+            if (primerLin) {
+              // Desaturate (luminance only) and tint with the primer, keeping the photo's shading:
+              // shading multiplies the primer colour, so a black primer stays black; bright spots get
+              // a small capped sheen, like the satin of a real spray coat.
+              const sh = lumLin[i] / primerMean;
+              const sheen = sh > 1 ? Math.min(0.12, (sh - 1) * 0.08) : 0;
+              pr = Math.min(1, primerLin[0] * sh) + sheen;
+              pg = Math.min(1, primerLin[1] * sh) + sheen;
+              pb = Math.min(1, primerLin[2] * sh) + sheen;
+            } else {
+              pr = pg = pb = lumLin[i]; // black & white
+            }
+            cr += (pr - cr) * a;
+            cg += (pg - cg) * a;
+            cb += (pb - cb) * a;
+          }
+        }
         // Automatic colour zones split each pixel between them (their masks add up to 255).
         // Blending them in sequence with plain alpha would let the photo show through at shared
         // edges; instead each one weighs exactly its share: alpha = m / (photo share + masks so far).
@@ -300,6 +353,25 @@ interface PreparedZone {
   dry: [number, number, number, number] | null;
   /** Automatic colour zone: shares pixels with the other automatic zones (partition). */
   exclusive: boolean;
+}
+
+/**
+ * A colour zone still showing the photo's own colour, with no effect: it is not rendered, so what
+ * lies below (primer or photo) shows through. Painting it makes it a layer.
+ */
+export function isUnpaintedColour(z: Zone): boolean {
+  return (
+    z.source === 'auto' &&
+    !!z.refHex &&
+    z.base.hex === z.refHex &&
+    !z.base.paintId &&
+    !z.wash.enabled &&
+    !z.drybrush.enabled &&
+    !z.highlight.enabled &&
+    !z.contrast &&
+    z.brightness === 0 &&
+    z.finish === 'mat'
+  );
 }
 
 function layer(e: Zone['wash']): [number, number, number, number] | null {

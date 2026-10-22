@@ -366,9 +366,9 @@ export const en = {
   'tech.highlight': 'Edge highlight',
   'tech.highlight.how': 'With the tip of the brush, paint thin lines on the sharpest edges.',
   'tech.highlight.tip': 'Use the side of the brush, not the very tip, for steadier lines.',
-  'primer.grey': 'Suggested primer: grey (works with most colours).',
-  'primer.white': 'Suggested primer: white (keeps bright colours vivid).',
-  'primer.black': 'Suggested primer: black (great for dark and metallic schemes).',
+  'beginner.primer.grey': 'Suggested primer: grey (works with most colours).',
+  'beginner.primer.white': 'Suggested primer: white (keeps bright colours vivid).',
+  'beginner.primer.black': 'Suggested primer: black (great for dark and metallic schemes).',
 
   // Stores
   'stores.title': 'Find a hobby store',
@@ -560,6 +560,23 @@ export const en = {
   'card.before': 'Before',
   'card.after': 'After',
   'share.compare': 'Before / after',
+  'primer.title': 'Primer',
+  'primer.role': 'Whole miniature, first coat',
+  'primer.hint': 'Start here: the miniature turns black & white, then takes the primer colour. Your colours are painted on top.',
+  'primer.none': 'None',
+  'primer.greyscale': 'Black & white',
+  'primer.black': 'Black',
+  'primer.grey': 'Grey',
+  'primer.white': 'White',
+  'primer.bone': 'Bone',
+  'primer.metal': 'Metal',
+  'primer.other': 'Other…',
+  'primer.choose': 'Choose the primer',
+  'colours.layersHint': 'Layers: the area at the top is painted over the ones below.',
+  'colours.layerUp': 'Move up (paint over)',
+  'colours.layerDown': 'Move down',
+  'part.modeNew': 'New area',
+  'part.modeAdd': 'Add to the open area',
 } as const;
 
 export type MessageKey = keyof typeof en;

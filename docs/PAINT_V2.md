@@ -37,3 +37,26 @@
   tapping one opens: closest paints, full catalogue, free colour, reset, "Effects", refine tools.
   Eyedropper on the image selects the colour under the finger. "+ Manual zone" for lasso/brush areas.
 - **Step 3 — Paints & share**: recipe per zone, shopping list, share card, variants, export, presets.
+
+## Layer model (2026-10-22, after owner feedback)
+
+Painting works like a real miniature, bottom to top:
+
+1. **Photo**
+2. **Primer** (`primer` on the project, not a zone): the miniature (everything but the excluded
+   background) is desaturated, then tinted with the primer colour. Shading multiplies the primer, so
+   a black primer stays black with a small sheen. Options: none, black & white, black, grey, white,
+   bone, metal (closest paint of the preferred brand), or any paint from the catalogue.
+3. **Colour zones** (automatic): a colour that was never repainted is *transparent* — the primer or
+   the photo shows through. Painting it makes it a layer.
+4. **Drawn areas** (lasso, brush, "tap a part"): layers above the colours, the newest on top,
+   reorderable with ↑ / ↓. "Tap a part" creates a new area by default ("add to the open area" is an
+   explicit option).
+
+Background detection: everything reachable from the image border without crossing a strong edge
+(flood fill on lightness), so backdrops with a gradient or vignette are found; it is carved out of the
+colour masks (still a partition). Colours that were mostly backdrop give it their anti-aliased rim
+only; their pixels inside the figure (highlights of the same grey) stay figure colours.
+
+Fixed bugs reported by the owner: a primer drawn with the lasso hid every colour painted later
+(drawn areas are above colours), and "tap a part" grew the open area instead of creating one.

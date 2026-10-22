@@ -42,8 +42,11 @@ export function PaintSearchLink({ paint }: { paint: Paint }) {
   );
 }
 
-/** Paint catalogue. `onPicked` lets a modal close once a paint is chosen. */
-export function PalettePanel({ slot, onPicked }: { slot?: SlotId; onPicked?: () => void } = {}) {
+/**
+ * Paint catalogue. By default a pick is applied to the active zone (`slot`); `onSelect` replaces that
+ * (e.g. choosing the primer). `onPicked` lets a modal close once a paint is chosen.
+ */
+export function PalettePanel({ slot, onPicked, onSelect }: { slot?: SlotId; onPicked?: () => void; onSelect?: (p: Paint) => void } = {}) {
   const t = useT();
   const library = useStore((s) => s.library);
   const updateLibrary = useStore((s) => s.updateLibrary);
@@ -89,7 +92,8 @@ export function PalettePanel({ slot, onPicked }: { slot?: SlotId; onPicked?: () 
 
   const pick = (p: Paint) => {
     setSelected(p);
-    assignPaint(p, slot);
+    if (onSelect) onSelect(p);
+    else assignPaint(p, slot);
     onPicked?.();
   };
 
@@ -114,7 +118,7 @@ export function PalettePanel({ slot, onPicked }: { slot?: SlotId; onPicked?: () 
 
   return (
     <div className="palette">
-      <SlotTarget />
+      {!onSelect && <SlotTarget />}
       <div className="palette-filters">
         <div className="search">
           <Icon name="zoomIn" size={14} />

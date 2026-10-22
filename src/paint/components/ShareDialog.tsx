@@ -12,6 +12,7 @@ export function ShareDialog() {
   const lang = useLang((s) => s.lang);
   const zones = useStore((s) => s.zones);
   const library = useStore((s) => s.library);
+  const primer = useStore((s) => s.primer);
   const projectName = useStore((s) => s.projectName);
   const { set, toast } = useStore.getState();
   const [format, setFormat] = useState<CardFormat>('square');
@@ -25,7 +26,7 @@ export function ShareDialog() {
     setPreview(null);
     (async () => {
       const l = await schemeLink(projectName, zones);
-      const b = await generateCard({ format, name: projectName, zones, library, lang, link: l });
+      const b = await generateCard({ format, name: projectName, zones, primer, library, lang, link: l });
       if (cancelled) return;
       url = URL.createObjectURL(b);
       setLink(l);
@@ -37,7 +38,7 @@ export function ShareDialog() {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [format, lang, projectName, zones, library]);
+  }, [format, lang, projectName, zones, primer, library]);
 
   const file = () => new File([blob!], `${slug(projectName)}-${format}.png`, { type: 'image/png' });
   const canShareFile = !!blob && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file()] });

@@ -45,7 +45,14 @@ export function TopBar({ onShortcuts }: { onShortcuts: () => void }) {
       <Menu trigger={(open) => <IconButton icon="download" label={t('export.menu')} onClick={open} />}>
         {(close) => (
           <>
-            <button className="menu-item" onClick={async () => { close(); await exportRenderPNG(useStore.getState().zones, projectName); }}>
+            <button
+              className="menu-item"
+              onClick={async () => {
+                close();
+                const st = useStore.getState();
+                await exportRenderPNG(st.zones, projectName, st.primer);
+              }}
+            >
               <Icon name="image" size={14} /> {t('export.png')}
             </button>
             <button
@@ -54,7 +61,7 @@ export function TopBar({ onShortcuts }: { onShortcuts: () => void }) {
                 close();
                 const s = useStore.getState();
                 try {
-                  await navigator.clipboard.writeText(recipeToText(projectName, buildRecipe(s.zones, s.library)));
+                  await navigator.clipboard.writeText(recipeToText(projectName, buildRecipe(s.zones, s.library, undefined, s.primer)));
                   toast(t('toast.recipeCopied'), 'success');
                 } catch {
                   toast(t('toast.clipboardDenied'), 'error');

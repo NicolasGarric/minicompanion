@@ -92,10 +92,17 @@ export interface PaletteColor {
   zoneId?: string;
 }
 
+/**
+ * Primer (undercoat) applied to the whole miniature before any colour: the photo is desaturated
+ * and tinted with the primer colour, keeping its shading. 'greyscale' = desaturated only.
+ */
+export type Primer = { kind: 'paint'; hex: string; paintId?: string } | { kind: 'greyscale' };
+
 export interface Variant {
   id: string;
   name: string;
   zones: Zone[];
+  primer?: Primer | null;
   thumb?: string;
   createdAt: number;
 }
@@ -117,6 +124,7 @@ export interface ProjectRecord extends ProjectMeta {
   zones: Zone[];
   masks: Record<string, Uint8Array>;
   variants: Variant[];
+  primer?: Primer | null;
   /** v1 only (reference palette panel); ignored since v2, where reference colours are zones. */
   palette?: PaletteColor[];
 }

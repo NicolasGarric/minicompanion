@@ -104,3 +104,27 @@ test('a grey-primed figure is flagged as greyscale and split by lightness', () =
   const lightness = clusters.map((c) => parseInt(c.hex.slice(1, 3), 16)).sort((a, b) => a - b);
   assert.ok(lightness.at(-1)! - lightness[0] > 60, `zones should span light and dark (${lightness})`);
 });
+
+test('a backdrop with a vignette (several shades) is merged into one background', () => {
+  const w = 120, h = 160;
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // light grey backdrop, darker towards the corners
+      const d = Math.hypot((x - w / 2) / (w / 2), (y - h / 2) / (h / 2));
+      let v = Math.round(225 - 70 * Math.min(1, d));
+      let px = [v, v, v - 4];
+      if (x >= 35 && x < 85 && y >= 30 && y < 140) px = [60, 62, 66]; // dark grey primed figure
+      data.set([...px, 255], (y * w + x) * 4);
+    }
+  }
+  const { clusters, background } = segmentImage({ data, width: w, height: h }, 5);
+  assert.ok(background >= 0, 'background detected');
+  const bg = clusters[background].mask;
+  assert.ok(bg[2 * w + 2] > 200 && bg[80 * w + 60 - 50] > 200, 'corner and side of the backdrop are background');
+  assert.ok(bg[80 * w + 60] < 30, 'the figure is not background');
+  for (let i = 0; i < w * h; i += 41) {
+    const sum = clusters.reduce((a, c) => a + c.mask[i], 0);
+    assert.ok(Math.abs(sum - 255) <= 3, 'still a partition');
+  }
+});

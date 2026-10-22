@@ -1,16 +1,16 @@
-import type { Zone } from '../types';
+import type { Primer, Zone } from '../types';
 import { engine } from '../engine/engine';
 import { canvasOf, download, imageDataToBlob, slug } from '../../core/lib/image';
 
 /** Renders zones into a separate buffer (the on-screen canvas is untouched). */
-export function renderOffscreen(zones: Zone[]): ImageData {
+export function renderOffscreen(zones: Zone[], primer: Primer | null = null): ImageData {
   const target = new ImageData(engine.width, engine.height);
-  return engine.render(zones, undefined, target);
+  return engine.render(zones, undefined, target, primer);
 }
 
-export function renderThumb(zones: Zone[], size: number): string {
+export function renderThumb(zones: Zone[], size: number, primer: Primer | null = null): string {
   if (!engine.loaded) return '';
-  const full = canvasOf(renderOffscreen(zones));
+  const full = canvasOf(renderOffscreen(zones, primer));
   const s = size / Math.max(full.width, full.height);
   const c = document.createElement('canvas');
   c.width = Math.round(full.width * s);
@@ -31,7 +31,7 @@ export function resampleMask(m: Uint8Array, w: number, h: number, nw: number, nh
   return out;
 }
 
-export async function exportRenderPNG(zones: Zone[], name: string) {
-  const blob = await imageDataToBlob(renderOffscreen(zones), 'image/png');
+export async function exportRenderPNG(zones: Zone[], name: string, primer: Primer | null = null) {
+  const blob = await imageDataToBlob(renderOffscreen(zones, primer), 'image/png');
   download(blob, `${slug(name)}.png`);
 }

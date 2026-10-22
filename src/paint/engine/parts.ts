@@ -1,5 +1,6 @@
 /**
- * "Tap a part": grows a region from a tapped point on a (usually grey-primed) miniature photo.
+ * Region growing on a miniature photo: "tap a part" (from a tapped point) and background detection
+ * (from the image border).
  *
  * Parts of a miniature are separated by dark recesses and sharp edges, while one part shades
  * smoothly. So the region spreads to a neighbour only if the lightness step between the two pixels
@@ -18,11 +19,10 @@ export interface LumaMaps {
 
 /** sensitivity 1 (tight) … 10 (loose) */
 export function growPart(maps: LumaMaps, seedX: number, seedY: number, sensitivity = 5): Uint8Array {
-  const { lum, edge, width: w, height: h } = maps;
-  const out = new Uint8Array(w * h);
+  const { edge, width: w, height: h } = maps;
   let sx = Math.round(seedX);
   let sy = Math.round(seedY);
-  if (sx < 0 || sy < 0 || sx >= w || sy >= h) return out;
+  if (sx < 0 || sy < 0 || sx >= w || sy >= h) return new Uint8Array(w * h);
   // A finger rarely lands in the middle of a part: start from the calmest pixel (lowest edge)
   // within a few pixels, so a tap right on an outline still selects the part.
   const r = 5;
@@ -36,22 +36,45 @@ export function growPart(maps: LumaMaps, seedX: number, seedY: number, sensitivi
       }
     }
   }
+  return finish(flood(maps, [sy * w + sx], sensitivity), w, h);
+}
 
+/**
+ * Background: everything reachable from the image border without crossing a strong edge.
+ * A backdrop with a gradient or vignette is smooth, so it is crossed; the figure's outline is not.
+ */
+export function growFromBorder(maps: LumaMaps, sensitivity = 5): Uint8Array {
+  const { edge, width: w, height: h } = maps;
+  const seeds: number[] = [];
+  const calm = 0.12 + sensitivity * 0.04;
+  for (let x = 0; x < w; x++) {
+    for (const y of [0, h - 1]) if (edge[y * w + x] <= calm) seeds.push(y * w + x);
+  }
+  for (let y = 1; y < h - 1; y++) {
+    for (const x of [0, w - 1]) if (edge[y * w + x] <= calm) seeds.push(y * w + x);
+  }
+  return finish(flood(maps, seeds, sensitivity), w, h);
+}
+
+/** 4-connected walk: a neighbour joins if the lightness step is small and it is not on a strong edge. */
+function flood(maps: LumaMaps, seeds: number[], sensitivity: number): Uint8Array {
+  const { lum, edge, width: w, height: h } = maps;
+  const out = new Uint8Array(w * h);
   const s = Math.max(1, Math.min(10, sensitivity));
   const maxStep = 0.012 + s * 0.006; // allowed lightness change between neighbours
   const maxEdge = 0.12 + s * 0.04; // stop on strong edges
-
   const queue = new Int32Array(w * h);
   let head = 0;
   let tail = 0;
-  const seed = sy * w + sx;
-  out[seed] = 255;
-  queue[tail++] = seed;
+  for (const seed of seeds) {
+    if (out[seed]) continue;
+    out[seed] = 255;
+    queue[tail++] = seed;
+  }
   while (head < tail) {
     const i = queue[head++];
     const x = i % w;
     const li = lum[i];
-    // 4-neighbourhood
     for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) {
       if (j < 0 || j >= w * h || out[j]) continue;
       if (Math.abs(lum[j] - li) > maxStep || edge[j] > maxEdge) continue;
@@ -59,9 +82,54 @@ export function growPart(maps: LumaMaps, seedX: number, seedY: number, sensitivi
       queue[tail++] = j;
     }
   }
-  // The pixels right on the outline are themselves on the edge, so the walk stops one short of them:
-  // grow by 1 px to cover the rim, then soften.
-  return soften(morph(close(out, w, h, 2), w, h, 1, true), w, h);
+  return out;
+}
+
+/**
+ * Cleans a walked region: closes small holes, covers the outline rim (pixels right on the outline
+ * are themselves on the edge, so the walk stops one short of them), then softens the edge.
+ */
+function finish(m: Uint8Array, w: number, h: number): Uint8Array {
+  return soften(morph(close(m, w, h, 2), w, h, 1, true), w, h);
+}
+
+/** Lightness + edge maps of an image, computed like the paint engine (luma, 3×3 blur, Sobel). */
+export function lumaMaps(img: { data: Uint8ClampedArray | Uint8Array; width: number; height: number }): LumaMaps {
+  const { data, width: w, height: h } = img;
+  const lum = new Float32Array(w * h);
+  for (let i = 0; i < lum.length; i++) lum[i] = (data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114) / 255;
+  const blurred = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let acc = 0;
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const yy = y + dy, xx = x + dx;
+          if (yy < 0 || yy >= h || xx < 0 || xx >= w) continue;
+          acc += lum[yy * w + xx];
+          n++;
+        }
+      }
+      blurred[y * w + x] = acc / n;
+    }
+  }
+  const edge = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const l = blurred;
+      const gx = -l[i - w - 1] - 2 * l[i - 1] - l[i + w - 1] + l[i - w + 1] + 2 * l[i + 1] + l[i + w + 1];
+      const gy = -l[i - w - 1] - 2 * l[i - w] - l[i - w + 1] + l[i + w - 1] + 2 * l[i + w] + l[i + w + 1];
+      edge[i] = Math.min(1, Math.hypot(gx, gy));
+    }
+  }
+  return { lum, edge, width: w, height: h };
+}
+
+/** Grows a mask by `r` pixels (max filter). */
+export function dilate(m: Uint8Array, w: number, h: number, r: number): Uint8Array {
+  return morph(m, w, h, r, true);
 }
 
 /** Morphological closing (dilate then erode): fills specks and thin gaps inside the part. */

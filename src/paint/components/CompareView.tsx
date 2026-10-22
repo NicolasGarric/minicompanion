@@ -10,8 +10,9 @@ export function CompareView() {
   const t = useT();
   const variants = useStore((s) => s.variants);
   const zones = useStore((s) => s.zones);
+  const primer = useStore((s) => s.primer);
   const { set, loadVariant } = useStore.getState();
-  const options = useMemo(() => [{ id: CURRENT, name: t('compare.current'), zones }, ...variants], [variants, zones]);
+  const options = useMemo(() => [{ id: CURRENT, name: t('compare.current'), zones, primer }, ...variants], [variants, zones, primer]);
   const [picked, setPicked] = useState<string[]>(() => options.slice(0, 4).map((o) => o.id));
   const [renders, setRenders] = useState<Record<string, string>>({});
 
@@ -22,7 +23,7 @@ export function CompareView() {
     const step = () => {
       const o = todo.shift();
       if (!o || cancelled) return;
-      const url = renderThumb(o.zones, 900);
+      const url = renderThumb(o.zones, 900, o.primer ?? null);
       setRenders((r) => ({ ...r, [o.id]: url }));
       setTimeout(step, 0);
     };

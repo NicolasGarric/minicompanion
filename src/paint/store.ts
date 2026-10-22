@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Paint, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
+import type { Paint, Primer, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
 import { engine, type Rect } from './engine/engine';
 import { segmentImage, splitMask } from './engine/segment';
 import { growPart } from './engine/parts';
@@ -17,9 +17,10 @@ import { combine, feather, growShrink, type CombineMode } from './engine/maskToo
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
-/** One undo step: zone settings + the changed rectangles of the affected masks. */
+/** One undo step: zone settings, primer + the changed rectangles of the affected masks. */
 interface HistoryEntry {
   zones: Zone[];
+  primer: Primer | null;
   activeZoneId: string | null;
   patches: MaskPatch[];
 }
@@ -53,6 +54,8 @@ interface State {
   width: number;
   height: number;
   zones: Zone[];
+  /** Undercoat on the whole miniature, below every colour (null = the photo as it is). */
+  primer: Primer | null;
   activeZoneId: string | null;
   variants: Variant[];
   maskVersion: number;
@@ -71,6 +74,8 @@ interface State {
   lassoMode: CombineMode;
   /** "Tap a part" tool: 1 (tight) … 10 (loose) */
   partSensitivity: number;
+  /** "Tap a part" creates a new area, or adds to the open drawn area. */
+  partMode: 'new' | 'add';
   showMask: boolean;
   split: number | null;
   compareOpen: boolean;
@@ -109,6 +114,8 @@ interface Actions {
   setZoneColour: (id: string, colour: Paint | string) => void;
   resetZoneColour: (id: string) => void;
   tapPart: (x: number, y: number) => void;
+  setPrimer: (primer: Primer | null) => void;
+  moveDrawnZone: (id: string, dir: 1 | -1) => void;
   mergeZones: (targetId: string, sourceId: string) => void;
   splitZone: (id: string) => boolean;
 
@@ -172,6 +179,7 @@ function meanColour(mask: Uint8Array): string {
 export const useStore = create<State & Actions>((set, get) => {
   const snapshot = (patches: { id: string; rect: Rect }[] = []): HistoryEntry => ({
     zones: structuredClone(get().zones),
+    primer: get().primer,
     activeZoneId: get().activeZoneId,
     patches: patches.map(({ id, rect }) => ({ id, rect, data: copyRect(engine.ensureMask(id), engine.width, rect) })),
   });
@@ -184,7 +192,7 @@ export const useStore = create<State & Actions>((set, get) => {
       pasteRect(engine.ensureMask(p.id), engine.width, p.rect, p.data);
       engine.invalidate(p.id);
     }
-    set((s) => ({ zones: entry.zones, activeZoneId: entry.activeZoneId, maskVersion: s.maskVersion + 1 }));
+    set((s) => ({ zones: entry.zones, primer: entry.primer, activeZoneId: entry.activeZoneId, maskVersion: s.maskVersion + 1 }));
   };
 
   const setImage = (blob: Blob, image: ImageData) => {
@@ -219,6 +227,7 @@ export const useStore = create<State & Actions>((set, get) => {
     maskVersion: 0,
     step: 2,
     tool: 'picker',
+    primer: null,
   });
 
   return {
@@ -230,6 +239,7 @@ export const useStore = create<State & Actions>((set, get) => {
     width: 0,
     height: 0,
     zones: [],
+    primer: null,
     activeZoneId: null,
     variants: [],
     maskVersion: 0,
@@ -245,6 +255,7 @@ export const useStore = create<State & Actions>((set, get) => {
     wand: { tolerance: 18, contiguous: true, feather: 1, mode: 'add' },
     lassoMode: 'add',
     partSensitivity: 5,
+    partMode: 'new',
     showMask: false,
     split: null,
     compareOpen: false,
@@ -345,6 +356,7 @@ export const useStore = create<State & Actions>((set, get) => {
         projectName: rec.name,
         createdAt: rec.createdAt,
         zones: rec.zones,
+        primer: rec.primer ?? null,
         variants: rec.variants ?? [],
         colourCount: auto || DEFAULT_COLOURS,
         activeZoneId: rec.zones.find((z) => z.visible)?.id ?? null,
@@ -378,7 +390,8 @@ export const useStore = create<State & Actions>((set, get) => {
         zones: s.zones,
         masks,
         variants: s.variants,
-        thumb: renderThumb(s.zones, 220),
+        primer: s.primer,
+        thumb: renderThumb(s.zones, 220, s.primer),
       };
     },
 
@@ -537,7 +550,7 @@ export const useStore = create<State & Actions>((set, get) => {
       const sel = growPart({ lum: engine.lumG, edge: engine.edge, width: engine.width, height: engine.height }, x, y, get().partSensitivity);
       if (!bboxOf(sel, engine.width, engine.height)) return;
       const active = get().zones.find((z) => z.id === get().activeZoneId);
-      if (active && active.source !== 'auto') {
+      if (get().partMode === 'add' && active && active.source !== 'auto') {
         get().applySelection(sel, 'add');
         return;
       }
@@ -546,6 +559,24 @@ export const useStore = create<State & Actions>((set, get) => {
       const z = makeZone('other', tr('zones.manualName', { n }));
       engine.setMask(z.id, sel);
       set((s) => ({ zones: [...s.zones, z], activeZoneId: z.id, maskVersion: s.maskVersion + 1 }));
+    },
+
+    setPrimer: (primer) => {
+      push(snapshot());
+      set({ primer });
+    },
+
+    /** Drawn areas are layers: the last one is on top. Moves one up (1) or down (-1) among them. */
+    moveDrawnZone: (id, dir) => {
+      const zones = [...get().zones];
+      const drawn = zones.map((z, i) => ({ z, i })).filter(({ z }) => !isAuto(z));
+      const k = drawn.findIndex(({ z }) => z.id === id);
+      const other = drawn[k + dir];
+      if (k < 0 || !other) return;
+      push(snapshot());
+      const i = drawn[k].i;
+      [zones[i], zones[other.i]] = [zones[other.i], zones[i]];
+      set({ zones });
     },
 
     /** Adds the area of `sourceId` to `targetId` and removes `sourceId` (target keeps its recipe). */
@@ -632,7 +663,7 @@ export const useStore = create<State & Actions>((set, get) => {
         });
       }
 
-      push({ zones: structuredClone(zones), activeZoneId: get().activeZoneId, patches });
+      push({ zones: structuredClone(zones), primer: get().primer, activeZoneId: get().activeZoneId, patches });
       engine.invalidate(zoneId);
       get().bumpMasks();
     },
@@ -711,7 +742,8 @@ export const useStore = create<State & Actions>((set, get) => {
 
     saveVariant: async (name) => {
       const zones = structuredClone(get().zones);
-      const v: Variant = { id: uid(), name, zones, thumb: renderThumb(zones, 260), createdAt: Date.now() };
+      const primer = get().primer;
+      const v: Variant = { id: uid(), name, zones, primer, thumb: renderThumb(zones, 260, primer), createdAt: Date.now() };
       set((s) => ({ variants: [...s.variants, v] }));
       get().toast(tr('toast.variantSaved', { name }), 'success');
     },
@@ -722,7 +754,7 @@ export const useStore = create<State & Actions>((set, get) => {
       push(snapshot());
       const zones = structuredClone(v.zones);
       zones.forEach((z) => engine.ensureMask(z.id));
-      set((s) => ({ zones, activeZoneId: zones.find((z) => z.visible)?.id ?? null, maskVersion: s.maskVersion + 1 }));
+      set((s) => ({ zones, primer: v.primer ?? null, activeZoneId: zones.find((z) => z.visible)?.id ?? null, maskVersion: s.maskVersion + 1 }));
     },
 
     deleteVariant: (id) => set((s) => ({ variants: s.variants.filter((v) => v.id !== id) })),

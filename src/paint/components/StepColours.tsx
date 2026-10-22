@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { allPaints, MAX_COLOURS, MIN_COLOURS, paintById, useStore } from '../store';
-import type { Paint, SlotId, Tool, Zone } from '../types';
+import type { Paint, Primer, SlotId, Tool, Zone } from '../types';
 import { nearestPaints } from '../../core/lib/color';
 import { similarity } from '../lib/beginner';
 import { k, useT } from '../../core/i18n';
@@ -25,11 +25,13 @@ export function StepColours() {
   const analysing = useStore((s) => s.analysing);
   const greyscale = useStore((s) => s.greyscale);
   const { analyseColours, addManualZone } = useStore.getState();
-  const [catalog, setCatalog] = useState<SlotId | null>(null);
+  // Which slot the paint catalogue fills: a zone slot, or the primer.
+  const [catalog, setCatalog] = useState<SlotId | 'primer' | null>(null);
 
   // The background shows up in the list only once the user brings it back into the scheme.
   const colours = zones.filter((z) => z.source === 'auto' && (!z.isBackground || z.visible));
-  const drawn = zones.filter((z) => z.source !== 'auto');
+  // Drawn areas are layers: the last one is on top, so it is listed first.
+  const drawn = zones.filter((z) => z.source !== 'auto').reverse();
   const background = zones.find((z) => z.isBackground);
 
   // The count control re-analyses after a short pause, so clicking +/- several times is cheap.
@@ -45,6 +47,8 @@ export function StepColours() {
 
   return (
     <div className="step-colours">
+      <PrimerCard onCatalog={() => setCatalog('primer')} />
+
       <div className="colour-count">
         <div>
           <strong>{t('colours.count')}</strong>
@@ -82,9 +86,10 @@ export function StepColours() {
       {drawn.length > 0 && (
         <>
           <h4>{t('colours.drawn')}</h4>
+          <p className="hint">{t('colours.layersHint')}</p>
           <ul className="colour-list">
-            {drawn.map((z) => (
-              <ColourZoneItem key={z.id} zone={z} open={z.id === activeZoneId} onCatalog={setCatalog} />
+            {drawn.map((z, i) => (
+              <ColourZoneItem key={z.id} zone={z} open={z.id === activeZoneId} onCatalog={setCatalog} layer={{ top: i === 0, bottom: i === drawn.length - 1 }} />
             ))}
           </ul>
         </>
@@ -101,15 +106,33 @@ export function StepColours() {
       {background && <BackgroundRow zone={background} />}
 
       {catalog && (
-        <Modal title={t('colours.catalogTitle')} onClose={() => setCatalog(null)}>
-          <PalettePanel slot={catalog} onPicked={() => setCatalog(null)} />
+        <Modal title={t(catalog === 'primer' ? 'primer.choose' : 'colours.catalogTitle')} onClose={() => setCatalog(null)}>
+          {catalog === 'primer' ? (
+            <PalettePanel
+              onSelect={(p) => useStore.getState().setPrimer({ kind: 'paint', hex: p.hex, paintId: p.id })}
+              onPicked={() => setCatalog(null)}
+            />
+          ) : (
+            <PalettePanel slot={catalog} onPicked={() => setCatalog(null)} />
+          )}
         </Modal>
       )}
     </div>
   );
 }
 
-function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; onCatalog: (slot: SlotId) => void }) {
+function ColourZoneItem({
+  zone,
+  open,
+  onCatalog,
+  layer,
+}: {
+  zone: Zone;
+  open: boolean;
+  onCatalog: (slot: SlotId) => void;
+  /** Set for drawn areas: position in the layer stack. */
+  layer?: { top: boolean; bottom: boolean };
+}) {
   const t = useT();
   const itemRef = useRef<HTMLLIElement>(null);
   // Selecting a colour by tapping the image scrolls its editor into view.
@@ -121,7 +144,7 @@ function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; 
   const zones = useStore((s) => s.zones);
   const brand = usePrefs((s) => s.brand);
   const greyscale = useStore((s) => s.greyscale);
-  const { setActiveZone, updateZone, setZoneColour, resetZoneColour, removeZone, mergeZones, splitZone, set } = useStore.getState();
+  const { setActiveZone, updateZone, setZoneColour, resetZoneColour, removeZone, mergeZones, splitZone, moveDrawnZone, set } = useStore.getState();
   const [effects, setEffects] = useState(false);
   const paint = paintById(zone.base.paintId, library);
   const changed = zone.refHex ? zone.base.hex !== zone.refHex : true;
@@ -154,6 +177,12 @@ function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; 
             <small className="muted">{paint ? `${paint.name} · ${paint.brand}` : changed ? zone.base.hex.toUpperCase() : t('colours.unchanged')}</small>
           </span>
         </button>
+        {layer && (
+          <>
+            <IconButton icon="up" label={t('colours.layerUp')} size={15} disabled={layer.top} onClick={() => moveDrawnZone(zone.id, 1)} />
+            <IconButton icon="down" label={t('colours.layerDown')} size={15} disabled={layer.bottom} onClick={() => moveDrawnZone(zone.id, -1)} />
+          </>
+        )}
         <IconButton
           icon={zone.visible ? 'eye' : 'eyeOff'}
           label={t(zone.visible ? 'zones.hide' : 'zones.show')}
@@ -301,5 +330,67 @@ function BrandSelect() {
         ))}
       </select>
     </label>
+  );
+}
+
+/** Common spray primers (by colour); each maps to the closest paint of the preferred brand. */
+const PRIMERS: { id: string; hex: string }[] = [
+  { id: 'black', hex: '#231f20' },
+  { id: 'grey', hex: '#a2a5a7' },
+  { id: 'white', hex: '#ffffff' },
+  { id: 'bone', hex: '#dbd1b2' },
+  { id: 'metal', hex: '#888d8f' },
+];
+
+/**
+ * Step zero of painting: the primer. The miniature turns black & white, then takes the primer colour
+ * (shading kept); every colour is then painted on top of it.
+ */
+function PrimerCard({ onCatalog }: { onCatalog: () => void }) {
+  const t = useT();
+  const primer = useStore((s) => s.primer);
+  const library = useStore((s) => s.library);
+  const brand = usePrefs((s) => s.brand);
+  const setPrimer = useStore((s) => s.setPrimer);
+  const options = useMemo(
+    () =>
+      PRIMERS.map((o) => ({
+        ...o,
+        paint: nearestPaints(o.hex, allPaints(library), 1, (p) => p.type !== 'shade' && p.type !== 'contrast' && (brand === 'all' || p.brand === brand))[0]?.paint,
+      })),
+    [library, brand],
+  );
+  const current = primer?.kind === 'paint' ? paintById(primer.paintId, library) : undefined;
+  const is = (p: Primer | null) => JSON.stringify(p) === JSON.stringify(primer);
+
+  return (
+    <section className="primer-card">
+      <div className="primer-head">
+        <strong>{t('primer.title')}</strong>
+        <small className="muted">{t('primer.hint')}</small>
+      </div>
+      <div className="primer-chips" role="radiogroup" aria-label={t('primer.title')}>
+        <button role="radio" aria-checked={primer === null} className={`chip ${primer === null ? 'on' : ''}`} onClick={() => setPrimer(null)}>
+          {t('primer.none')}
+        </button>
+        <button role="radio" aria-checked={is({ kind: 'greyscale' })} className={`chip ${is({ kind: 'greyscale' }) ? 'on' : ''}`} onClick={() => setPrimer({ kind: 'greyscale' })}>
+          <span className="chip-swatch bw" aria-hidden /> {t('primer.greyscale')}
+        </button>
+        {options.map((o) => {
+          if (!o.paint) return null;
+          const value: Primer = { kind: 'paint', hex: o.paint.hex, paintId: o.paint.id };
+          const on = primer?.kind === 'paint' && primer.paintId === o.paint.id;
+          return (
+            <button key={o.id} role="radio" aria-checked={on} className={`chip ${on ? 'on' : ''}`} onClick={() => setPrimer(value)} title={`${o.paint.name} · ${o.paint.brand}`}>
+              <span className="chip-swatch" style={{ background: o.paint.hex }} aria-hidden /> {t(k(`primer.${o.id}`))}
+            </button>
+          );
+        })}
+        <button className="chip" onClick={onCatalog}>
+          <Icon name="palette" size={12} /> {t('primer.other')}
+        </button>
+      </div>
+      {current && <small className="muted">{current.name} · {current.brand} {current.range}</small>}
+    </section>
   );
 }

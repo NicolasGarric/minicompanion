@@ -1,4 +1,4 @@
-import type { Finish, RoleId, Scheme, Zone, ZoneRecipe } from '../types';
+import type { Finish, Primer, RoleId, Scheme, Zone, ZoneRecipe } from '../types';
 import { defaultRecipe } from '../data/presets';
 import type { Library } from '../storage/db';
 import { engine } from '../engine/engine';
@@ -154,8 +154,16 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxW: number) {
   return t + '…';
 }
 
-export async function generateCard(opts: { format: CardFormat; name: string; zones: Zone[]; library: Library; lang: Lang; link: string }): Promise<Blob> {
-  const { format, name, zones, library, lang } = opts;
+export async function generateCard(opts: {
+  format: CardFormat;
+  name: string;
+  zones: Zone[];
+  primer: Primer | null;
+  library: Library;
+  lang: Lang;
+  link: string;
+}): Promise<Blob> {
+  const { format, name, zones, primer, library, lang } = opts;
   const t = (key: Parameters<typeof translate>[0], vars?: Record<string, string | number>) => translate(key, vars, lang);
   await Promise.allSettled([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 28px ${FONT}`)]);
 
@@ -168,7 +176,7 @@ export async function generateCard(opts: { format: CardFormat; name: string; zon
   ctx.fillRect(0, 0, W, H);
 
   const pad = 64;
-  const painted = canvasFromImageData(renderOffscreen(zones));
+  const painted = canvasFromImageData(renderOffscreen(zones, primer));
   const reference = canvasFromImageData(engine.sourceImageData());
 
   const story = format === 'story';
@@ -217,7 +225,7 @@ export async function generateCard(opts: { format: CardFormat; name: string; zon
     ctx.fillText(t('card.reference'), ix + 12, iy + inset - 12);
 
     // Swatches + paint names
-    const lines = buildRecipe(zones, library, lang);
+    const lines = buildRecipe(zones, library, lang, primer);
     // Rows must end above the footer rule (story: H-200, square: H-150).
     const maxRows = story ? 6 : 7;
     const rowH = story ? 76 : 96;

@@ -136,7 +136,7 @@ export function Beginner() {
               <li key={s.technique} className="card technique">
                 <h3><span className="step-n">{i + 1}</span> {t(k(`tech.${s.technique}`))}</h3>
                 <p>{t(k(`tech.${s.technique}.how`))}</p>
-                {s.primer && <p className="tip">{t(k(`primer.${s.primer}`))}</p>}
+                {s.primer && <p className="tip">{t(k(`beginner.primer.${s.primer}`))}</p>}
                 {s.paints.map(({ paint, similarity, forKey }) => (
                   <div key={paint.id + forKey} className="plan-paint">
                     <Swatch hex={paint.hex} size={28} />

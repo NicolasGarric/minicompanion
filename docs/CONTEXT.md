@@ -143,6 +143,10 @@ discover → paint → share → play → watch → back to physical stores.
 - [x] 3-step editor (Image → Colours → Paints & share), closest paints first, effects behind a
       toggle, live shopping list with "I have it", share card, variants, presets in step 3.
 - [x] Removed: reference-palette panel, harmonies panel, old zones panel (and their dead strings).
+- [x] Layer model: primer step (B&W or primer colour on the miniature), unpainted colours are
+      transparent, drawn areas are reorderable layers, border flood-fill background (see PAINT_V2.md).
+- [x] Tap a part, mobile bottom sheet, long press / hold to see the original, split / merge colours,
+      preferred brand, before / after card, popular colours for grey or drawn zones.
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 

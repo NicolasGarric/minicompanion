@@ -6,10 +6,13 @@
  * 2. Every full-resolution pixel gets the label of its nearest centre.
  * 3. A 3×3 majority filter removes isolated pixels, then a 1 px box blur softens the edges.
  *    Masks are a partition of unity: at every pixel they add up to 255.
- * 4. The background is the colour covering most (>55 %) of the image border.
+ * 4. The background is what the image border reaches without crossing a strong edge.
  *
- * Self-contained (no app imports) so it runs in the browser and in Node unit tests.
+ * No app imports (only the pure region-growing helpers) so it runs in the browser and in Node tests.
  */
+
+// Explicit .ts extension: Node resolves it when the unit tests import this file directly.
+import { dilate, growFromBorder, lumaMaps } from './parts.ts';
 
 export interface ImageLike {
   data: Uint8ClampedArray | Uint8Array;
@@ -37,6 +40,10 @@ export interface Segmentation {
 
 const L_WEIGHT = 0.45; // lightness counts less than hue/chroma
 const GREYSCALE_CHROMA = 9; // mean Lab chroma under which a photo counts as colourless
+const BG_MIN_WEIGHT = 0.05; // a backdrop smaller than this is not one
+const BG_MAX_WEIGHT = 0.85; // larger than this: the subject fills the frame, there is no backdrop
+const MIN_COLOUR_WEIGHT = 0.004; // colours left with less than this after removing the backdrop join it
+const BACKDROP_LOSS = 0.25; // a colour keeping under 25 % of itself outside the backdrop was the backdrop colour
 const SAMPLE_SIDE = 160;
 const ITERATIONS = 14;
 
@@ -130,29 +137,56 @@ export function segmentImage(img: ImageLike, count: number): Segmentation {
     };
   }).filter((c) => c.weight > 0);
 
-  // 4. Background = colour covering most of the border (if it clearly dominates)
-  const border = new Float64Array(k);
-  let borderTotal = 0;
-  const band = Math.max(1, Math.round(Math.min(w, h) * 0.03));
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (x >= band && x < w - band && y >= band && y < h - band) continue;
-      border[clean[y * w + x]]++;
-      borderTotal++;
-    }
-  }
+  // 4. Background = what can be reached from the image border without crossing a strong edge
+  //    (a backdrop with a gradient or vignette is smooth; the figure's outline is not). It is carved
+  //    out of the colour masks, so the masks still add up to 255 everywhere.
   clusters.sort((a, b) => b.weight - a.weight);
   let background = -1;
-  let best = 0;
-  clusters.forEach((c, i) => {
-    const share = border[c.label] / borderTotal;
-    if (share > best) {
-      best = share;
-      background = i;
+  const bgMask = growFromBorder(lumaMaps(img));
+  let bgSum = 0;
+  for (let i = 0; i < bgMask.length; i++) bgSum += bgMask[i];
+  const bgShare = bgSum / (255 * w * h);
+  if (bgShare >= BG_MIN_WEIGHT && bgShare <= BG_MAX_WEIGHT) {
+    // Pixels hugging the backdrop (2 px), used to absorb the anti-aliased rim of backdrop colours.
+    const rim = dilate(bgMask, w, h, 2);
+    const weightOf = (m: Uint8Array) => m.reduce((acc, v) => acc + v, 0) / (255 * w * h);
+    // Pass 1: carve the backdrop out of every colour, all against the same backdrop mask.
+    const lostMost = new Set<(typeof clusters)[number]>();
+    for (const c of clusters) {
+      const before = c.weight;
+      for (let i = 0; i < c.mask.length; i++) c.mask[i] = Math.round((c.mask[i] * (255 - bgMask[i])) / 255);
+      c.weight = weightOf(c.mask);
+      if (c.weight < before * BACKDROP_LOSS) lostMost.add(c);
     }
-  });
-  // A real backdrop covers well over half of the border, even when the base touches the bottom edge.
-  if (best < 0.55) background = -1;
+    // Pass 2: a colour that lost most of itself to the backdrop was the backdrop colour: its pixels
+    // right next to the backdrop are its anti-aliased rim and join it. Its pixels inside the figure
+    // (e.g. highlights of the same grey) stay a colour of the figure.
+    for (const c of lostMost) {
+      for (let i = 0; i < c.mask.length; i++) {
+        if (!c.mask[i] || rim[i] < 128) continue;
+        bgMask[i] = Math.min(255, bgMask[i] + c.mask[i]);
+        c.mask[i] = 0;
+      }
+      c.weight = weightOf(c.mask);
+    }
+    // Tiny leftovers are noise: they join the background too.
+    for (const c of clusters.filter((x) => x.weight < MIN_COLOUR_WEIGHT)) {
+      for (let i = 0; i < bgMask.length; i++) bgMask[i] = Math.min(255, bgMask[i] + c.mask[i]);
+    }
+    clusters = clusters.filter((x) => x.weight >= MIN_COLOUR_WEIGHT);
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0, p = 0; i < bgMask.length; i++, p += 4) {
+      const v = bgMask[i];
+      if (!v) continue;
+      r += data[p] * v;
+      g += data[p + 1] * v;
+      b += data[p + 2] * v;
+      n += v;
+    }
+    clusters.push({ hex: `#${hex2(r / n)}${hex2(g / n)}${hex2(b / n)}`, weight: n / (255 * w * h), mask: bgMask, label: -1 });
+    clusters.sort((a, b) => b.weight - a.weight);
+    background = clusters.findIndex((c) => c.label === -1);
+  }
 
   clusters = clusters.map(({ hex, weight, mask }) => ({ hex, weight, mask })) as typeof clusters;
   return { clusters, background, greyscale };

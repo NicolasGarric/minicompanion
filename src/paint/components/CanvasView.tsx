@@ -20,6 +20,7 @@ export function CanvasView() {
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
   const zones = useStore((s) => s.zones);
+  const primer = useStore((s) => s.primer);
   const maskVersion = useStore((s) => s.maskVersion);
   const tool = useStore((s) => s.tool);
   const brush = useStore((s) => s.brush);
@@ -150,11 +151,11 @@ export function CanvasView() {
   useEffect(() => {
     if (!engine.loaded || !resultRef.current) return;
     const id = requestAnimationFrame(() => {
-      engine.render(zones);
+      engine.render(zones, undefined, undefined, primer);
       resultRef.current!.getContext('2d')!.putImageData(engine.out!, 0, 0);
     });
     return () => cancelAnimationFrame(id);
-  }, [zones, maskVersion, width, height]);
+  }, [zones, primer, maskVersion, width, height]);
 
   useEffect(() => {
     if (!engine.loaded || !sourceRef.current) return;
@@ -179,8 +180,8 @@ export function CanvasView() {
     const rect = st.pending;
     st.pending = null;
     if (!rect) return;
-    const zs = useStore.getState().zones;
-    engine.render(zs, rect);
+    const { zones: zs, primer: pr } = useStore.getState();
+    engine.render(zs, rect, undefined, pr);
     const w = rect.x1 - rect.x0;
     const h = rect.y1 - rect.y0;
     resultRef.current!.getContext('2d')!.putImageData(engine.out!, 0, 0, rect.x0, rect.y0, w, h);
