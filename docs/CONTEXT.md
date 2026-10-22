@@ -197,19 +197,30 @@ discover → paint → share → play → watch → back to physical stores.
 | "Automated check" games | Deleted after each live check (admin-only cleanup function) |
 | Next priorities | Full tournament flow, painting contest, visual pass, PAINT performance |
 
-## Open points / next steps
+## Open points / next steps (updated 2026-10-23)
 
-- **Next session — multi-week tournaments** (owner request, 2026-10-28): let the organiser set a
-  precise date and time **per round** (events played over several weeks) and a **venue per round**
-  (store or address, possibly different each week). Impacts: `rounds` gets `scheduled_at` and
-  venue fields (or a `round_venues` link to stores), the organise form gets a round planner, the
-  pairings / table pages and the .ics export show each round's date and place, reminders per round.
-- Japanese terms to validate with a native hobbyist: see `// CHECK:` in `src/i18n/ja.ts`
-  (エリア for "zone", ウォッシュ, コントラスト系塗料, 配色 for "scheme", サーフェイサー vs プライマー, grim).
-- Visual pass (owner): spacing, typography scale, editor layout on tablets.
-- Zone names are created in the UI language at creation time and are not re-translated.
-- Hosted share links + real analytics endpoint need a small backend (decision for later).
-- Push to GitHub needs the owner to re-authenticate (`gh auth login`), remote is already set.
+Agreed order: 4. PAINT performance → 5. visual pass. Then:
+
+1. **Multi-week tournaments** (owner request): date and time **per round**, **venue per round**
+   (store or address); shown in pairings, table pages, .ics, reminders per round.
+2. **PAINT performance**: render in a Web Worker (or WebGL) so colour changes stay fluid on 2048 px
+   images (full render ≈190 ms today).
+3. **Visual pass** on the whole app (typography, spacing, tablet layout, editor). Known details:
+   painting-contest pages still show "pts / rounds / players" of the tournament header; the empty
+   middle of the result card when no photo is attached.
+4. Tournaments list: **map and filters** (city, distance, format, type; Leaflet is already approved).
+5. **Organiser dashboard** (registrations over time, check-ins, list status, contest entries) and
+   **bridges** PAINT ↔ PLAY (e.g. "paint this army" from a list, contest entry from a PAINT project).
+6. **Moderation**: report button (table `reports` exists) and an admin review page.
+7. **Stores page**: still a client-side sample list; switch it to the database stores (store pages,
+   regular nights and leagues already use the database).
+8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
+9. **Japanese review** by a native hobbyist: `// CHECK:` markers in `src/core/i18n/ja.ts` and all
+   PLAY texts added since (owner: later).
+10. **Security**: the database password leaked once and is not rotated yet (owner's choice).
+11. Demo data: in the live database the "Friday Live Clash" table 3 shows 14–14 marked as a win
+    (fixed in `seed_tournament.sql` for new installs).
+12. Zone names are created in the UI language and not re-translated.
 
 ## Dev environment notes
 
