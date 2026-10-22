@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { k, useT } from '../../core/i18n';
 import { TopBar } from '../components/TopBar';
@@ -20,11 +20,17 @@ export function Editor() {
   const step = useStore((s) => s.step);
   const compareOpen = useStore((s) => s.compareOpen);
   const shareOpen = useStore((s) => s.shareOpen);
+  const activeZoneId = useStore((s) => s.activeZoneId);
   const [help, setHelp] = useState(false);
+  // Mobile: the panel is a bottom sheet; selecting a colour on the image raises it.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  useEffect(() => {
+    if (activeZoneId) setSheetOpen(true);
+  }, [activeZoneId]);
   useEditorShortcuts(() => setHelp(true));
 
   return (
-    <div className={`editor step-${step}`}>
+    <div className={`editor step-${step} ${sheetOpen ? 'sheet-open' : ''}`}>
       <TopBar onShortcuts={() => setHelp(true)} />
       <StepBar />
       {step === 2 && <Toolbar />}
@@ -33,6 +39,10 @@ export function Editor() {
         <CanvasView />
       </main>
       <aside className="side panel-col" aria-label={t(k(`steps.${step}`))}>
+        <button className="sheet-handle" onClick={() => setSheetOpen(!sheetOpen)} aria-expanded={sheetOpen}>
+          <span className="grip" aria-hidden />
+          <span>{t(sheetOpen ? 'editor.sheetLower' : 'editor.sheetRaise')}</span>
+        </button>
         <div className="tab-body">
           {step === 1 && <StepImage />}
           {step === 2 && <StepColours />}

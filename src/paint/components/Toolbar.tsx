@@ -6,6 +6,7 @@ import { IconButton, Segmented, Slider, Toggle } from '../../core/ui/ui';
 
 export const TOOLS: { id: Tool; icon: string; key: string }[] = [
   { id: 'picker', icon: 'picker', key: 'I' },   // v2: tap the image to select the colour under the finger
+  { id: 'part', icon: 'target', key: 'P' },     // tap a part of a primed miniature to make it an area
   { id: 'brush', icon: 'brush', key: 'B' },
   { id: 'eraser', icon: 'eraser', key: 'E' },
   { id: 'lasso', icon: 'lasso', key: 'L' },
@@ -32,6 +33,7 @@ export function ToolOptions() {
   const brush = useStore((s) => s.brush);
   const wand = useStore((s) => s.wand);
   const lassoMode = useStore((s) => s.lassoMode);
+  const partSensitivity = useStore((s) => s.partSensitivity);
   const zone = useStore((s) => s.zones.find((z) => z.id === s.activeZoneId));
   const set = useStore((s) => s.set);
   const modes: { value: CombineMode; label: string }[] = (['add', 'subtract', 'replace'] as CombineMode[]).map((m) => ({ value: m, label: t(k(`mode.${m}`)) }));
@@ -70,6 +72,12 @@ export function ToolOptions() {
         <>
           <Segmented value={lassoMode} options={modes} onChange={(lassoMode) => set({ lassoMode })} />
           <span className="hint hide-sm">{t('lasso.hint')}</span>
+        </>
+      )}
+      {tool === 'part' && (
+        <>
+          <Slider label={t('part.sensitivity')} value={partSensitivity} min={1} max={10} step={1} onChange={(v) => set({ partSensitivity: v })} />
+          <span className="hint">{t('part.hint')}</span>
         </>
       )}
       {tool === 'picker' && <span className="hint">{t('picker.hint')}</span>}

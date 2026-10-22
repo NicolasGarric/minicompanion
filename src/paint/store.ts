@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { Paint, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
 import { engine, type Rect } from './engine/engine';
-import { segmentImage } from './engine/segment';
+import { segmentImage, splitMask } from './engine/segment';
+import { growPart } from './engine/parts';
 import { copyRect, pasteRect, bboxOf, type MaskPatch } from './engine/maskPatch';
 import { applyRecipe, defaultRecipe, recipeOf, ROLES, roleLabel, schemeName } from './data/presets';
 import { PAINTS } from './data/paints';
@@ -68,6 +69,8 @@ interface State {
   brush: { size: number; hardness: number; flow: number; smart: boolean; smartTolerance: number };
   wand: { tolerance: number; contiguous: boolean; feather: number; mode: CombineMode };
   lassoMode: CombineMode;
+  /** "Tap a part" tool: 1 (tight) … 10 (loose) */
+  partSensitivity: number;
   showMask: boolean;
   split: number | null;
   compareOpen: boolean;
@@ -105,6 +108,9 @@ interface Actions {
   assignPaint: (paint: Paint, slot?: SlotId) => void;
   setZoneColour: (id: string, colour: Paint | string) => void;
   resetZoneColour: (id: string) => void;
+  tapPart: (x: number, y: number) => void;
+  mergeZones: (targetId: string, sourceId: string) => void;
+  splitZone: (id: string) => boolean;
 
   commitMaskEdit: (zoneId: string, before: Uint8Array, rect: Rect) => void;
   applySelection: (sel: Uint8Array, mode: CombineMode) => void;
@@ -238,6 +244,7 @@ export const useStore = create<State & Actions>((set, get) => {
     brush: { size: 40, hardness: 0.6, flow: 1, smart: false, smartTolerance: 25 },
     wand: { tolerance: 18, contiguous: true, feather: 1, mode: 'add' },
     lassoMode: 'add',
+    partSensitivity: 5,
     showMask: false,
     split: null,
     compareOpen: false,
@@ -520,6 +527,65 @@ export const useStore = create<State & Actions>((set, get) => {
       const zone = get().zones.find((z) => z.id === id);
       if (!zone?.refHex) return;
       get().updateZone(id, { ...defaultRecipe(), base: { hex: zone.refHex } }, 'reset');
+    },
+
+    /**
+     * "Tap a part" (grey-primed minis): the part under the finger becomes a drawn area, or is added
+     * to the open drawn area.
+     */
+    tapPart: (x, y) => {
+      const sel = growPart({ lum: engine.lumG, edge: engine.edge, width: engine.width, height: engine.height }, x, y, get().partSensitivity);
+      if (!bboxOf(sel, engine.width, engine.height)) return;
+      const active = get().zones.find((z) => z.id === get().activeZoneId);
+      if (active && active.source !== 'auto') {
+        get().applySelection(sel, 'add');
+        return;
+      }
+      push(snapshot());
+      const n = get().zones.filter((z) => !isAuto(z)).length + 1;
+      const z = makeZone('other', tr('zones.manualName', { n }));
+      engine.setMask(z.id, sel);
+      set((s) => ({ zones: [...s.zones, z], activeZoneId: z.id, maskVersion: s.maskVersion + 1 }));
+    },
+
+    /** Adds the area of `sourceId` to `targetId` and removes `sourceId` (target keeps its recipe). */
+    mergeZones: (targetId, sourceId) => {
+      if (targetId === sourceId) return;
+      const full = fullRect();
+      push(snapshot([{ id: targetId, rect: full }, { id: sourceId, rect: full }]));
+      const t = engine.ensureMask(targetId);
+      const s = engine.ensureMask(sourceId);
+      for (let i = 0; i < t.length; i++) if (s[i]) t[i] = Math.min(255, t[i] + s[i]);
+      engine.invalidate(targetId);
+      set((st) => ({ zones: st.zones.filter((z) => z.id !== sourceId), activeZoneId: targetId, maskVersion: st.maskVersion + 1 }));
+    },
+
+    /** Splits a colour zone into two sub-colours; the new one is added right after it. */
+    splitZone: (id) => {
+      const zone = get().zones.find((z) => z.id === id);
+      if (!zone) return false;
+      const res = splitMask({ data: engine.src, width: engine.width, height: engine.height }, engine.ensureMask(id));
+      if (!res) {
+        get().toast(tr('colours.splitUniform'), 'info');
+        return false;
+      }
+      push(snapshot([{ id, rect: fullRect() }]));
+      const [m1, m2] = res.masks;
+      const [hex1, hex2] = res.hexes;
+      engine.setMask(id, m1);
+      const unchanged = !zone.refHex || zone.base.hex === zone.refHex;
+      const kept: Zone = { ...zone, refHex: hex1, base: unchanged ? { hex: hex1 } : zone.base };
+      const taken = new Set(get().zones.map((z) => z.name));
+      let name = colourName(hex2);
+      for (let k = 2; taken.has(name); k++) name = `${colourName(hex2)} ${k}`;
+      const added: Zone = { ...makeZone(zone.role, name), source: zone.source, refHex: hex2, base: { hex: hex2 } };
+      engine.setMask(added.id, m2);
+      set((s) => {
+        const zones = s.zones.map((z) => (z.id === id ? kept : z));
+        zones.splice(zones.findIndex((z) => z.id === id) + 1, 0, added);
+        return { zones, activeZoneId: added.id, maskVersion: s.maskVersion + 1 };
+      });
+      return true;
     },
 
     /**

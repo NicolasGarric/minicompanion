@@ -49,7 +49,8 @@ export function PalettePanel({ slot, onPicked }: { slot?: SlotId; onPicked?: () 
   const updateLibrary = useStore((s) => s.updateLibrary);
   const assignPaint = useStore((s) => s.assignPaint);
   const [query, setQuery] = useState('');
-  const [brands, setBrands] = useState<Brand[]>(['Citadel']);
+  const preferred = usePrefs((s) => s.brand);
+  const [brands, setBrands] = useState<Brand[]>(() => (preferred === 'all' ? BRANDS.filter((b) => b !== 'Custom') : [preferred as Brand]));
   const [type, setType] = useState<PaintType | 'all'>('all');
   const [favOnly, setFavOnly] = useState(false);
   const [selected, setSelected] = useState<Paint | null>(null);

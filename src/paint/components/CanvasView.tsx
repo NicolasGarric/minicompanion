@@ -39,6 +39,9 @@ export function CanvasView() {
   const [spaceDown, setSpaceDown] = useState(false);
   const [lasso, setLasso] = useState<{ x: number; y: number }[] | null>(null);
   const [panning, setPanning] = useState(false);
+  /** Shows the untouched photo while true (long press on the image, or the hold button). */
+  const [peek, setPeek] = useState(false);
+  const pressRef = useRef<{ x: number; y: number; img: { x: number; y: number }; timer: number; peeked: boolean } | null>(null);
 
   const strokeRef = useRef<{ stroke: BrushStroke; zoneId: string; pending: Rect | null; raf: number } | null>(null);
   const panRef = useRef<{ sx: number; sy: number; vx: number; vy: number } | null>(null);
@@ -55,6 +58,20 @@ export function CanvasView() {
 
   useLayoutEffect(() => {
     fit();
+  }, [fit]);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    let last = `${el.clientWidth}x${el.clientHeight}`;
+    const ro = new ResizeObserver(() => {
+      const size = `${el.clientWidth}x${el.clientHeight}`;
+      if (size === last) return;
+      last = size;
+      fit();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [fit]);
 
   useEffect(() => {
@@ -188,8 +205,18 @@ export function CanvasView() {
 
     const pickTool = effectiveTool === 'picker' || (e.altKey && (effectiveTool === 'brush' || effectiveTool === 'eraser'));
     if (pickTool) {
-      // Selects the colour zone under the pointer; the panel opens its editor.
-      if (s.selectZoneAt(p.x, p.y) && s.step !== 2) s.set({ step: 2 });
+      // Tap = select the colour under the finger (on release); long press = see the original photo.
+      const press = { x: e.clientX, y: e.clientY, img: p, peeked: false, timer: 0 };
+      press.timer = window.setTimeout(() => {
+        press.peeked = true;
+        setPeek(true);
+      }, 350);
+      pressRef.current = press;
+      return;
+    }
+
+    if (effectiveTool === 'part') {
+      s.tapPart(p.x, p.y);
       return;
     }
 
@@ -241,6 +268,11 @@ export function CanvasView() {
   const onPointerMove = (e: React.PointerEvent) => {
     const r = wrapRef.current!.getBoundingClientRect();
     setCursor({ x: e.clientX - r.left, y: e.clientY - r.top });
+    const press = pressRef.current;
+    if (press && !press.peeked && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) {
+      clearTimeout(press.timer); // moving is not a tap nor a long press
+      pressRef.current = null;
+    }
 
     if (splitDragRef.current) {
       const v = viewRef.current;
@@ -271,6 +303,17 @@ export function CanvasView() {
 
   const endInteraction = (e: React.PointerEvent) => {
     splitDragRef.current = false;
+    const press = pressRef.current;
+    if (press) {
+      clearTimeout(press.timer);
+      pressRef.current = null;
+      if (press.peeked) setPeek(false);
+      else if (e.type === 'pointerup') {
+        const s = useStore.getState();
+        // Selects the colour zone under the pointer; the panel opens its editor.
+        if (s.selectZoneAt(press.img.x, press.img.y) && s.step !== 2) s.set({ step: 2 });
+      }
+    }
     if (panRef.current) {
       panRef.current = null;
       setPanning(false);
@@ -301,6 +344,7 @@ export function CanvasView() {
     wand: 'crosshair',
     lasso: 'crosshair',
     picker: 'crosshair',
+    part: 'cell',
   }[effectiveTool];
 
   const showBrushCursor = cursor && (effectiveTool === 'brush' || effectiveTool === 'eraser');
@@ -325,7 +369,7 @@ export function CanvasView() {
             width={width}
             height={height}
             className={view.z > 2.5 ? 'pixelated' : ''}
-            style={{ clipPath: split !== null ? `inset(0 ${(1 - split) * 100}% 0 0)` : 'inset(0 100% 0 0)' }}
+            style={{ clipPath: peek ? 'none' : split !== null ? `inset(0 ${(1 - split) * 100}% 0 0)` : 'inset(0 100% 0 0)' }}
           />
           <canvas ref={overlayRef} width={width} height={height} />
           {lasso && (
@@ -362,7 +406,22 @@ export function CanvasView() {
           />
         )}
       </div>
+      {peek && <div className="peek-label">{t('canvas.original')}</div>}
       <div className="zoom-bar">
+        <button
+          className="hold-original"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            setPeek(true);
+          }}
+          onPointerUp={() => setPeek(false)}
+          onPointerCancel={() => setPeek(false)}
+          onContextMenu={(e) => e.preventDefault()}
+          title={t('canvas.holdOriginal')}
+        >
+          <Icon name="eye" size={16} />
+          <span>{t('canvas.holdOriginal')}</span>
+        </button>
         <IconButton icon="zoomOut" label={t('canvas.zoomOut')} onClick={() => zoomAt(1 / 1.25)} size={16} />
         <button className="zoom-value" onClick={() => setView((v) => ({ ...v, z: 1 }))} title={t('canvas.actualSize')}>
           {Math.round(view.z * 100)}%

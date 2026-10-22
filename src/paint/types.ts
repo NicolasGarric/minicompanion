@@ -100,7 +100,7 @@ export interface Variant {
   createdAt: number;
 }
 
-export type Tool = 'hand' | 'brush' | 'eraser' | 'wand' | 'lasso' | 'picker';
+export type Tool = 'hand' | 'brush' | 'eraser' | 'wand' | 'lasso' | 'picker' | 'part';
 
 export interface ProjectMeta {
   id: string;

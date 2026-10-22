@@ -15,6 +15,7 @@ const ICONS: Record<string, ReactNode> = {
   eyeOff: <><path d="M9.88 9.88a3 3 0 104.24 4.24M10.73 5.08A10.4 10.4 0 0112 5c7 0 10 7 10 7a13.2 13.2 0 01-1.67 2.68M6.61 6.61A13.5 13.5 0 002 12s3 7 10 7a9.7 9.7 0 005.39-1.61M2 2l20 20" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
+  target: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" /></>,
   trash: <><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" /></>,
   copy: <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></>,
   up: <path d="M18 15l-6-6-6 6" />,

@@ -234,3 +234,77 @@ function softenMask(m: Uint8Array, w: number, h: number): Uint8Array {
   }
   return out;
 }
+
+/**
+ * Splits one colour zone into two sub-colours (2-means on the pixels of its mask).
+ * The two new masks add up exactly to the original one, so the partition of zones is kept.
+ * Returns null when the zone is too uniform to split (one side under 2 %).
+ */
+export function splitMask(img: ImageLike, mask: Uint8Array): { masks: [Uint8Array, Uint8Array]; hexes: [string, string] } | null {
+  const { data, width: w, height: h } = img;
+  const inside: number[] = [];
+  for (let i = 0; i < w * h; i++) if (mask[i] > 127) inside.push(i);
+  if (inside.length < 50) return null;
+
+  // Sample at most ~20k pixels for the clustering
+  const step = Math.max(1, Math.floor(inside.length / 20000));
+  const n = Math.ceil(inside.length / step);
+  const sLab = new Float32Array(n * 3);
+  for (let s = 0; s < n; s++) {
+    const p = inside[s * step] * 4;
+    lab(data[p], data[p + 1], data[p + 2], sLab, s * 3, 1);
+  }
+  let chroma = 0;
+  for (let s = 0; s < n; s++) chroma += Math.hypot(sLab[s * 3 + 1], sLab[s * 3 + 2]);
+  const lWeight = chroma / n < GREYSCALE_CHROMA ? 1 : L_WEIGHT;
+  if (lWeight !== 1) {
+    for (let s = 0; s < n; s++) {
+      const p = inside[s * step] * 4;
+      lab(data[p], data[p + 1], data[p + 2], sLab, s * 3, lWeight);
+    }
+  }
+
+  // Seeds: the sample farthest from the first one, then the one farthest from that.
+  const centres = new Float32Array(6);
+  let a = 0;
+  for (let s = 1; s < n; s++) if (d2(sLab, s * 3, sLab, 0) > d2(sLab, a * 3, sLab, 0)) a = s;
+  let b = 0;
+  for (let s = 1; s < n; s++) if (d2(sLab, s * 3, sLab, a * 3) > d2(sLab, b * 3, sLab, a * 3)) b = s;
+  centres.set(sLab.subarray(a * 3, a * 3 + 3), 0);
+  centres.set(sLab.subarray(b * 3, b * 3 + 3), 3);
+  for (let it = 0; it < ITERATIONS; it++) {
+    const sum = new Float64Array(8);
+    for (let s = 0; s < n; s++) {
+      const c = nearest(sLab, s * 3, centres, 2) * 4;
+      sum[c] += sLab[s * 3];
+      sum[c + 1] += sLab[s * 3 + 1];
+      sum[c + 2] += sLab[s * 3 + 2];
+      sum[c + 3]++;
+    }
+    for (let c = 0; c < 2; c++) {
+      if (!sum[c * 4 + 3]) continue;
+      for (let j = 0; j < 3; j++) centres[c * 3 + j] = sum[c * 4 + j] / sum[c * 4 + 3];
+    }
+  }
+
+  const m1 = new Uint8Array(w * h);
+  const m2 = new Uint8Array(w * h);
+  const rgb = new Float64Array(8);
+  const px = new Float32Array(3);
+  for (let i = 0; i < w * h; i++) {
+    const v = mask[i];
+    if (!v) continue;
+    const p = i * 4;
+    lab(data[p], data[p + 1], data[p + 2], px, 0, lWeight);
+    const c = nearest(px, 0, centres, 2);
+    (c === 0 ? m1 : m2)[i] = v;
+    rgb[c * 4] += data[p] * v;
+    rgb[c * 4 + 1] += data[p + 1] * v;
+    rgb[c * 4 + 2] += data[p + 2] * v;
+    rgb[c * 4 + 3] += v;
+  }
+  const total = rgb[3] + rgb[7];
+  if (rgb[3] / total < 0.02 || rgb[7] / total < 0.02) return null;
+  const hex = (c: number) => `#${hex2(rgb[c * 4] / rgb[c * 4 + 3])}${hex2(rgb[c * 4 + 1] / rgb[c * 4 + 3])}${hex2(rgb[c * 4 + 2] / rgb[c * 4 + 3])}`;
+  return { masks: [m1, m2], hexes: [hex(0), hex(1)] };
+}

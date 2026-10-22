@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Brand } from '../types';
 import { useStore } from '../store';
 import { k, useT } from '../../core/i18n';
+import { usePrefs } from '../../core/prefs';
 import { extractPalette } from '../lib/palette';
 import { buildBeginnerPlan, suggestMain } from '../lib/beginner';
 import { track } from '../../core/analytics';
@@ -21,7 +22,8 @@ export function Beginner() {
   const [image, setImage] = useState<{ data: ImageData; url: string; name: string } | null>(null);
   const [main, setMain] = useState<string | null>(null);
   const [secondary, setSecondary] = useState<string | null>(null);
-  const [brand, setBrand] = useState<Brand>('Citadel');
+  const preferred = usePrefs((s) => s.brand);
+  const [brand, setBrand] = useState<Brand>(BRANDS.includes(preferred as Brand) ? (preferred as Brand) : 'Citadel');
   const [have, setHave] = useState<Set<string>>(new Set());
   const completed = useRef(false);
 

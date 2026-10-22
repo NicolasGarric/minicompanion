@@ -70,6 +70,7 @@ export function ShareDialog() {
           options={[
             { value: 'square', label: t('share.square') },
             { value: 'story', label: t('share.story') },
+            { value: 'compare', label: t('share.compare') },
           ]}
         />
         <div className={`share-preview ${format}`}>

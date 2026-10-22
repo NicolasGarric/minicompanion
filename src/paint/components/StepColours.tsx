@@ -3,10 +3,18 @@ import { allPaints, MAX_COLOURS, MIN_COLOURS, paintById, useStore } from '../sto
 import type { Paint, SlotId, Tool, Zone } from '../types';
 import { nearestPaints } from '../../core/lib/color';
 import { similarity } from '../lib/beginner';
-import { useT } from '../../core/i18n';
+import { k, useT } from '../../core/i18n';
+import { usePrefs } from '../../core/prefs';
+import { BRANDS } from '../data/paints';
 import { ColorInput, Icon, IconButton, Modal, pct, Slider, Swatch } from '../../core/ui/ui';
 import { PalettePanel } from './PalettePanel';
 import { ZoneEffects } from './ZoneEffects';
+
+/**
+ * Varied starting colours, used instead of "closest paints" when the zone has no real colour to match
+ * (grey-primed photo, drawn area): blue, red, green, yellow, bone, steel, black, brass.
+ */
+const STARTER_HEXES = ['#0d407f', '#960c09', '#1f5429', '#fbb81c', '#dbd1b2', '#888d8f', '#231f20', '#a47552'];
 
 /** Step 2: the reference colours of the image, each one editable with a live render. */
 export function StepColours() {
@@ -48,12 +56,18 @@ export function StepColours() {
           <IconButton icon="plus" label={t('colours.more')} onClick={() => changeCount(count + 1)} disabled={count >= MAX_COLOURS} />
         </div>
       </div>
+      <BrandSelect />
       {greyscale ? (
         <div className="notice">
           <p>{t('colours.greyscale')}</p>
-          <button className="btn small" onClick={() => addManualZone()}>
-            <Icon name="lasso" size={14} /> {t('colours.addDrawn')}
-          </button>
+          <div className="field-row">
+            <button className="btn small primary" onClick={() => useStore.getState().set({ tool: 'part' })}>
+              <Icon name="target" size={14} /> {t('tool.part')}
+            </button>
+            <button className="btn small" onClick={() => addManualZone()}>
+              <Icon name="lasso" size={14} /> {t('colours.addDrawn')}
+            </button>
+          </div>
         </div>
       ) : (
         <p className="hint">{t('colours.hint')}</p>
@@ -75,9 +89,14 @@ export function StepColours() {
           </ul>
         </>
       )}
-      <button className="btn small ghost" onClick={() => addManualZone()}>
-        <Icon name="lasso" size={14} /> {t('colours.addDrawn')}
-      </button>
+      <div className="field-row">
+        <button className="btn small ghost" onClick={() => useStore.getState().set({ tool: 'part' })}>
+          <Icon name="target" size={14} /> {t('tool.part')}
+        </button>
+        <button className="btn small ghost" onClick={() => addManualZone()}>
+          <Icon name="lasso" size={14} /> {t('colours.addDrawn')}
+        </button>
+      </div>
 
       {background && <BackgroundRow zone={background} />}
 
@@ -92,18 +111,31 @@ export function StepColours() {
 
 function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; onCatalog: (slot: SlotId) => void }) {
   const t = useT();
+  const itemRef = useRef<HTMLLIElement>(null);
+  // Selecting a colour by tapping the image scrolls its editor into view.
+  useEffect(() => {
+    if (open) itemRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [open]);
   const library = useStore((s) => s.library);
   const tool = useStore((s) => s.tool);
-  const { setActiveZone, updateZone, setZoneColour, resetZoneColour, removeZone, set } = useStore.getState();
+  const zones = useStore((s) => s.zones);
+  const brand = usePrefs((s) => s.brand);
+  const greyscale = useStore((s) => s.greyscale);
+  const { setActiveZone, updateZone, setZoneColour, resetZoneColour, removeZone, mergeZones, splitZone, set } = useStore.getState();
   const [effects, setEffects] = useState(false);
   const paint = paintById(zone.base.paintId, library);
   const changed = zone.refHex ? zone.base.hex !== zone.refHex : true;
 
-  // Closest paints to the colour seen in the photo: "what paint is this?" before "what else?".
-  const suggestions = useMemo(
-    () => nearestPaints(zone.refHex ?? zone.base.hex, allPaints(library), 6, (p) => p.type !== 'shade' && p.type !== 'technical'),
-    [zone.refHex, zone.base.hex, library],
-  );
+  // Closest paints to the colour seen in the photo ("what paint is this?"), or varied starting
+  // colours when there is nothing to match (grey primer, drawn area).
+  const starter = greyscale || !zone.refHex;
+  const suggestions = useMemo(() => {
+    const pool = allPaints(library);
+    const ok = (p: Paint) => p.type !== 'shade' && p.type !== 'technical' && (brand === 'all' || p.brand === brand || p.brand === 'Custom');
+    if (!starter) return nearestPaints(zone.refHex!, pool, 6, ok);
+    const picks = STARTER_HEXES.map((hex) => nearestPaints(hex, pool, 1, ok)[0]).filter(Boolean);
+    return picks.filter((m, i) => picks.findIndex((x) => x.paint.id === m.paint.id) === i);
+  }, [starter, zone.refHex, library, brand]);
 
   const refine = (t: Tool) => {
     setActiveZone(zone.id);
@@ -111,7 +143,7 @@ function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; 
   };
 
   return (
-    <li className={`colour-item ${open ? 'open' : ''} ${zone.visible ? '' : 'hidden'}`}>
+    <li ref={itemRef} className={`colour-item ${open ? 'open' : ''} ${zone.visible ? '' : 'hidden'}`}>
       <div className="colour-row">
         <button className="colour-head" onClick={() => setActiveZone(open ? null : zone.id)} aria-expanded={open}>
           {zone.refHex && <Swatch hex={zone.refHex} size={22} title={t('colours.original')} />}
@@ -137,10 +169,10 @@ function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; 
             <input className="text-input" value={zone.name} maxLength={40} onChange={(e) => updateZone(zone.id, { name: e.target.value }, 'name')} />
           </label>
 
-          <div className="section-title">{t('colours.suggestions')}</div>
+          <div className="section-title">{t(starter ? 'colours.popular' : 'colours.suggestions')}</div>
           <div className="paint-chips">
             {suggestions.map(({ paint: p, dE }) => (
-              <PaintChip key={p.id} paint={p} sim={similarity(dE)} active={p.id === zone.base.paintId} onClick={() => setZoneColour(zone.id, p)} />
+              <PaintChip key={p.id} paint={p} sim={starter ? null : similarity(dE)} active={p.id === zone.base.paintId} onClick={() => setZoneColour(zone.id, p)} />
             ))}
           </div>
           <div className="colour-actions">
@@ -171,11 +203,29 @@ function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; 
           <div className="refine-tools">
             {(['brush', 'eraser', 'lasso', 'wand'] as Tool[]).map((x) => (
               <button key={x} className={`btn small ${tool === x ? 'primary' : ''}`} onClick={() => refine(x)}>
-                <Icon name={x} size={14} /> {t(`tool.${x}` as const)}
+                <Icon name={x} size={14} /> {t(k(`tool.${x}`))}
               </button>
             ))}
           </div>
           {zone.source === 'auto' && <p className="hint">{t('colours.refineHint')}</p>}
+          <div className="refine-tools">
+            <button className="btn small" onClick={() => splitZone(zone.id)}>
+              <Icon name="split" size={14} /> {t('colours.split')}
+            </button>
+            <select
+              className="select slim"
+              value=""
+              aria-label={t('colours.mergeWith')}
+              onChange={(e) => e.target.value && mergeZones(zone.id, e.target.value)}
+            >
+              <option value="">{t('colours.mergeWith')}</option>
+              {zones
+                .filter((z) => z.id !== zone.id && (z.source === 'auto') === (zone.source === 'auto'))
+                .map((z) => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+            </select>
+          </div>
 
           <button className="link small" onClick={() => setEffects(!effects)} aria-expanded={effects}>
             {effects ? t('colours.effectsHide') : t('colours.effectsShow')}
@@ -202,13 +252,13 @@ function ColourZoneItem({ zone, open, onCatalog }: { zone: Zone; open: boolean; 
   );
 }
 
-function PaintChip({ paint, sim, active, onClick }: { paint: Paint; sim: number; active: boolean; onClick: () => void }) {
+function PaintChip({ paint, sim, active, onClick }: { paint: Paint; sim: number | null; active: boolean; onClick: () => void }) {
   return (
     <button className={`paint-chip ${active ? 'on' : ''}`} onClick={onClick} title={`${paint.name} — ${paint.brand} ${paint.range}`}>
       <Swatch hex={paint.hex} size={22} />
       <span>
         {paint.name}
-        <small>{paint.brand} · {sim}%</small>
+        <small>{paint.brand}{sim !== null ? ` · ${sim}%` : ''}</small>
       </span>
     </button>
   );
@@ -234,5 +284,22 @@ function BackgroundRow({ zone }: { zone: Zone }) {
         {t(zone.visible ? 'colours.backgroundExclude' : 'colours.backgroundInclude')}
       </button>
     </div>
+  );
+}
+
+/** Paint brand used for suggestions, remembered on this device. */
+function BrandSelect() {
+  const t = useT();
+  const { brand, setBrand } = usePrefs();
+  return (
+    <label className="field inline brand-select">
+      <span>{t('colours.brand')}</span>
+      <select className="select slim" value={brand} onChange={(e) => setBrand(e.target.value)}>
+        <option value="all">{t('colours.brandAll')}</option>
+        {BRANDS.filter((b) => b !== 'Custom').map((b) => (
+          <option key={b} value={b}>{b}</option>
+        ))}
+      </select>
+    </label>
   );
 }
