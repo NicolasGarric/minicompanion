@@ -174,6 +174,23 @@ discover → paint → share → play → watch → back to physical stores.
 - Every new SQL rule gets a test in `supabase/tests/*.sql` (run with the local harness).
 - Seeded data is fictional; demo accounts use `demo-password-2026` (demo project only).
 
+## Owner decisions (2026-10-25)
+
+| Topic | Decision |
+|---|---|
+| Demo data names | Keep real game names in demo games (player-typed text, no logos, trademark notice) |
+| Profiles | Private by default; public page by choice |
+| Report photos / attached army | Visible according to the **author's profile**: public profile → public, private → participants only |
+| Messages / notifications | **Supabase Realtime** (no new dependency; SQL to enable it on the tables) |
+| Twitch | Embedded player only for now (no developer credentials, no live status) |
+| Pairings | Swiss rounds only |
+| Tournaments | Always public; an account is needed to register |
+| Old PAINT projects | Re-detect base paints **automatically** on open (colours carried over to the closest) |
+| Japanese review | Later |
+| DB password (leaked once) | Not rotated for now, owner's choice |
+| "Automated check" games | Deleted after each live check (admin-only cleanup function) |
+| Next priorities | Full tournament flow, painting contest, visual pass, PAINT performance |
+
 ## Open points / next steps
 
 - Japanese terms to validate with a native hobbyist: see `// CHECK:` in `src/i18n/ja.ts`
