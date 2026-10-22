@@ -53,7 +53,12 @@ export function useEditorShortcuts(openHelp: () => void) {
           break;
         case 'n':
         case 'N':
-          s.addZone('other');
+          s.addManualZone();
+          break;
+        case '1':
+        case '2':
+        case '3':
+          s.set({ step: Number(e.key) as 1 | 2 | 3 });
           break;
         case '?':
           openHelp();

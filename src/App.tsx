@@ -22,7 +22,7 @@ function useAutosave() {
     const unsub = useStore.subscribe((s, prev) => {
       if (!s.projectId || s.projectId !== prev.projectId) return;
       const changed =
-        s.zones !== prev.zones || s.maskVersion !== prev.maskVersion || s.variants !== prev.variants || s.projectName !== prev.projectName || s.palette !== prev.palette;
+        s.zones !== prev.zones || s.maskVersion !== prev.maskVersion || s.variants !== prev.variants || s.projectName !== prev.projectName;
       if (!changed) return;
       clearTimeout(timer);
       timer = setTimeout(() => useStore.getState().saveNow(), 1500);

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useStore } from '../store';
 import { engine, type Rect } from '../engine/engine';
 import { BrushStroke, feather, magicWand, polygonMask, type CombineMode } from '../engine/maskTools';
-import { rgbToHex } from '../../core/lib/color';
+import { copyRect } from '../engine/maskPatch';
 import { Icon, IconButton } from '../../core/ui/ui';
 import { translate as tr, useT } from '../../core/i18n';
 
@@ -188,10 +188,8 @@ export function CanvasView() {
 
     const pickTool = effectiveTool === 'picker' || (e.altKey && (effectiveTool === 'brush' || effectiveTool === 'eraser'));
     if (pickTool) {
-      const c = engine.sampleSource(Math.round(p.x), Math.round(p.y), 2);
-      const hex = rgbToHex(c);
-      s.addPaletteColor(hex);
-      s.set({ pickedColor: hex, harmonyBase: hex });
+      // Selects the colour zone under the pointer; the panel opens its editor.
+      if (s.selectZoneAt(p.x, p.y) && s.step !== 2) s.set({ step: 2 });
       return;
     }
 
@@ -283,11 +281,8 @@ export function CanvasView() {
       flushStroke();
       strokeRef.current = null;
       const s = useStore.getState();
-      if (st.stroke.dirty) {
-        s.pushMaskHistory(st.zoneId, st.stroke.snapshot);
-        engine.invalidate(st.zoneId);
-        s.bumpMasks();
-      }
+      const dirty = st.stroke.dirty;
+      if (dirty) s.commitMaskEdit(st.zoneId, copyRect(st.stroke.snapshot, engine.width, dirty), dirty);
     }
     if (lasso) {
       if (lasso.length > 2) {

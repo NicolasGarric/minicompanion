@@ -42,13 +42,12 @@ export function PaintSearchLink({ paint }: { paint: Paint }) {
   );
 }
 
-export function PalettePanel() {
+/** Paint catalogue. `onPicked` lets a modal close once a paint is chosen. */
+export function PalettePanel({ slot, onPicked }: { slot?: SlotId; onPicked?: () => void } = {}) {
   const t = useT();
   const library = useStore((s) => s.library);
   const updateLibrary = useStore((s) => s.updateLibrary);
   const assignPaint = useStore((s) => s.assignPaint);
-  const pickedColor = useStore((s) => s.pickedColor);
-  const set = useStore((s) => s.set);
   const [query, setQuery] = useState('');
   const [brands, setBrands] = useState<Brand[]>(['Citadel']);
   const [type, setType] = useState<PaintType | 'all'>('all');
@@ -89,7 +88,8 @@ export function PalettePanel() {
 
   const pick = (p: Paint) => {
     setSelected(p);
-    assignPaint(p);
+    assignPaint(p, slot);
+    onPicked?.();
   };
 
   const addCustom = () => {
@@ -100,10 +100,6 @@ export function PalettePanel() {
     if (!brands.includes('Custom')) setBrands([...brands, 'Custom']);
   };
 
-  const pickedMatches = useMemo(
-    () => (pickedColor ? nearestPaints(pickedColor, paints, 4, (p) => brands.length === 0 || brands.includes(p.brand)) : []),
-    [pickedColor, paints, brands],
-  );
   const equivalents = useMemo(
     () =>
       selected
@@ -139,28 +135,6 @@ export function PalettePanel() {
           <Toggle checked={library.ownedOnly} onChange={(ownedOnly) => updateLibrary((l) => ({ ...l, ownedOnly }))} label={t('palette.ownedOnly')} />
         </div>
       </div>
-
-      {pickedColor && (
-        <div className="card picked">
-          <div className="card-head">
-            <Swatch hex={pickedColor} size={28} />
-            <div>
-              <strong>{t('palette.picked', { hex: pickedColor.toUpperCase() })}</strong>
-              <small className="muted">{t('palette.closest')}</small>
-            </div>
-            <IconButton icon="x" label={t('common.close')} size={14} onClick={() => set({ pickedColor: null })} />
-          </div>
-          <div className="match-list">
-            {pickedMatches.map(({ paint, dE }) => (
-              <button key={paint.id} className="match" onClick={() => pick(paint)}>
-                <Swatch hex={paint.hex} size={20} />
-                <span>{paint.name}<small>{brandLabel(paint.brand, t)} · {paint.range}</small></span>
-                <span className="similarity">{similarity(dE)}%</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {selected && (
         <div className="card selected-paint">

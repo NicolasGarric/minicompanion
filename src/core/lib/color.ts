@@ -90,11 +90,6 @@ export function hslToRgb([h, s, l]: RGB): RGB {
   return [(rgb[0] + m) * 255, (rgb[1] + m) * 255, (rgb[2] + m) * 255];
 }
 
-export function shiftHue(hex: string, deg: number): string {
-  const [h, s, l] = rgbToHsl(hexToRgb(hex));
-  return rgbToHex(hslToRgb([h + deg, s, l]));
-}
-
 export function adjustLightness(hex: string, delta: number): string {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
   return rgbToHex(hslToRgb([h, s, Math.max(0, Math.min(1, l + delta))]));
@@ -109,26 +104,6 @@ export function mixHex(a: string, b: string, t: number): string {
 export function isDark(hex: string): boolean {
   const [r, g, b] = hexToRgb(hex);
   return r * 0.299 + g * 0.587 + b * 0.114 < 140;
-}
-
-/** Labels and descriptions live in i18n (`harmony.<id>`, `harmony.<id>.desc`). */
-export interface Harmony {
-  id: string;
-  offsets: number[];
-}
-
-export const HARMONIES: Harmony[] = [
-  { id: 'complementary', offsets: [180] },
-  { id: 'split', offsets: [150, 210] },
-  { id: 'analogous', offsets: [-30, 30] },
-  { id: 'triadic', offsets: [120, 240] },
-  { id: 'tetradic', offsets: [90, 180, 270] },
-  { id: 'mono', offsets: [] },
-];
-
-export function harmonyColors(hex: string, h: Harmony): string[] {
-  if (h.id === 'mono') return [adjustLightness(hex, -0.22), adjustLightness(hex, -0.1), adjustLightness(hex, 0.12), adjustLightness(hex, 0.25)];
-  return h.offsets.map((o) => shiftHue(hex, o));
 }
 
 const labCache = new Map<string, RGB>();

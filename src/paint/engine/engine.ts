@@ -157,6 +157,7 @@ export class PaintEngine {
     if (prepared.length === 0) return out;
 
     const { lumLin, lumG, blur, edge, noise } = this;
+    const exclusive = prepared.filter((z) => z.exclusive);
     const LUT = LINEAR_TO_SRGB_LUT;
     const L = SRGB_TO_LINEAR;
 
@@ -165,6 +166,12 @@ export class PaintEngine {
         const i = y * w + x;
         let touched = false;
         let cr = 0, cg = 0, cb = 0;
+        // Automatic colour zones split each pixel between them (their masks add up to 255).
+        // Blending them in sequence with plain alpha would let the photo show through at shared
+        // edges; instead each one weighs exactly its share: alpha = m / (photo share + masks so far).
+        let shared = 255;
+        for (let k = 0; k < exclusive.length; k++) shared -= exclusive[k].mask[i];
+        if (shared < 0) shared = 0;
         for (let k = 0; k < prepared.length; k++) {
           const z = prepared[k];
           const bb = z.bbox!;
@@ -178,7 +185,13 @@ export class PaintEngine {
             cb = L[o[p + 2]];
             touched = true;
           }
-          const alpha = (m / 255) * z.opacity;
+          let alpha: number;
+          if (z.exclusive) {
+            shared += m;
+            alpha = (m / shared) * z.opacity;
+          } else {
+            alpha = (m / 255) * z.opacity;
+          }
           const lg = lumG[i];
           const bl = blur[i];
           const cav = clamp01((bl - lg) * 7);
@@ -187,6 +200,9 @@ export class PaintEngine {
           // Relative shading from the photo
           let sh = 1 + (lumLin[i] / z.mean - 1) * z.shading;
           if (sh < 0) sh = 0;
+          // Photos of painted miniatures already contain highlights: compress what is far above the
+          // zone's mean so recolouring does not blow them out to white.
+          if (z.exclusive && sh > 1) sh = 1 + (sh - 1) / (1 + 0.6 * (sh - 1));
           if (z.metal) sh = Math.pow(sh, 1.45);
           let pr = z.base[0] * z.bright;
           let pg = z.base[1] * z.bright;
@@ -282,6 +298,8 @@ interface PreparedZone {
   wash: [number, number, number, number] | null;
   hl: [number, number, number, number] | null;
   dry: [number, number, number, number] | null;
+  /** Automatic colour zone: shares pixels with the other automatic zones (partition). */
+  exclusive: boolean;
 }
 
 function layer(e: Zone['wash']): [number, number, number, number] | null {
@@ -309,6 +327,7 @@ function prepareZone(z: Zone, c: ZoneCache, mask: Uint8Array): PreparedZone {
     wash: layer(z.wash),
     hl: layer(z.highlight),
     dry: layer(z.drybrush),
+    exclusive: z.source === 'auto',
   };
 }
 

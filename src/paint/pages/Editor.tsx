@@ -1,63 +1,42 @@
 import { useState } from 'react';
-import { useStore, type RightTab } from '../store';
+import { useStore } from '../store';
 import { k, useT } from '../../core/i18n';
 import { TopBar } from '../components/TopBar';
+import { StepBar } from '../components/StepBar';
 import { Toolbar, ToolOptions, TOOLS } from '../components/Toolbar';
 import { CanvasView } from '../components/CanvasView';
-import { ReferencePanel } from '../components/ReferencePanel';
-import { ZonesPanel } from '../components/ZonesPanel';
-import { PalettePanel } from '../components/PalettePanel';
-import { SchemesPanel } from '../components/SchemesPanel';
-import { HarmonyPanel } from '../components/HarmonyPanel';
-import { VariantsPanel } from '../components/VariantsPanel';
+import { StepImage } from '../components/StepImage';
+import { StepColours } from '../components/StepColours';
+import { StepFinish } from '../components/StepFinish';
 import { CompareView } from '../components/CompareView';
 import { ShareDialog } from '../components/ShareDialog';
 import { Footer } from '../../core/layout/Shell';
-import { Icon, Modal } from '../../core/ui/ui';
+import { Modal } from '../../core/ui/ui';
 import { useEditorShortcuts } from './useEditorShortcuts';
 
-const TABS: { id: RightTab; icon: string }[] = [
-  { id: 'zones', icon: 'layers' },
-  { id: 'palette', icon: 'palette' },
-  { id: 'schemes', icon: 'book' },
-  { id: 'harmony', icon: 'wheel' },
-  { id: 'variants', icon: 'compare' },
-];
-
+/** PAINT editor: canvas + the panel of the current step (1 image, 2 colours, 3 paints & share). */
 export function Editor() {
   const t = useT();
-  const rightTab = useStore((s) => s.rightTab);
+  const step = useStore((s) => s.step);
   const compareOpen = useStore((s) => s.compareOpen);
   const shareOpen = useStore((s) => s.shareOpen);
-  const set = useStore((s) => s.set);
   const [help, setHelp] = useState(false);
   useEditorShortcuts(() => setHelp(true));
 
   return (
-    <div className="editor">
+    <div className={`editor step-${step}`}>
       <TopBar onShortcuts={() => setHelp(true)} />
-      <Toolbar />
+      <StepBar />
+      {step === 2 && <Toolbar />}
       <main className="center">
-        <ToolOptions />
+        {step === 2 && <ToolOptions />}
         <CanvasView />
       </main>
-      <aside className="side reference-col">
-        <ReferencePanel />
-      </aside>
-      <aside className="side panel-col">
-        <div className="tabs" role="tablist">
-          {TABS.map((tab) => (
-            <button key={tab.id} role="tab" aria-selected={rightTab === tab.id} className={rightTab === tab.id ? 'on' : ''} onClick={() => set({ rightTab: tab.id })}>
-              <Icon name={tab.icon} size={15} /> <span>{t(k(`tab.${tab.id}`))}</span>
-            </button>
-          ))}
-        </div>
+      <aside className="side panel-col" aria-label={t(k(`steps.${step}`))}>
         <div className="tab-body">
-          {rightTab === 'zones' && <ZonesPanel />}
-          {rightTab === 'palette' && <PalettePanel />}
-          {rightTab === 'schemes' && <SchemesPanel />}
-          {rightTab === 'harmony' && <HarmonyPanel />}
-          {rightTab === 'variants' && <VariantsPanel />}
+          {step === 1 && <StepImage />}
+          {step === 2 && <StepColours />}
+          {step === 3 && <StepFinish />}
         </div>
       </aside>
       <div className="editor-footer">
@@ -76,11 +55,11 @@ export function Editor() {
               ['F', t('canvas.fit')],
               ['M', t('editor.showMask')],
               ['\\', t('editor.beforeAfter')],
-              ['N', t('keys.newZone')],
+              ['N', t('colours.addDrawn')],
+              ['1 / 2 / 3', t('steps.label')],
               ['Ctrl+Z', t('editor.undo')],
               ['Ctrl+Shift+Z / Ctrl+Y', t('editor.redo')],
               ['Ctrl+S', t('keys.save')],
-              [t('keys.altClick'), t('tool.picker')],
             ].map(([key, d]) => (
               <div key={key}>
                 <dt><kbd>{key}</kbd></dt>

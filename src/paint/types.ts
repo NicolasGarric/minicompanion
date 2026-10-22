@@ -46,6 +46,12 @@ export interface Zone {
   wash: EffectLayer;
   highlight: EffectLayer;
   drybrush: EffectLayer;
+  /** 'auto' = created from a reference colour of the image; 'manual' (default) = drawn by the user. */
+  source?: 'auto' | 'manual';
+  /** Original colour of an automatic zone, as found in the photo. */
+  refHex?: string;
+  /** The automatic zone detected as the photo background (excluded by default = hidden). */
+  isBackground?: boolean;
 }
 
 export type SlotId = 'base' | 'wash' | 'highlight' | 'drybrush';
@@ -64,7 +70,7 @@ export type RoleId =
   | 'other';
 
 /** A zone's recipe, reusable across projects (schemes, presets). */
-export type ZoneRecipe = Omit<Zone, 'id' | 'name' | 'role' | 'visible'>;
+export type ZoneRecipe = Omit<Zone, 'id' | 'name' | 'role' | 'visible' | 'source' | 'refHex' | 'isBackground'>;
 
 export interface Scheme {
   id: string;
@@ -111,5 +117,6 @@ export interface ProjectRecord extends ProjectMeta {
   zones: Zone[];
   masks: Record<string, Uint8Array>;
   variants: Variant[];
-  palette: PaletteColor[];
+  /** v1 only (reference palette panel); ignored since v2, where reference colours are zones. */
+  palette?: PaletteColor[];
 }

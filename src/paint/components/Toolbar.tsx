@@ -5,11 +5,11 @@ import { k, useT } from '../../core/i18n';
 import { IconButton, Segmented, Slider, Toggle } from '../../core/ui/ui';
 
 export const TOOLS: { id: Tool; icon: string; key: string }[] = [
+  { id: 'picker', icon: 'picker', key: 'I' },   // v2: tap the image to select the colour under the finger
   { id: 'brush', icon: 'brush', key: 'B' },
   { id: 'eraser', icon: 'eraser', key: 'E' },
-  { id: 'wand', icon: 'wand', key: 'W' },
   { id: 'lasso', icon: 'lasso', key: 'L' },
-  { id: 'picker', icon: 'picker', key: 'I' },
+  { id: 'wand', icon: 'wand', key: 'W' },
   { id: 'hand', icon: 'hand', key: 'H' },
 ];
 

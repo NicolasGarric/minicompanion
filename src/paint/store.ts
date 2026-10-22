@@ -1,23 +1,26 @@
 import { create } from 'zustand';
-import type { PaletteColor, Paint, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
-import { engine } from './engine/engine';
+import type { Paint, ProjectRecord, RoleId, Scheme, SlotId, Tool, Variant, Zone } from './types';
+import { engine, type Rect } from './engine/engine';
+import { segmentImage } from './engine/segment';
+import { copyRect, pasteRect, bboxOf, type MaskPatch } from './engine/maskPatch';
 import { applyRecipe, defaultRecipe, recipeOf, ROLES, roleLabel, schemeName } from './data/presets';
 import { PAINTS } from './data/paints';
 import { db, emptyLibrary, type Library } from './storage/db';
 import { blobToImageData, imageDataToBlob } from '../core/lib/image';
 import { renderThumb, resampleMask } from './lib/render';
-import { extractPalette } from './lib/palette';
-import { nearestPaints } from '../core/lib/color';
+import { colourName, uniqueNames } from './lib/colourName';
+import { deltaE, hexToRgb, rgbToHex } from '../core/lib/color';
 import { track } from '../core/analytics';
 import { translate as tr } from '../core/i18n';
 import { combine, feather, growShrink, type CombineMode } from './engine/maskTools';
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
+/** One undo step: zone settings + the changed rectangles of the affected masks. */
 interface HistoryEntry {
   zones: Zone[];
   activeZoneId: string | null;
-  masks: [string, Uint8Array][];
+  patches: MaskPatch[];
 }
 
 export interface Toast {
@@ -26,13 +29,17 @@ export interface Toast {
   tone: 'info' | 'success' | 'error';
 }
 
-export type RightTab = 'zones' | 'palette' | 'schemes' | 'harmony' | 'variants';
+export type Step = 1 | 2 | 3;
 export type MaskOp = 'grow' | 'shrink' | 'feather' | 'invert' | 'clear' | 'fill';
 
+export const DEFAULT_COLOURS = 6;
+export const MIN_COLOURS = 3;
+export const MAX_COLOURS = 12;
+
 export interface NewProjectOptions {
-  /** Masks per role (demo figure). */
+  /** Ready-made masks per role (demo figure). */
   masks?: Partial<Record<RoleId, Uint8Array>>;
-  /** Creates one empty zone per role of this scheme, with its recipe. */
+  /** Scheme to apply to the detected colours, biggest colour first (shared links, beginner path). */
   scheme?: Scheme;
 }
 
@@ -47,9 +54,15 @@ interface State {
   zones: Zone[];
   activeZoneId: string | null;
   variants: Variant[];
-  palette: PaletteColor[];
   maskVersion: number;
   loading: boolean;
+
+  /** Editor flow: 1 image, 2 colours, 3 paints & share. */
+  step: Step;
+  colourCount: number;
+  analysing: boolean;
+  /** Last analysis found a colourless photo (primed miniature): suggest drawing areas. */
+  greyscale: boolean;
 
   tool: Tool;
   brush: { size: number; hardness: number; flow: number; smart: boolean; smartTolerance: number };
@@ -59,10 +72,8 @@ interface State {
   split: number | null;
   compareOpen: boolean;
   shareOpen: boolean;
+  /** Slot that receives the next paint picked in the catalogue. */
   activeSlot: SlotId;
-  rightTab: RightTab;
-  pickedColor: string | null;
-  harmonyBase: string | null;
 
   library: Library;
   past: HistoryEntry[];
@@ -85,19 +96,17 @@ interface Actions {
   saveNow: () => Promise<void>;
   buildRecord: () => Promise<ProjectRecord | null>;
 
-  addZone: (role?: RoleId, name?: string) => string;
+  analyseColours: (count: number) => Promise<void>;
+  addManualZone: () => string;
   updateZone: (id: string, patch: Partial<Zone>, key?: string) => void;
   removeZone: (id: string) => void;
-  duplicateZone: (id: string) => void;
-  moveZone: (id: string, dir: -1 | 1) => void;
   setActiveZone: (id: string | null) => void;
+  selectZoneAt: (x: number, y: number) => string | null;
   assignPaint: (paint: Paint, slot?: SlotId) => void;
+  setZoneColour: (id: string, colour: Paint | string) => void;
+  resetZoneColour: (id: string) => void;
 
-  addPaletteColor: (hex: string) => void;
-  removePaletteColor: (id: string) => void;
-  assignColorToZone: (colorId: string, zoneId: string | undefined) => void;
-
-  pushMaskHistory: (id: string, before: Uint8Array) => void;
+  commitMaskEdit: (zoneId: string, before: Uint8Array, rect: Rect) => void;
   applySelection: (sel: Uint8Array, mode: CombineMode) => void;
   maskOp: (op: MaskOp, amount?: number) => void;
   bumpMasks: () => void;
@@ -121,8 +130,12 @@ interface Actions {
 }
 
 const HISTORY_LIMIT = 60;
+/** Colours closer than this (ΔE) keep the recipe the user gave them when re-analysing. */
+const CARRY_OVER_DE = 14;
 
 const roleColor = (role: RoleId) => ROLES.find((r) => r.id === role)?.color ?? '#888888';
+const fullRect = (): Rect => ({ x0: 0, y0: 0, x1: engine.width, y1: engine.height });
+const isAuto = (z: Zone) => z.source === 'auto';
 
 export function makeZone(role: RoleId, name: string): Zone {
   return {
@@ -135,22 +148,36 @@ export function makeZone(role: RoleId, name: string): Zone {
   };
 }
 
-function paletteFrom(image: ImageData): PaletteColor[] {
-  return extractPalette(image, 6).map((c) => ({ id: uid(), hex: c.hex, weight: c.weight, source: 'auto' as const }));
+/** Average source colour under a mask (used for the demo figure's ready-made zones). */
+function meanColour(mask: Uint8Array): string {
+  let r = 0, g = 0, b = 0, n = 0;
+  const src = engine.src;
+  for (let i = 0; i < mask.length; i += 3) {
+    const a = mask[i];
+    if (!a) continue;
+    r += src[i * 4] * a;
+    g += src[i * 4 + 1] * a;
+    b += src[i * 4 + 2] * a;
+    n += a;
+  }
+  return n ? rgbToHex([r / n, g / n, b / n]) : '#808080';
 }
 
 export const useStore = create<State & Actions>((set, get) => {
-  const snapshot = (maskIds: string[] = []): HistoryEntry => ({
+  const snapshot = (patches: { id: string; rect: Rect }[] = []): HistoryEntry => ({
     zones: structuredClone(get().zones),
     activeZoneId: get().activeZoneId,
-    masks: maskIds.map((id) => [id, new Uint8Array(engine.ensureMask(id))]),
+    patches: patches.map(({ id, rect }) => ({ id, rect, data: copyRect(engine.ensureMask(id), engine.width, rect) })),
   });
 
   const push = (entry: HistoryEntry) =>
     set((s) => ({ past: [...s.past.slice(-HISTORY_LIMIT + 1), entry], future: [], lastCommitKey: '' }));
 
   const restore = (entry: HistoryEntry) => {
-    for (const [id, data] of entry.masks) engine.setMask(id, new Uint8Array(data));
+    for (const p of entry.patches) {
+      pasteRect(engine.ensureMask(p.id), engine.width, p.rect, p.data);
+      engine.invalidate(p.id);
+    }
     set((s) => ({ zones: entry.zones, activeZoneId: entry.activeZoneId, maskVersion: s.maskVersion + 1 }));
   };
 
@@ -160,6 +187,22 @@ export const useStore = create<State & Actions>((set, get) => {
     return { imageBlob: blob, imageUrl: URL.createObjectURL(blob), width: image.width, height: image.height };
   };
 
+  /** Applies a role-based scheme to plain colour zones: main role to the biggest colour, etc. */
+  const applySchemeBySize = (scheme: Scheme) => {
+    const targets = get().zones.filter((z) => isAuto(z) && !z.isBackground);
+    const recipes = ROLES.map((r) => ({ role: r.id, rec: scheme.recipes[r.id] })).filter((x) => x.rec);
+    if (!targets.length || !recipes.length) return;
+    push(snapshot());
+    const byId = new Map(targets.slice(0, recipes.length).map((z, i) => [z.id, recipes[i]]));
+    set((s) => ({
+      zones: s.zones.map((z) => {
+        const r = byId.get(z.id);
+        return r ? { ...applyRecipe(z, r.rec), role: r.role } : z;
+      }),
+    }));
+    get().toast(tr('toast.schemeApplied', { name: schemeName(scheme), count: byId.size }), 'success');
+  };
+
   const resetProjectState = (): Partial<State> => ({
     past: [],
     future: [],
@@ -167,8 +210,9 @@ export const useStore = create<State & Actions>((set, get) => {
     split: null,
     compareOpen: false,
     shareOpen: false,
-    pickedColor: null,
     maskVersion: 0,
+    step: 2,
+    tool: 'picker',
   });
 
   return {
@@ -182,11 +226,15 @@ export const useStore = create<State & Actions>((set, get) => {
     zones: [],
     activeZoneId: null,
     variants: [],
-    palette: [],
     maskVersion: 0,
     loading: false,
 
-    tool: 'brush',
+    step: 2,
+    colourCount: DEFAULT_COLOURS,
+    analysing: false,
+    greyscale: false,
+
+    tool: 'picker',
     brush: { size: 40, hardness: 0.6, flow: 1, smart: false, smartTolerance: 25 },
     wand: { tolerance: 18, contiguous: true, feather: 1, mode: 'add' },
     lassoMode: 'add',
@@ -195,9 +243,6 @@ export const useStore = create<State & Actions>((set, get) => {
     compareOpen: false,
     shareOpen: false,
     activeSlot: 'base',
-    rightTab: 'zones',
-    pickedColor: null,
-    harmonyBase: null,
 
     library: emptyLibrary(),
     past: [],
@@ -217,29 +262,6 @@ export const useStore = create<State & Actions>((set, get) => {
 
     newProject: async (image, name, opts = {}) => {
       engine.load(image);
-      const zones: Zone[] = [];
-      if (opts.masks) {
-        for (const { id: role } of ROLES) {
-          const m = opts.masks[role];
-          if (!m) continue;
-          const z = makeZone(role, roleLabel(role));
-          engine.setMask(z.id, m);
-          zones.push(z);
-        }
-      } else if (opts.scheme) {
-        for (const { id: role } of ROLES) {
-          const rec = opts.scheme.recipes[role];
-          if (!rec) continue;
-          const z = applyRecipe(makeZone(role, roleLabel(role)), rec);
-          engine.ensureMask(z.id);
-          zones.push(z);
-        }
-      }
-      if (zones.length === 0) {
-        const z = makeZone('armor', roleLabel('armor'));
-        engine.ensureMask(z.id);
-        zones.push(z);
-      }
       const blob = await imageDataToBlob(image);
       set({
         ...resetProjectState(),
@@ -247,32 +269,43 @@ export const useStore = create<State & Actions>((set, get) => {
         projectId: uid(),
         projectName: name,
         createdAt: Date.now(),
-        zones,
-        palette: paletteFrom(image),
-        activeZoneId: zones[0]?.id ?? null,
-        rightTab: 'zones',
+        zones: [],
+        activeZoneId: null,
       });
+
+      if (opts.masks) {
+        // Demo figure: its parts are already known, use them as the reference colours.
+        const zones: Zone[] = [];
+        for (const { id: role } of ROLES) {
+          const m = opts.masks[role];
+          if (!m) continue;
+          const ref = meanColour(m);
+          const z: Zone = { ...makeZone(role, roleLabel(role)), source: 'auto', refHex: ref, base: { hex: ref } };
+          engine.setMask(z.id, m);
+          zones.push(z);
+        }
+        set({ zones, activeZoneId: zones[0]?.id ?? null, colourCount: zones.length });
+      } else {
+        await get().analyseColours(DEFAULT_COLOURS);
+        if (opts.scheme) applySchemeBySize(opts.scheme);
+      }
       track('scheme_created');
       await get().saveNow();
     },
 
     replaceImage: async (image) => {
-      const { width: ow, height: oh, zones, variants } = get();
-      // Masks are resampled so painted zones roughly follow the new framing.
-      const ids = new Set([...zones.map((z) => z.id), ...variants.flatMap((v) => v.zones.map((z) => z.id))]);
+      const { width: ow, height: oh, zones, variants, colourCount } = get();
+      const hasAuto = zones.some(isAuto);
+      // Manual zones are resampled to the new framing; automatic ones are re-detected.
+      const ids = new Set([...zones.filter((z) => !isAuto(z)).map((z) => z.id), ...variants.flatMap((v) => v.zones.map((z) => z.id))]);
       const old = new Map([...ids].map((id) => [id, engine.masks.get(id)]));
       engine.load(image);
       for (const [id, m] of old) {
         engine.setMask(id, m ? resampleMask(m, ow, oh, image.width, image.height) : new Uint8Array(image.width * image.height));
       }
       const blob = await imageDataToBlob(image);
-      set((s) => ({
-        ...setImage(blob, image),
-        palette: [...paletteFrom(image), ...s.palette.filter((c) => c.source === 'picked')],
-        past: [],
-        future: [],
-        maskVersion: s.maskVersion + 1,
-      }));
+      set((s) => ({ ...setImage(blob, image), past: [], future: [], maskVersion: s.maskVersion + 1 }));
+      if (hasAuto) await get().analyseColours(colourCount);
       get().toast(tr('toast.imageReplaced'), 'success');
       await get().saveNow();
     },
@@ -297,6 +330,7 @@ export const useStore = create<State & Actions>((set, get) => {
       engine.load(img);
       for (const [id, m] of Object.entries(rec.masks)) engine.setMask(id, new Uint8Array(m));
       for (const z of rec.zones) engine.ensureMask(z.id);
+      const auto = rec.zones.filter(isAuto).length;
       set({
         ...resetProjectState(),
         ...setImage(rec.image, img),
@@ -305,15 +339,15 @@ export const useStore = create<State & Actions>((set, get) => {
         createdAt: rec.createdAt,
         zones: rec.zones,
         variants: rec.variants ?? [],
-        palette: rec.palette?.length ? rec.palette : paletteFrom(img),
-        activeZoneId: rec.zones[0]?.id ?? null,
+        colourCount: auto || DEFAULT_COLOURS,
+        activeZoneId: rec.zones.find((z) => z.visible)?.id ?? null,
       });
     },
 
     closeProject: () => {
       const url = get().imageUrl;
       if (url) URL.revokeObjectURL(url);
-      set({ projectId: null, zones: [], palette: [], activeZoneId: null, imageBlob: null, imageUrl: null, ...resetProjectState() });
+      set({ projectId: null, zones: [], activeZoneId: null, imageBlob: null, imageUrl: null, ...resetProjectState() });
     },
 
     buildRecord: async () => {
@@ -337,7 +371,6 @@ export const useStore = create<State & Actions>((set, get) => {
         zones: s.zones,
         masks,
         variants: s.variants,
-        palette: s.palette,
         thumb: renderThumb(s.zones, 220),
       };
     },
@@ -352,19 +385,69 @@ export const useStore = create<State & Actions>((set, get) => {
       }
     },
 
-    addZone: (role = 'other', name) => {
+    analyseColours: async (count) => {
+      if (!engine.loaded) return;
+      set({ analysing: true });
+      // Let the spinner paint before the (synchronous) analysis.
+      await new Promise((r) => setTimeout(r, 30));
+      const seg = segmentImage({ data: engine.src, width: engine.width, height: engine.height }, count);
+
+      const previous = get().zones.filter(isAuto);
+      const manual = get().zones.filter((z) => !isAuto(z));
+      const used = new Set<string>();
+      // The background gets its own label, so it does not take a colour name ("Light grey") from the figure.
+      const names = uniqueNames(seg.clusters.map((c, i) => (i === seg.background ? tr('colours.background') : colourName(c.hex))));
+
+      const autoZones = seg.clusters.map((c, i): Zone => {
+        const isBackground = i === seg.background;
+        // Carry over what the user did to the closest colour of the previous analysis.
+        const match = previous
+          .filter((p) => !used.has(p.id) && p.refHex)
+          .map((p) => ({ p, d: deltaE(hexToRgb(p.refHex!), hexToRgb(c.hex)) }))
+          .sort((a, b) => a.d - b.d)[0];
+        const base: Zone = { ...makeZone('other', names[i]), source: 'auto', refHex: c.hex, base: { hex: c.hex }, isBackground, visible: !isBackground };
+        if (!match || match.d > CARRY_OVER_DE) return base;
+        used.add(match.p.id);
+        const recolouredBefore = match.p.base.hex !== match.p.refHex;
+        return {
+          ...structuredClone(match.p),
+          id: base.id,
+          refHex: c.hex,
+          isBackground,
+          base: recolouredBefore ? match.p.base : { hex: c.hex },
+        };
+      });
+      autoZones.forEach((z, i) => engine.setMask(z.id, seg.clusters[i].mask));
+      // Background last in the list; the rest by size (the segmentation order).
+      autoZones.sort((a, b) => Number(!!a.isBackground) - Number(!!b.isBackground));
+
+      // Masks were replaced wholesale: undo history no longer matches them.
+      set((s) => ({
+        zones: [...autoZones, ...manual],
+        colourCount: seg.clusters.length,
+        greyscale: seg.greyscale,
+        // Nothing open: the list is the first thing to read.
+        activeZoneId: null,
+        analysing: false,
+        past: [],
+        future: [],
+        maskVersion: s.maskVersion + 1,
+      }));
+    },
+
+    addManualZone: () => {
       push(snapshot());
-      const count = get().zones.filter((z) => z.role === role).length;
-      const z = makeZone(role, name ?? `${roleLabel(role)}${count ? ` ${count + 1}` : ''}`);
+      const n = get().zones.filter((z) => !isAuto(z)).length + 1;
+      const z = makeZone('other', tr('zones.manualName', { n }));
       engine.ensureMask(z.id);
-      set((s) => ({ zones: [...s.zones, z], activeZoneId: z.id }));
+      set((s) => ({ zones: [...s.zones, z], activeZoneId: z.id, tool: 'lasso' }));
       return z.id;
     },
 
     updateZone: (id, patch, key) => {
       const s = get();
       const now = Date.now();
-      // Consecutive edits of the same field (slider drags) are merged into one undo step.
+      // Consecutive edits of the same field (slider drags, colour wheel) are merged into one undo step.
       const k = key ? `${id}:${key}` : `${id}:${Object.keys(patch).join(',')}`;
       if (k !== s.lastCommitKey || now - s.lastCommitAt > 900) push(snapshot());
       set((st) => ({
@@ -375,42 +458,30 @@ export const useStore = create<State & Actions>((set, get) => {
     },
 
     removeZone: (id) => {
-      push(snapshot([id]));
+      push(snapshot([{ id, rect: fullRect() }]));
       set((s) => {
         const zones = s.zones.filter((z) => z.id !== id);
-        return {
-          zones,
-          palette: s.palette.map((c) => (c.zoneId === id ? { ...c, zoneId: undefined } : c)),
-          activeZoneId: s.activeZoneId === id ? zones[zones.length - 1]?.id ?? null : s.activeZoneId,
-        };
+        return { zones, activeZoneId: s.activeZoneId === id ? zones.find((z) => z.visible)?.id ?? null : s.activeZoneId };
       });
-    },
-
-    duplicateZone: (id) => {
-      const src = get().zones.find((z) => z.id === id);
-      if (!src) return;
-      push(snapshot());
-      const z: Zone = { ...structuredClone(src), id: uid(), name: tr('zone.copyName', { name: src.name }) };
-      engine.setMask(z.id, new Uint8Array(engine.ensureMask(id)));
-      set((s) => {
-        const i = s.zones.findIndex((x) => x.id === id);
-        const zones = [...s.zones];
-        zones.splice(i + 1, 0, z);
-        return { zones, activeZoneId: z.id, maskVersion: s.maskVersion + 1 };
-      });
-    },
-
-    moveZone: (id, dir) => {
-      const zones = [...get().zones];
-      const i = zones.findIndex((z) => z.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= zones.length) return;
-      push(snapshot());
-      [zones[i], zones[j]] = [zones[j], zones[i]];
-      set({ zones });
     },
 
     setActiveZone: (id) => set({ activeZoneId: id }),
+
+    /** Zone under a point of the image: manual zones are on top, then the strongest colour. */
+    selectZoneAt: (x, y) => {
+      const i = Math.round(y) * engine.width + Math.round(x);
+      if (i < 0 || i >= engine.width * engine.height) return null;
+      const zones = get().zones;
+      const manualHit = [...zones].reverse().find((z) => !isAuto(z) && z.visible && (engine.masks.get(z.id)?.[i] ?? 0) > 127);
+      const hit =
+        manualHit ??
+        zones
+          .filter(isAuto)
+          .map((z) => ({ z, m: engine.masks.get(z.id)?.[i] ?? 0 }))
+          .sort((a, b) => b.m - a.m)[0]?.z;
+      if (hit) set({ activeZoneId: hit.id });
+      return hit?.id ?? null;
+    },
 
     assignPaint: (paint, slot) => {
       const s = get();
@@ -420,67 +491,103 @@ export const useStore = create<State & Actions>((set, get) => {
         return;
       }
       const target = slot ?? s.activeSlot;
-      const ref = { hex: paint.hex, paintId: paint.id };
-      if (target === 'base') {
-        const metal = paint.type === 'metallic';
-        s.updateZone(
-          zone.id,
-          {
-            base: ref,
-            contrast: paint.type === 'contrast',
-            finish: metal ? 'metal' : zone.finish === 'metal' ? 'mat' : zone.finish,
-          },
-          'base',
-        );
-      } else {
-        s.updateZone(zone.id, { [target]: { ...zone[target], ...ref, enabled: true } }, target);
+      if (target === 'base') return s.setZoneColour(zone.id, paint);
+      s.updateZone(zone.id, { [target]: { ...zone[target], hex: paint.hex, paintId: paint.id, enabled: true } }, target);
+    },
+
+    setZoneColour: (id, colour) => {
+      const zone = get().zones.find((z) => z.id === id);
+      if (!zone) return;
+      if (typeof colour === 'string') {
+        get().updateZone(id, { base: { hex: colour }, visible: true }, 'base');
+        return;
       }
+      const metal = colour.type === 'metallic';
+      get().updateZone(
+        id,
+        {
+          base: { hex: colour.hex, paintId: colour.id },
+          contrast: colour.type === 'contrast',
+          finish: metal ? 'metal' : zone.finish === 'metal' ? 'mat' : zone.finish,
+          // Recolouring the background means the user wants it back in the scheme.
+          visible: true,
+        },
+        'base',
+      );
     },
 
-    addPaletteColor: (hex) => {
-      if (get().palette.some((c) => c.hex === hex)) return;
-      set((s) => ({ palette: [...s.palette, { id: uid(), hex, source: 'picked' }] }));
+    resetZoneColour: (id) => {
+      const zone = get().zones.find((z) => z.id === id);
+      if (!zone?.refHex) return;
+      get().updateZone(id, { ...defaultRecipe(), base: { hex: zone.refHex } }, 'reset');
     },
 
-    removePaletteColor: (id) => set((s) => ({ palette: s.palette.filter((c) => c.id !== id) })),
+    /**
+     * Records a mask edit for undo. On automatic zones the edit is exclusive: what one colour gains
+     * is taken from the other colours (and what it loses is given back), so they stay a partition.
+     */
+    commitMaskEdit: (zoneId, before, rect) => {
+      const zones = get().zones;
+      const zone = zones.find((z) => z.id === zoneId);
+      if (!zone) return;
+      const w = engine.width;
+      const mask = engine.ensureMask(zoneId);
+      const patches: MaskPatch[] = [{ id: zoneId, rect, data: before }];
 
-    assignColorToZone: (colorId, zoneId) => {
-      const color = get().palette.find((c) => c.id === colorId);
-      if (!color) return;
-      set((s) => ({ palette: s.palette.map((c) => (c.id === colorId ? { ...c, zoneId } : c)) }));
-      if (!zoneId) return;
-      // The zone's base becomes the closest paint (owned paints only when that filter is on).
-      const s = get();
-      const owned = new Set(s.library.owned);
-      const match = nearestPaints(color.hex, allPaints(s.library), 1, (p) =>
-        p.type !== 'shade' && p.type !== 'technical' && (!s.library.ownedOnly || owned.has(p.id) || p.brand === 'Custom'),
-      )[0];
-      const zone = s.zones.find((z) => z.id === zoneId);
-      if (match && zone) {
-        set({ activeZoneId: zoneId });
-        s.assignPaint(match.paint, 'base');
+      if (isAuto(zone)) {
+        const others = zones.filter((z) => isAuto(z) && z.id !== zoneId).map((z) => ({ id: z.id, m: engine.ensureMask(z.id) }));
+        const saved = others.map((o) => copyRect(o.m, w, rect));
+        const changed = new Array(others.length).fill(false);
+        const rw = rect.x1 - rect.x0;
+        for (let y = rect.y0; y < rect.y1; y++) {
+          for (let x = rect.x0; x < rect.x1; x++) {
+            const i = y * w + x;
+            const was = before[(y - rect.y0) * rw + (x - rect.x0)];
+            const now = mask[i];
+            if (was === now) continue;
+            const restWas = 255 - was;
+            if (restWas <= 0) continue; // nobody else had this pixel
+            const factor = Math.max(0, 255 - now) / restWas;
+            others.forEach((o, k) => {
+              const v = o.m[i];
+              if (!v) return;
+              const nv = Math.min(255, Math.round(v * factor));
+              if (nv !== v) {
+                o.m[i] = nv;
+                changed[k] = true;
+              }
+            });
+          }
+        }
+        others.forEach((o, k) => {
+          if (!changed[k]) return;
+          patches.push({ id: o.id, rect, data: saved[k] });
+          engine.invalidate(o.id);
+        });
       }
-    },
 
-    pushMaskHistory: (id, before) => {
-      push({ zones: structuredClone(get().zones), activeZoneId: get().activeZoneId, masks: [[id, before]] });
+      push({ zones: structuredClone(zones), activeZoneId: get().activeZoneId, patches });
+      engine.invalidate(zoneId);
+      get().bumpMasks();
     },
 
     applySelection: (sel, mode) => {
       const id = get().activeZoneId;
       if (!id) return;
+      const rect = mode === 'replace' ? fullRect() : bboxOf(sel, engine.width, engine.height);
+      if (!rect) return;
       const mask = engine.ensureMask(id);
-      get().pushMaskHistory(id, new Uint8Array(mask));
+      const before = copyRect(mask, engine.width, rect);
       combine(mask, sel, mode);
-      engine.invalidate(id);
-      get().bumpMasks();
+      get().commitMaskEdit(id, before, rect);
     },
 
     maskOp: (op, amount = 2) => {
       const id = get().activeZoneId;
       if (!id) return;
       const mask = engine.ensureMask(id);
-      get().pushMaskHistory(id, new Uint8Array(mask));
+      const rect = fullRect();
+      const before = copyRect(mask, engine.width, rect);
       let next: Uint8Array;
       switch (op) {
         case 'grow': next = growShrink(mask, amount); break;
@@ -490,8 +597,8 @@ export const useStore = create<State & Actions>((set, get) => {
         case 'clear': next = new Uint8Array(mask.length); break;
         case 'fill': next = new Uint8Array(mask.length).fill(255); break;
       }
-      engine.setMask(id, next);
-      get().bumpMasks();
+      mask.set(next);
+      get().commitMaskEdit(id, before, rect);
     },
 
     bumpMasks: () => set((s) => ({ maskVersion: s.maskVersion + 1 })),
@@ -499,6 +606,11 @@ export const useStore = create<State & Actions>((set, get) => {
     applyScheme: (scheme) => {
       const zones = get().zones;
       if (!zones.length) return;
+      // Zones with a role get the matching recipe; plain colour zones get the scheme by size.
+      if (!zones.some((z) => z.role !== 'other' && scheme.recipes[z.role])) {
+        applySchemeBySize(scheme);
+        return;
+      }
       push(snapshot());
       let applied = 0;
       const next = zones.map((z) => {
@@ -544,7 +656,7 @@ export const useStore = create<State & Actions>((set, get) => {
       push(snapshot());
       const zones = structuredClone(v.zones);
       zones.forEach((z) => engine.ensureMask(z.id));
-      set((s) => ({ zones, activeZoneId: zones[0]?.id ?? null, maskVersion: s.maskVersion + 1 }));
+      set((s) => ({ zones, activeZoneId: zones.find((z) => z.visible)?.id ?? null, maskVersion: s.maskVersion + 1 }));
     },
 
     deleteVariant: (id) => set((s) => ({ variants: s.variants.filter((v) => v.id !== id) })),
@@ -564,7 +676,7 @@ export const useStore = create<State & Actions>((set, get) => {
     undo: () => {
       const entry = get().past.at(-1);
       if (!entry) return;
-      const redo = snapshot(entry.masks.map(([id]) => id));
+      const redo = snapshot(entry.patches);
       set((s) => ({ past: s.past.slice(0, -1), future: [...s.future, redo], lastCommitKey: '' }));
       restore(entry);
     },
@@ -572,11 +684,12 @@ export const useStore = create<State & Actions>((set, get) => {
     redo: () => {
       const entry = get().future.at(-1);
       if (!entry) return;
-      const undo = snapshot(entry.masks.map(([id]) => id));
+      const undo = snapshot(entry.patches);
       set((s) => ({ future: s.future.slice(0, -1), past: [...s.past, undo], lastCommitKey: '' }));
       restore(entry);
     },
   };
+
 });
 
 export function allPaints(lib: Library): Paint[] {

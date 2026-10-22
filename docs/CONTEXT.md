@@ -132,6 +132,20 @@ discover → paint → share → play → watch → back to physical stores.
 - [ ] Step 3 — tournament list, filters, map (Leaflet), tournament page
 - [ ] Steps 4–9 — see `docs/PLAY_PLAN.md`
 
+### PAINT v2 (2026-10-22) — simpler editor, see `docs/PAINT_V2.md`
+
+- [x] Automatic reference colours (`src/paint/engine/segment.ts`): N colours (3–12, default 6),
+      Lab k-means with lightness down-weighted, soft masks forming a partition, background
+      detected from the border (>55 %) and excluded, colourless photos flagged (`greyscale`).
+- [x] Zones `source: 'auto'` named after their colour (EN/JP), recoloured live; re-analysis keeps
+      renamed / recoloured zones (ΔE < 14). Brush / lasso / wand edits on auto zones are exclusive.
+- [x] Undo stores mask rectangles only (`maskPatch.ts`). Blending of auto zones by share (no seams).
+- [x] 3-step editor (Image → Colours → Paints & share), closest paints first, effects behind a
+      toggle, live shopping list with "I have it", share card, variants, presets in step 3.
+- [x] Removed: reference-palette panel, harmonies panel, old zones panel (and their dead strings).
+- Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
+  mini they only follow light and shadow → the app says so and suggests drawing areas.
+
 ### Conventions for PLAY
 
 - Write operations with business rules go through `SECURITY DEFINER` SQL functions; tables only get
