@@ -1,7 +1,11 @@
 import type { ProjectRecord } from '../types';
 import { download, slug } from '../../core/lib/image';
+import { APP_ID } from '../../core/brand';
 
-// --- Portable project file (.chroma.json) ---------------------------------------------------
+/** Files exported under the app's first name are still accepted. */
+const PROJECT_FORMATS = [APP_ID, 'chromaforge'];
+
+// --- Portable project file (.minicompanion.json) ---------------------------------------------------
 
 function bytesToBase64(bytes: Uint8Array): string {
   let bin = '';
@@ -44,13 +48,13 @@ function unrle(d: Uint8Array, size: number): Uint8Array {
 export async function exportProjectFile(rec: ProjectRecord) {
   const image = bytesToBase64(new Uint8Array(await rec.image.arrayBuffer()));
   const masks = Object.fromEntries(Object.entries(rec.masks).map(([k, v]) => [k, bytesToBase64(rle(v))]));
-  const payload = { format: 'chromaforge', version: 1, ...rec, image, imageType: rec.image.type, masks };
-  download(new Blob([JSON.stringify(payload)], { type: 'application/json' }), `${slug(rec.name)}.chroma.json`);
+  const payload = { format: APP_ID, version: 1, ...rec, image, imageType: rec.image.type, masks };
+  download(new Blob([JSON.stringify(payload)], { type: 'application/json' }), `${slug(rec.name)}.${APP_ID}.json`);
 }
 
 export async function parseProjectFile(file: File): Promise<ProjectRecord> {
   const data = JSON.parse(await file.text());
-  if (data.format !== 'chromaforge') throw new Error('Unrecognised file');
+  if (!PROJECT_FORMATS.includes(data.format)) throw new Error('Unrecognised file');
   const size = data.width * data.height;
   const masks: Record<string, Uint8Array> = {};
   for (const [k, v] of Object.entries(data.masks as Record<string, string>)) masks[k] = unrle(base64ToBytes(v), size);

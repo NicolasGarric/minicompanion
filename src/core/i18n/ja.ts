@@ -107,7 +107,7 @@ export const ja: Record<MessageKey, string> = {
   'export.menu': '書き出し',
   'export.png': '仕上がり画像（PNG）',
   'export.recipe': 'レシピをコピー（テキスト）',
-  'export.project': 'プロジェクトファイル（.chroma.json）',
+  'export.project': 'プロジェクトファイル（.json）',
   'tab.zones': 'エリア',
   'tab.palette': '塗料',
   'tab.schemes': '配色',

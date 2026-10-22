@@ -112,7 +112,7 @@ export const en = {
   'export.menu': 'Export',
   'export.png': 'Rendered image (PNG)',
   'export.recipe': 'Copy recipe (text)',
-  'export.project': 'Project file (.chroma.json)',
+  'export.project': 'Project file (.json)',
   'tab.zones': 'Zones',
   'tab.palette': 'Paints',
   'tab.schemes': 'Schemes',

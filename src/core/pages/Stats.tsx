@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { EVENTS, readAnalytics, resetAnalytics, type AnalyticsEvent } from '../analytics';
 import { k, useLang, useT } from '../i18n';
 import { download } from '../lib/image';
+import { APP_ID } from '../brand';
 
 const DAYS = 14;
 
@@ -106,7 +107,7 @@ export function Stats() {
         <h3>{t('stats.privacyTitle')}</h3>
         <p>{t('stats.privacy')}</p>
         <div className="nav-row">
-          <button className="btn small" onClick={() => download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'chromaforge-stats.json')}>
+          <button className="btn small" onClick={() => download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `${APP_ID}-stats.json`)}>
             {t('stats.export')}
           </button>
           <button

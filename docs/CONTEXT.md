@@ -1,4 +1,4 @@
-# Project context — Chromaforge
+# Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
 > Last update: 2026-10-21 (brief items 1–6 implemented)
@@ -54,7 +54,7 @@ edge highlight (Sobel × ridge) and specular for satin/gloss/metal.
 3. **EN/JP interface** — all strings in translation files, language switcher, Noto Sans JP.
    Uncertain hobby terms are flagged in `src/i18n/ja.ts` with `// CHECK:` comments.
 4. **Shareable card** — story 1080×1920 and square 1080×1080, download / Web Share / copy link,
-   public link that re-opens the scheme, "Made with Chromaforge" footer + short disclaimer.
+   public link that re-opens the scheme, "Made with MiniCompanion" footer + short disclaimer.
 5. **Beginner path** — upload → 3–5 step scheme (base coat, wash, drybrush, highlight) →
    shopping list → store finder (sample data, pluggable provider).
 6. **Analytics** — privacy-friendly local event counters + internal stats page.
@@ -103,10 +103,15 @@ discover → paint → share → play → watch → back to physical stores.
 - Plan, data model, scope check: `docs/PLAY_PLAN.md`. Out of scope: `ROADMAP.md`.
 - Validated by the owner (2026-10-21): keep Vite + add **hosted Supabase**; dependencies
   `@supabase/supabase-js`, `leaflet`, `qrcode` approved.
-- Still open: Twitch credentials + production domain (needed by step 9), single elimination
-  (bonus or roadmap), privacy of signed-in events, app name (proposal: "Dicebrush"; one-line change
-  in `src/core/brand.ts`).
-- Owner action needed: create the Supabase project → `docs/SUPABASE_SETUP.md`.
+- App name: **MiniCompanion** (chosen by the owner 2026-10-22). Written in Latin letters everywhere,
+  including the Japanese UI: the katakana コンパニオン is strongly associated with banquet hostesses.
+  Internal storage ids (`chromaforge` IndexedDB, `cf.*` localStorage keys) are kept on purpose so
+  existing local projects stay readable; old `.chroma.json` project files are still imported.
+- Hosting: Vercel (Hobby plan), target URL `minicompanion.vercel.app`.
+- Supabase project created and seeded (2026-10-22). The DB password leaked once in a public commit
+  (since removed with a force push): it must be rotated; never keep it in repo files.
+- Still open: Twitch credentials (step 9), single elimination (bonus or roadmap), privacy of
+  signed-in events.
 
 ### PLAY progress
 

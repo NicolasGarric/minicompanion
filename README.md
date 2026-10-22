@@ -1,4 +1,4 @@
-# Chromaforge — miniature painting planner
+# MiniCompanion — paint, play and share your miniature hobby
 
 > Independent fan project. Not affiliated with or endorsed by any brand or retailer. Trademarks
 > belong to their owners and are used for identification only.
@@ -16,7 +16,7 @@ The app is built around three growth loops:
 | Goal | Feature | Metric tracked |
 |---|---|---|
 | **Recruit new players** | Beginner path: one image → 5-step scheme → paint list | `beginner_started`, `beginner_completed` |
-| **Organic social reach** | "My scheme" cards (story 1080×1920, post 1080×1080) with a "Made with Chromaforge" footer, plus a public link that lets anyone reuse the scheme | `card_generated`, `card_shared`, `shared_link_opened` |
+| **Organic social reach** | "My scheme" cards (story 1080×1920, post 1080×1080) with a "Made with MiniCompanion" footer, plus a public link that lets anyone reuse the scheme | `card_generated`, `card_shared`, `shared_link_opened` |
 | **Drive store visits** | The beginner path ends on a store finder; every paint has a neutral search link | `store_finder_opened` |
 
 The internal stats page (`#/stats`) shows these as campaign-style numbers and conversion rates.

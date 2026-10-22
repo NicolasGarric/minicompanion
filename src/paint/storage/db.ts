@@ -1,5 +1,6 @@
 import type { ProjectMeta, ProjectRecord, Scheme, Paint } from '../types';
 
+// Internal storage id from the app's first name: kept so existing local projects stay readable.
 const DB_NAME = 'chromaforge';
 const DB_VERSION = 1;
 
