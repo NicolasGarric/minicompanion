@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { supabase } from '../auth/supabase';
 
 /**
- * Unread counters for the header (notifications and messages). Refreshed every minute while
- * signed in and when the tab gets focus; no realtime channel needed.
+ * Unread counter for the header bell. Refreshed on realtime inserts, when the tab gets focus,
+ * and every two minutes as a fallback.
  */
 export const useUnread = create<{ notifications: number; refresh: () => Promise<void> }>((set) => ({
   notifications: 0,

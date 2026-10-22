@@ -11,7 +11,7 @@ import {
   getReport,
   myGalleryItems,
   playError,
-  reportPhotoUrl,
+  reportPhotoUrls,
   submitReport,
   uploadReportPhoto,
   type GameReport,
@@ -30,6 +30,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
   const [report, setReport] = useState<GameReport | null | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [images, setImages] = useState<Map<string, string>>(new Map());
+  const [photos, setPhotos] = useState<Map<string, string>>(new Map());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +48,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
       setReport(r);
       const paths = (r?.results ?? []).map((x) => x.item?.image_path).filter((p): p is string => !!p);
       setImages(await galleryUrls(paths));
+      setPhotos(await reportPhotoUrls(r?.photos ?? []));
     }, (e) => {
       setError(playError(e) ?? 'generic');
       setReport(null);
@@ -75,7 +77,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
     try {
       const pics = [
         ...report.results.map((r) => (r.item ? images.get(r.item.image_path) : undefined)).filter((u): u is string => !!u),
-        ...report.photos.map(reportPhotoUrl),
+        ...report.photos.map((p) => photos.get(p)).filter((u): u is string => !!u),
       ];
       const blob = await resultCard({
         game,
@@ -136,11 +138,11 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
             ))}
           </ol>
           {report.summary && <p className="game-note">{report.summary}</p>}
-          {report.photos.length > 0 && (
+          {photos.size > 0 && (
             <div className="report-photos">
-              {report.photos.map((p) => (
-                <a key={p} href={reportPhotoUrl(p)} target="_blank" rel="noreferrer">
-                  <img src={reportPhotoUrl(p)} alt="" loading="lazy" />
+              {report.photos.filter((p) => photos.has(p)).map((p) => (
+                <a key={p} href={photos.get(p)} target="_blank" rel="noreferrer">
+                  <img src={photos.get(p)} alt="" loading="lazy" />
                 </a>
               ))}
             </div>

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang, useT } from '../../core/i18n';
-import { gameChat, playError, sendGameMessage, type GameMessage } from '../lib/social';
+import { gameChat, onInsert, playError, sendGameMessage, type GameMessage } from '../lib/social';
 
-/** Chat of a game, for the host and the accepted players. Refreshed every 15 s. */
+/** Chat of a game, for the host and the accepted players. New messages arrive in real time. */
 export function GameChat({ gameId, me }: { gameId: string; me: string }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -14,8 +14,13 @@ export function GameChat({ gameId, me }: { gameId: string; me: string }) {
   const load = () => gameChat(gameId).then(setMessages, (e) => setError(playError(e)));
   useEffect(() => {
     load();
-    const id = setInterval(load, 15000);
-    return () => clearInterval(id);
+    // Realtime push; a slow poll covers a dropped connection.
+    const off = onInsert('game_messages', `game_id=eq.${gameId}`, load);
+    const id = setInterval(load, 60000);
+    return () => {
+      off();
+      clearInterval(id);
+    };
   }, [gameId]);
   useEffect(() => end.current?.scrollIntoView({ block: 'nearest' }), [messages.length]);
 

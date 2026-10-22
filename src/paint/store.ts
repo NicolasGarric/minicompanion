@@ -158,6 +158,11 @@ interface Actions {
 const HISTORY_LIMIT = 60;
 /** Colours closer than this (ΔE) keep the recipe the user gave them when re-analysing. */
 const CARRY_OVER_DE = 14;
+/**
+ * Version of the automatic detection. Projects saved with an older one are re-detected when they
+ * open (2 = base paints up to 8, grey photos split by material).
+ */
+export const SEG_VERSION = 2;
 
 /**
  * Uploaded photo → working image: the frame around the miniature is found on a small preview, cut
@@ -406,6 +411,12 @@ export const useStore = create<State & Actions>((set, get) => {
         variants: rec.variants ?? [],
         activeZoneId: rec.zones.find((z) => z.visible)?.id ?? null,
       });
+      // Older detection: re-detect now; colours the user chose move to the closest new paint.
+      if (rec.zones.some(isAuto) && (rec.segVersion ?? 1) < SEG_VERSION) {
+        await get().analyseColours();
+        get().toast(tr('toast.redetected'), 'info');
+        await get().saveNow();
+      }
     },
 
     closeProject: () => {
@@ -437,6 +448,7 @@ export const useStore = create<State & Actions>((set, get) => {
         variants: s.variants,
         primer: s.primer,
         cutout: s.cutout,
+        segVersion: SEG_VERSION,
         thumb: renderThumb(s.zones, 220, s.primer),
       };
     },
@@ -476,7 +488,8 @@ export const useStore = create<State & Actions>((set, get) => {
         const isBackground = i === seg.background;
         // Carry over what the user did to the closest colour of the previous analysis.
         const match = previous
-          .filter((p) => !used.has(p.id) && p.refHex)
+          // The background only carries over to the background (and figure colours to figure colours).
+          .filter((p) => !used.has(p.id) && p.refHex && !!p.isBackground === isBackground)
           .map((p) => ({ p, d: deltaE(hexToRgb(p.refHex!), hexToRgb(c.hex)) }))
           .sort((a, b) => a.d - b.d)[0];
         const base: Zone = { ...makeZone('other', names[i]), source: 'auto', refHex: c.hex, base: { hex: c.hex }, isBackground, visible: !isBackground };

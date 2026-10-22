@@ -98,6 +98,42 @@ select pg_temp.as_user(pg_temp.uid(7));
 select pg_temp.ok((select count(*) from public.notifications where kind = 'game_match' and payload ->> 'game' = 'kill team') = 1, 'matching game alerts the post author');
 select pg_temp.as_user(pg_temp.uid(33));
 update public.lfg_posts set note = 'hijacked' where author_id = pg_temp.uid(7);
+
+-- Decisions 2026-10-25: attached army and report photos follow the author's profile
+reset role;
+insert into public.games (id, host_id, game_system, starts_at, country, city, players_count, max_players, status)
+values (md5('t-played-2')::uuid, pg_temp.uid(34), 'Warcry', now() - interval '2 hours', 'JP', 'Tokyo', 2, 2, 'full');
+insert into public.game_players (game_id, player_id, status) values (md5('t-played-2')::uuid, pg_temp.uid(35), 'accepted');
+insert into public.gallery_items (id, owner_id, title, image_path)
+values (md5('t-item')::uuid, pg_temp.uid(34), 'My warband', pg_temp.uid(34) || '/44444444-4444-4444-4444-444444444444.jpg');
+insert into storage.objects (bucket_id, name, owner) values
+  ('gallery', pg_temp.uid(34) || '/44444444-4444-4444-4444-444444444444.jpg', pg_temp.uid(34)),
+  ('reports', md5('t-played-2')::uuid || '/photo.jpg', pg_temp.uid(34));
+set role authenticated;
+select pg_temp.as_user(pg_temp.uid(34));
+select public.submit_game_report(md5('t-played-2')::uuid,
+  jsonb_build_array(jsonb_build_object('player_id', pg_temp.uid(34), 'placement', 1, 'gallery_item_id', md5('t-item')::uuid),
+                    jsonb_build_object('player_id', pg_temp.uid(35), 'placement', 2)), null, array[md5('t-played-2')::uuid || '/photo.jpg']);
+select pg_temp.ok((select not is_public from public.gallery_items where id = md5('t-item')::uuid), 'attaching an army does not make the image public');
+select pg_temp.as_user(pg_temp.uid(35));
+select pg_temp.ok((select count(*) from public.gallery_items where id = md5('t-item')::uuid) = 1, 'the opponent sees the attached army');
+select pg_temp.ok((select count(*) from storage.objects where bucket_id = 'gallery' and owner = pg_temp.uid(34)) = 1, 'and its file');
+select pg_temp.ok((select count(*) from storage.objects where bucket_id = 'reports' and name like md5('t-played-2')::uuid || '/%') = 1, 'and the report photo');
+select pg_temp.as_user(pg_temp.uid(36));
+select pg_temp.ok((select count(*) from public.gallery_items where id = md5('t-item')::uuid) = 0, 'private author: outsiders do not see the army');
+select pg_temp.ok((select count(*) from storage.objects where bucket_id = 'reports' and name like md5('t-played-2')::uuid || '/%') = 0, 'nor the report photo');
+reset role;
+update public.profiles set is_public = true where id = pg_temp.uid(34);
+set role anon;
+select pg_temp.as_user(null);
+select pg_temp.ok((select count(*) from public.gallery_items where id = md5('t-item')::uuid) = 1, 'public author: everyone sees the army');
+select pg_temp.ok((select count(*) from storage.objects where bucket_id = 'reports' and name like md5('t-played-2')::uuid || '/%') = 1, 'and the report photo');
+reset role;
+update public.gallery_items set is_public = true where id = md5('t-item')::uuid;
+update public.profiles set is_public = false where id = pg_temp.uid(34);
+delete from public.game_results where game_id = md5('t-played-2')::uuid;
+set role anon;
+select pg_temp.ok((select count(*) from public.gallery_items where id = md5('t-item')::uuid) = 0, '"show on my profile" needs a public profile');
 reset role;
 select pg_temp.ok((select note from public.lfg_posts where author_id = pg_temp.uid(7)) <> 'hijacked', 'posts are edited by their author only');
 select 'social tests passed';

@@ -4,7 +4,7 @@ import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { supabase } from '../../core/auth/supabase';
-import { canMessage, conversations, playError, sendMessage, thread, type Conversation, type DirectMessage } from '../lib/social';
+import { canMessage, conversations, onInsert, playError, sendMessage, thread, type Conversation, type DirectMessage } from '../lib/social';
 
 const fmt = (iso: string, lang: string) =>
   new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
@@ -19,7 +19,10 @@ export function Inbox() {
 
   useEffect(() => {
     if (ready && !session) requireSignIn();
-    if (session) conversations(session.user.id).then(setList, (e) => (playError(e), setError(true)));
+    if (!session) return;
+    const load = () => conversations(session.user.id).then(setList, (e) => (playError(e), setError(true)));
+    load();
+    return onInsert('direct_messages', `recipient_id=eq.${session.user.id}`, load);
   }, [ready, session]);
 
   if (!backendConfigured) return <BackendNotice />;
@@ -70,8 +73,12 @@ export function MessageThread({ userId }: { userId: string }) {
     supabase.from('profiles').select('display_name, handle').eq('id', userId).maybeSingle().then(({ data }) => setOther(data));
     canMessage(userId).then(setAllowed, () => setAllowed(false));
     load();
-    const id = setInterval(load, 15000);
-    return () => clearInterval(id);
+    const off = onInsert('direct_messages', `recipient_id=eq.${me}`, load);
+    const id = setInterval(load, 60000);
+    return () => {
+      off();
+      clearInterval(id);
+    };
   }, [ready, me, userId]);
   useEffect(() => end.current?.scrollIntoView({ block: 'nearest' }), [msgs.length]);
 

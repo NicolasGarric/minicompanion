@@ -136,7 +136,9 @@ if (orgIn.data.user) {
       ok(shown.data?.length === 1, 'address visible once accepted');
       await player.rpc('leave_game', { p_game: id });
       const can = await organiser.rpc('cancel_game', { p_game: id });
-      ok(!can.error, 'host cancels the check game (cleanup)', can.error?.message);
+      ok(!can.error, 'host cancels the check game', can.error?.message);
+      const purge = await organiser.rpc('purge_check_games');
+      ok(!purge.error && purge.data >= 1, 'host deletes the cancelled check games (cleanup)', purge.error?.message ?? `${purge.data} deleted`);
     }
   }
 }

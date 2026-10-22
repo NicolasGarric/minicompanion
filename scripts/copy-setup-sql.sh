@@ -24,6 +24,7 @@ declare -A GUARD=(
   [20261023000004_gallery.sql]="to_regclass('public.gallery_items') is null"
   [20261024000005_quick_play.sql]="to_regclass('public.games') is null"
   [20261025000006_play_social.sql]="to_regclass('public.game_reports') is null"
+  [20261026000007_owner_decisions.sql]="to_regprocedure('public.purge_check_games()') is null"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label

@@ -7,6 +7,7 @@ import { backendConfigured } from '../auth/supabase';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/ui';
 import { useUnread } from '../social/unread';
+import { onInsert } from '../../play/lib/social';
 
 export function Logo() {
   return (
@@ -54,9 +55,11 @@ export function AccountButton() {
     if (!session) return;
     const refresh = () => useUnread.getState().refresh();
     refresh();
-    const id = setInterval(refresh, 60000);
+    const off = onInsert('notifications', `user_id=eq.${session.user.id}`, refresh);
+    const id = setInterval(refresh, 120000);
     window.addEventListener('focus', refresh);
     return () => {
+      off();
       clearInterval(id);
       window.removeEventListener('focus', refresh);
     };

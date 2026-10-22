@@ -73,7 +73,12 @@ export async function uploadReportPhoto(gameId: string, blob: Blob): Promise<str
   must(await db().storage.from('reports').upload(path, blob, { contentType: 'image/jpeg' }));
   return path;
 }
-export const reportPhotoUrl = (path: string) => db().storage.from('reports').getPublicUrl(path).data.publicUrl;
+/** Report photos are private files: signed URLs work when the uploader's profile is public or for the players. */
+export async function reportPhotoUrls(paths: string[]): Promise<Map<string, string>> {
+  if (!paths.length) return new Map();
+  const { data } = await db().storage.from('reports').createSignedUrls(paths, 3600);
+  return new Map((data ?? []).filter((u) => u.signedUrl).map((u) => [u.path ?? '', u.signedUrl]));
+}
 
 /** Gallery images are private files: signed URLs work for the owner and for public items. */
 export async function galleryUrls(paths: string[]): Promise<Map<string, string>> {
@@ -397,6 +402,22 @@ export async function storeTournaments(id: string) {
     name: string;
     starts_at: string;
   }[];
+}
+
+/**
+ * Realtime: calls `onChange` when a row is inserted in `table` (matching `filter`, PostgREST syntax).
+ * RLS applies, so only rows the user may read arrive. Returns the unsubscribe function.
+ */
+export function onInsert(table: 'direct_messages' | 'game_messages' | 'notifications', filter: string, onChange: () => void): () => void {
+  if (!supabase) return () => undefined;
+  const client = supabase;
+  const channel = client
+    .channel(`${table}:${filter}:${Math.random().toString(36).slice(2)}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter }, () => onChange())
+    .subscribe();
+  return () => {
+    client.removeChannel(channel);
+  };
 }
 
 export { playError };

@@ -132,6 +132,8 @@ export interface ProjectRecord extends ProjectMeta {
   primer?: Primer | null;
   /** Paint the model alone (background transparent) instead of the whole photo. */
   cutout?: boolean;
+  /** Version of the automatic colour detection that made the zones (missing = 1). */
+  segVersion?: number;
   /** v1 only (reference palette panel); ignored since v2, where reference colours are zones. */
   palette?: PaletteColor[];
 }
