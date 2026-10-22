@@ -10,6 +10,7 @@ import { playError } from '../lib/games';
 import { downloadIcs } from '../lib/ics';
 import { parseArmyList } from '../lib/listParser';
 import type { Pairing } from '../lib/pairing';
+import { ContestSection } from '../components/ContestSection';
 import {
   confirmMatch,
   createRound,
@@ -39,7 +40,7 @@ import {
   type Tournament,
 } from '../lib/tournaments';
 
-type Tab = 'info' | 'players' | 'pairings' | 'standings';
+type Tab = 'info' | 'players' | 'pairings' | 'standings' | 'contest';
 
 interface Data {
   t: Tournament;
@@ -100,7 +101,9 @@ export function TournamentDetail({ slug }: { slug: string }) {
   const organiser = me === tour.organiser_id;
   const mine = regs.find((r) => r.user_id === me);
   const running = tour.status === 'in_progress' || tour.status === 'finished';
-  const current = tab ?? (running ? 'pairings' : 'info');
+  const contest = tour.type === 'painting_contest';
+  const current = tab ?? (contest ? 'contest' : running ? 'pairings' : 'info');
+  const tabs: Tab[] = contest ? ['contest', 'info', 'players'] : ['info', 'players', 'pairings', 'standings', 'contest'];
   const registered = regs.filter((r) => r.status === 'registered');
 
   return (
@@ -121,10 +124,10 @@ export function TournamentDetail({ slug }: { slug: string }) {
         </span>
       </div>
 
-      {organiser && <OrganiserPanel data={data} onChange={load} />}
+      {organiser && !contest && <OrganiserPanel data={data} onChange={load} />}
 
       <div className="segmented view-switch" role="tablist">
-        {(['info', 'players', 'pairings', 'standings'] as Tab[]).map((x) => (
+        {tabs.map((x) => (
           <button key={x} role="tab" aria-selected={current === x} className={current === x ? 'on' : ''} onClick={() => setTab(x)}>
             {t(k(`tour.tab.${x}`))}
           </button>
@@ -135,6 +138,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
       {current === 'players' && <PlayersTab data={data} organiser={organiser} onChange={load} />}
       {current === 'pairings' && <PairingsTab data={data} me={me} organiser={organiser} onChange={load} />}
       {current === 'standings' && <StandingsTab regs={regs} matches={matches} me={me} rounds={rounds} />}
+      {current === 'contest' && <ContestSection tour={tour} organiser={organiser} />}
     </div>
   );
 }

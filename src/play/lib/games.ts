@@ -180,6 +180,7 @@ export function playError(e: unknown): string | null {
     'no_opponent', 'rate_limited', 'not_league_member', 'not_organiser', 'bad_status', 'not_enough_players',
     'round_not_finished', 'all_rounds_played', 'bad_pairings', 'no_match', 'not_in_match', 'match_closed',
     'nothing_to_confirm', 'no_active_round', 'matches_pending', 'not_registered', 'list_locked', 'forbidden',
+    'contest_closed', 'own_entry', 'email_not_confirmed', 'no_entry', 'rights_required',
   ];
   return known.find((k) => m.includes(k)) ?? null;
 }

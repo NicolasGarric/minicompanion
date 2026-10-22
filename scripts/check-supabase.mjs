@@ -235,5 +235,22 @@ if (playerId && orgIn.data.user) {
   }
 }
 
+// --- Painting contest (migration 20261028000009) -------------------------------------------
+{
+  const cat = await anon.from('contest_categories').select('id, tournament:tournaments!inner(slug)').eq('tournament.slug', 'summer-paint-off').eq('kind', 'single').maybeSingle();
+  ok(!cat.error && !!cat.data, 'anon sees the finished demo contest', cat.error?.message);
+  if (cat.data) {
+    const res = await anon.rpc('contest_results', { p_category: cat.data.id });
+    ok(!res.error && res.data[0]?.title === 'Crimson Warden', 'public podium of the finished contest', res.error?.message ?? res.data?.[0]?.title);
+  }
+  const open = await anon.from('contest_categories').select('id, tournament:tournaments!inner(slug)').eq('tournament.slug', 'kanda-paint-off-autumn').eq('kind', 'single').maybeSingle();
+  if (open.data) {
+    const entries = await anon.rpc('contest_entries_of', { p_category: open.data.id });
+    ok(!entries.error && entries.data.length >= 4 && entries.data.every((e) => e.author_name === null && e.votes === null), 'open contest: blind entries (no author, no count)', entries.error?.message);
+    const early = await anon.rpc('contest_results', { p_category: open.data.id });
+    ok(!early.error && early.data.length === 0, 'open contest: no results yet', early.error?.message);
+  }
+}
+
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll live checks passed.');
 process.exit(failures ? 1 : 0);

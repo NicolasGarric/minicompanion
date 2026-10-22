@@ -356,3 +356,18 @@ games (report button, admin review), public player profiles.
   Realtime on matches and rounds: pairings and standings update live.
 - Tests: `supabase/tests/rls_tournament.sql` (21 checks); demo event in progress "Friday Live Clash".
 
+### Painting contest — done (2026-10-28), migration `20261028000009_painting_contest.sql` + `seed_contest.sql`
+
+- Categories per tournament (single, squad, vehicle / monster, beginner), closing date, optional jury;
+  a "painting_contest" tournament opens on its Contest tab.
+- Entries: title, 1–5 photos (3 angles recommended; upload or pick from the PAINT gallery, resized to
+  1600 px), rights confirmation; public `contest` bucket, one folder per category.
+- **Blind public vote**: one vote per account and category (can move until closing), not for your own
+  entry, confirmed e-mail only; authors and counts hidden until the close (`contest_entries_of`).
+- **Jury**: jurors added by handle, scores 1–10 for technique, composition, originality (RLS).
+- **Results** after the close (organiser preview anytime): podium by public vote, jury ranking
+  (/30), podium share card (1080²). Organiser can hide entries (moderation).
+- Demo: finished "Summer Paint-Off" (podium + jury) and open "Autumn Paint-Off"; demo photos are the
+  app's own figure painted with the built-in schemes (`public/demo/contest/`).
+- Tests: `supabase/tests/rls_contest.sql` (21 checks); live checks for the podium and the blind vote.
+

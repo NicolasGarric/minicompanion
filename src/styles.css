@@ -745,3 +745,31 @@ a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--bo
   body, .page { background: #fff; }
   .qr-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- PLAY: painting contest ---------- */
+.contest { display: grid; gap: 0.75rem; }
+.entry-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.75rem; }
+.entry { display: grid; gap: 0.3rem; align-content: start; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.entry.voted { border-color: var(--accent); }
+.entry.hidden { opacity: 0.45; }
+.entry > .btn { justify-self: start; }
+.entry-photo { position: relative; display: block; aspect-ratio: 3 / 4; border-radius: 0.5rem; overflow: hidden; background: var(--bg); }
+.entry-photo img { width: 100%; height: 100%; object-fit: cover; }
+.entry-photo .tag { position: absolute; right: 0.35rem; bottom: 0.35rem; }
+.podium { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 0.5rem; }
+.podium li { display: grid; gap: 0.25rem; position: relative; }
+.podium li.place-1 { order: 2; }
+.podium li.place-2 { order: 1; }
+.podium li.place-3 { order: 3; }
+.podium img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 0.5rem; }
+.podium li.place-1 img { border: 3px solid var(--accent); }
+.podium-rank { position: absolute; top: 0.35rem; left: 0.35rem; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #15171c; font-weight: 800; }
+.podium-card .card-head { justify-content: space-between; flex-wrap: wrap; }
+.pick-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0.4rem; }
+.pick-grid label { display: block; position: relative; border: 2px solid transparent; border-radius: 0.4rem; overflow: hidden; cursor: pointer; }
+.pick-grid label.on { border-color: var(--accent); }
+.pick-grid input { position: absolute; top: 0.25rem; left: 0.25rem; }
+.pick-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.jury-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.jury-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+.jury-list img { width: 3.5rem; height: 3.5rem; object-fit: cover; border-radius: 0.4rem; }

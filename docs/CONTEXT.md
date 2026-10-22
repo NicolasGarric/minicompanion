@@ -167,6 +167,8 @@ discover → paint → share → play → watch → back to physical stores.
       auto re-detection of old PAINT projects, cleanup of check games.
 - [x] Full tournament flow (migration 20261027000008 + seed_tournament.sql): organise, register, lists,
       Swiss rounds, score reports by QR code, live standings (see PLAY_PLAN.md).
+- [x] Painting contest (migration 20261028000009 + seed_contest.sql): entries, blind vote, jury,
+      podium and share card (see PLAY_PLAN.md).
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 
@@ -197,6 +199,11 @@ discover → paint → share → play → watch → back to physical stores.
 
 ## Open points / next steps
 
+- **Next session — multi-week tournaments** (owner request, 2026-10-28): let the organiser set a
+  precise date and time **per round** (events played over several weeks) and a **venue per round**
+  (store or address, possibly different each week). Impacts: `rounds` gets `scheduled_at` and
+  venue fields (or a `round_venues` link to stores), the organise form gets a round planner, the
+  pairings / table pages and the .ics export show each round's date and place, reminders per round.
 - Japanese terms to validate with a native hobbyist: see `// CHECK:` in `src/i18n/ja.ts`
   (エリア for "zone", ウォッシュ, コントラスト系塗料, 配色 for "scheme", サーフェイサー vs プライマー, grim).
 - Visual pass (owner): spacing, typography scale, editor layout on tablets.

@@ -26,6 +26,7 @@ declare -A GUARD=(
   [20261025000006_play_social.sql]="to_regclass('public.game_reports') is null"
   [20261026000007_owner_decisions.sql]="to_regprocedure('public.purge_check_games()') is null"
   [20261027000008_tournament_flow.sql]="to_regprocedure('public.create_round(uuid,jsonb)') is null"
+  [20261028000009_painting_contest.sql]="to_regprocedure('public.cast_contest_vote(uuid)') is null"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label
@@ -51,6 +52,7 @@ OUT="$(mktemp --suffix=.sql)"
     wrap "$ROOT/supabase/seed.sql" "not exists (select 1 from public.stores)" "seed.sql (demo data)"
     wrap "$ROOT/supabase/seed_games.sql" "not exists (select 1 from public.games) and exists (select 1 from public.stores)" "seed_games.sql (demo quick play games)"
     wrap "$ROOT/supabase/seed_social.sql" "not exists (select 1 from public.leagues) and exists (select 1 from public.stores)" "seed_social.sql (demo reports, league, posts)"
+    wrap "$ROOT/supabase/seed_contest.sql" "not exists (select 1 from public.tournaments where slug = 'summer-paint-off') and exists (select 1 from public.stores)" "seed_contest.sql (demo painting contests)"
     wrap "$ROOT/supabase/seed_tournament.sql" "not exists (select 1 from public.tournaments where slug = 'kanda-live-friday') and exists (select 1 from public.stores)" "seed_tournament.sql (demo tournament in progress)"
   fi
 } > "$OUT"
