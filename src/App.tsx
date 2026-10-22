@@ -18,6 +18,7 @@ import { QuickPlay } from './play/pages/QuickPlay';
 import { MyGames } from './play/pages/MyGames';
 import { GameNew } from './play/pages/GameNew';
 import { GameDetail } from './play/pages/GameDetail';
+import { TournamentDetail } from './play/pages/TournamentDetail';
 
 /** Saves the open PAINT project 1.5 s after the last change, and on tab close. */
 function useAutosave() {
@@ -65,6 +66,7 @@ function Page({ route }: { route: Route }) {
     case 'play.mine': return <MyGames />;
     case 'play.new': return <GameNew />;
     case 'play.game': return <GameDetail id={route.params.id ?? ''} />;
+    case 'play.tournament': return <TournamentDetail slug={route.params.slug ?? ''} />;
     case 'stores': return <Stores />;
     case 'signin': return <SignInPage />;
     case 'account': return <AccountPage />;

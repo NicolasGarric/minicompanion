@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
-import { useT } from '../../core/i18n';
+import { k, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { GameCard } from '../components/GameCard';
-import { myGames, type Game, type JoinStatus } from '../lib/games';
+import { myGames, playError, type Game, type JoinStatus } from '../lib/games';
 
 /** The games I host and the ones I asked to join, upcoming first, then past ones. */
 export function MyGames() {
   const t = useT();
   const { ready, session } = useSession();
   const [data, setData] = useState<{ hosted: Game[]; joined: (Game & { my_status: JoinStatus })[] } | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (ready && !session) requireSignIn();
-    if (session && backendConfigured) myGames(session.user.id).then(setData, () => setError(true));
+    if (session && backendConfigured) myGames(session.user.id).then(setData, (e) => setError(playError(e) ?? 'generic'));
   }, [ready, session]);
 
   if (!backendConfigured) return <BackendNotice />;
@@ -31,7 +31,7 @@ export function MyGames() {
         <h1>{t('mine.title')}</h1>
         <a className="btn primary" href="#/play/new">{t('quick.create')}</a>
       </div>
-      {error && <p className="error">{t('error.generic')}</p>}
+      {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
       {!data && !error && <span className="spinner" />}
       {data && (
         <>

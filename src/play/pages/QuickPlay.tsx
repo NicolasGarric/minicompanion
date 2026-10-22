@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLang, useT } from '../../core/i18n';
+import { k, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
 import { GameCard } from '../components/GameCard';
-import { listGames, popularTexts, type Game, type GameFilters } from '../lib/games';
+import { listGames, playError, popularTexts, type Game, type GameFilters } from '../lib/games';
 import { sortedCountries } from '../lib/countries';
 
 /** Quick play: upcoming casual games, filtered by game, format and place. */
@@ -15,7 +15,7 @@ export function QuickPlay() {
   const session = useSession((s) => s.session);
   const [filters, setFilters] = useState<GameFilters>({ country: '', openOnly: false });
   const [games, setGames] = useState<Game[] | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [popular, setPopular] = useState<string[]>([]);
   const [formats, setFormats] = useState<string[]>([]);
   const countries = useMemo(() => sortedCountries(lang), [lang]);
@@ -35,7 +35,7 @@ export function QuickPlay() {
   useEffect(() => {
     if (!backendConfigured) return;
     const id = setTimeout(() => {
-      listGames(filters).then(setGames, () => setError(true));
+      listGames(filters).then(setGames, (e) => setError(playError(e) ?? 'generic'));
     }, 250);
     return () => clearTimeout(id);
   }, [filters]);
@@ -80,7 +80,7 @@ export function QuickPlay() {
         </div>
       )}
 
-      {error && <p className="error">{t('error.generic')}</p>}
+      {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
       {!games && !error && <span className="spinner" />}
       {games?.length === 0 && <p className="hint">{t('quick.none')}</p>}
       {!!games?.length && <ul className="game-list">{games.map((g) => <GameCard key={g.id} game={g} />)}</ul>}

@@ -5,7 +5,7 @@ import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
 import { countryName } from '../lib/countries';
-import { cancelGame, gameError, getGame, leaveGame, requestJoin, respondJoin, type Game, type GamePlayer } from '../lib/games';
+import { cancelGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, type Game, type GamePlayer } from '../lib/games';
 import { formatWhen } from '../components/GameCard';
 
 /** One game: details, players, and the actions of the viewer (host, player or visitor). */
@@ -19,7 +19,14 @@ export function GameDetail({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => getGame(id).then(setData, () => setData(null)), [id]);
+  const load = useCallback(
+    () =>
+      getGame(id).then(setData, (e) => {
+        playError(e);
+        setData(null);
+      }),
+    [id],
+  );
   useEffect(() => {
     if (backendConfigured) load();
   }, [load, me]);

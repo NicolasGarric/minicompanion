@@ -161,9 +161,17 @@ export async function listStores(): Promise<{ id: string; name: string; city: st
   return data ?? [];
 }
 
-/** Error code raised by the SQL functions (e.g. "game_full"), or null. */
-export function gameError(e: unknown): string | null {
-  const m = (e as { message?: string })?.message ?? '';
-  const known = ['not_authenticated', 'starts_in_past', 'too_many_games', 'not_open', 'is_host', 'not_host', 'no_request', 'game_full'];
+/**
+ * Error code for the UI: a code raised by the SQL functions (e.g. "game_full"), "not_installed"
+ * when the database misses the PLAY migrations, or null. Every error is also logged to the console.
+ */
+export function playError(e: unknown): string | null {
+  console.error('[play]', e);
+  const err = e as { message?: string; code?: string };
+  const m = err?.message ?? '';
+  // PostgREST: unknown table / function (schema cache), Postgres: undefined table / function
+  if (['PGRST202', 'PGRST205', '42P01', '42883'].includes(err?.code ?? '') || m.includes('schema cache')) return 'not_installed';
+  const known = ['not_authenticated', 'starts_in_past', 'too_many_games', 'not_open', 'is_host', 'not_host', 'no_request', 'game_full', 'registration_closed'];
   return known.find((k) => m.includes(k)) ?? null;
 }
+export const gameError = playError;
