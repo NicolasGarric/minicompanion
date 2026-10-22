@@ -694,3 +694,53 @@ a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--bo
 .slot-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .slot-form .text-input { width: auto; }
 .account .card + .card { margin-top: 0; }
+
+/* ---------- PLAY: tournament flow ---------- */
+.live-dot { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--danger); margin-right: 0.25rem; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.tag.status-in_progress { color: var(--danger); }
+.tag.status-published { color: var(--ok); }
+.tag.list-approved, .tag.match-confirmed, .tag.match-resolved { color: var(--ok); }
+.tag.list-rejected, .tag.match-disputed { color: var(--danger); }
+.tag.match-reported { color: var(--accent); }
+.organiser .card-head { justify-content: space-between; flex-wrap: wrap; }
+.organiser > .field-row { padding: 0.35rem 0; border-top: 1px solid var(--border); }
+.pairing-preview { border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.pairing-preview ol { margin: 0 0 0.75rem; padding-left: 1.5rem; display: grid; gap: 0.2rem; }
+.match-list { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+.match { display: grid; gap: 0.45rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.match.mine { border-color: var(--accent); }
+.match-line { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 0.5rem; }
+.match-line .tag { grid-column: 1 / -1; justify-self: start; }
+.match-table { font-size: 0.75rem; color: var(--muted); }
+.match-player { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.match-player.right { text-align: right; }
+.match-player.win { font-weight: 700; color: var(--accent); }
+.match-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (min-width: 40rem) {
+  .match-line { grid-template-columns: 4.5rem minmax(0, 1fr) auto minmax(0, 1fr) auto; }
+  .match-line .tag { grid-column: auto; justify-self: end; }
+}
+.score-form { display: grid; gap: 0.5rem; }
+.score-form fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.4rem 0.6rem 0.6rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.score-form legend { font-weight: 700; padding: 0 0.3rem; }
+.player-rows { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.4rem; }
+.player-rows > li { border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+.player-rows > li.dropped, .player-rows > li.waitlist { opacity: 0.65; }
+.player-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.player-row .grow { display: grid; }
+.list-review { display: grid; gap: 0.5rem; margin-top: 0.4rem; }
+.list-text { margin: 0; padding: 0.6rem; max-height: 18rem; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.75rem; white-space: pre-wrap; }
+.text-input.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8125rem; }
+.standings tr.dropped td { opacity: 0.55; }
+.twitch iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius); }
+.table-page .table-versus { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.75rem; margin: 0.75rem 0 1rem; font-size: 1.15rem; text-align: center; }
+.qr-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 1rem; }
+.qr-grid li { display: grid; justify-items: center; gap: 0.35rem; padding: 0.9rem; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; color: #111; text-align: center; break-inside: avoid; }
+.qr-grid img { width: 100%; max-width: 12rem; }
+.qr-table { font-size: 1.6rem; font-weight: 800; }
+@media print {
+  .site-header, .sub-nav, .site-footer, .no-print { display: none !important; }
+  body, .page { background: #fff; }
+  .qr-grid { grid-template-columns: repeat(2, 1fr); }
+}

@@ -177,7 +177,9 @@ export function playError(e: unknown): string | null {
   const known = [
     'not_authenticated', 'starts_in_past', 'too_many_games', 'not_open', 'is_host', 'not_host', 'no_request', 'game_full',
     'registration_closed', 'not_participant', 'not_played_yet', 'already_confirmed', 'bad_results', 'bad_photos', 'no_report',
-    'no_opponent', 'rate_limited', 'not_league_member',
+    'no_opponent', 'rate_limited', 'not_league_member', 'not_organiser', 'bad_status', 'not_enough_players',
+    'round_not_finished', 'all_rounds_played', 'bad_pairings', 'no_match', 'not_in_match', 'match_closed',
+    'nothing_to_confirm', 'no_active_round', 'matches_pending', 'not_registered', 'list_locked', 'forbidden',
   ];
   return known.find((k) => m.includes(k)) ?? null;
 }

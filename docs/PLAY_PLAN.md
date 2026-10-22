@@ -338,3 +338,21 @@ regular nights, `.ics` export and reminders the day before.
 
 Open questions for later phases: e-mail notifications (provider, opt-in), moderation of free-text
 games (report button, admin review), public player profiles.
+
+### Tournament flow — done (2026-10-27), migration `20261027000008_tournament_flow.sql` + `seed_tournament.sql`
+
+- **Organise** (`#/play/t-new`): name, free-text game, size (generic formats), kind, max players, Swiss
+  rounds (suggested from the player count), venue (store or venue + city), date and duration, list
+  visibility, optional Twitch channel. Created as a draft, published from its page.
+- **Tournament page** tabs: Info (details, Twitch player, map, register / waiting list, army list with
+  the client parser and the points limit), Players (lists, organiser check-in / drop / list review),
+  Pairings (rounds, tables, score entry, confirm / dispute), Standings (match points, SoS, VP diff).
+- **Organiser tools**: publish, start (creates the tables), pair the next round with the tested Swiss
+  engine (preview, draw again, rematch warning), close the round once every result is confirmed or
+  resolved, resolve disputes, finish the event.
+- **QR codes** (`#/play/t/<slug>/tables`, printable): each table opens `#/play/table/<token>` where the
+  two players enter and confirm the score. Tokens are readable by the organiser only.
+- Notifications: round paired (with the table), score to confirm, score confirmed / disputed.
+  Realtime on matches and rounds: pairings and standings update live.
+- Tests: `supabase/tests/rls_tournament.sql` (21 checks); demo event in progress "Friday Live Clash".
+

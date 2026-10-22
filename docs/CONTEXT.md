@@ -163,6 +163,10 @@ discover → paint → share → play → watch → back to physical stores.
 - [x] PLAY social (phases 2–5): battle reports + result card, friendly rating + badges, public /
       private player page, looking-for-a-game posts, in-app notifications, messages, leagues, store
       nights, .ics (migration 20261025000006 + seed_social.sql to apply in Supabase).
+- [x] Owner decisions applied (migration 20261026000007): report media per profile, realtime,
+      auto re-detection of old PAINT projects, cleanup of check games.
+- [x] Full tournament flow (migration 20261027000008 + seed_tournament.sql): organise, register, lists,
+      Swiss rounds, score reports by QR code, live standings (see PLAY_PLAN.md).
 - Insight: automatic colours shine on **painted** minis / box art / illustrations. On a grey-primed
   mini they only follow light and shadow → the app says so and suggests drawing areas.
 

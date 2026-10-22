@@ -11,6 +11,7 @@ import { useUnread } from '../../core/social/unread';
 /** Where a notification leads. */
 function linkOf(n: AppNotification) {
   if (n.kind === 'message') return `#/messages/${n.payload.from_id}`;
+  if (n.payload.slug) return `#/play/t/${n.payload.slug}`;
   return n.payload.game_id ? `#/play/game/${n.payload.game_id}` : '#/play/quick';
 }
 
@@ -68,10 +69,13 @@ export function Notifications() {
           {items.map((n) => (
             <li key={n.id} className={n.read_at ? '' : 'unread'}>
               <a href={linkOf(n)}>
-                {t(k(`notif.${n.kind}${n.kind === 'join_answer' || n.kind === 'report_answer' ? `.${n.payload.status}` : ''}`), {
+                {t(k(`notif.${n.kind}${['join_answer', 'report_answer', 'match_answer'].includes(n.kind) ? `.${n.payload.status}` : ''}`), {
                   from: n.payload.from ?? '',
                   game: n.payload.game ?? '',
                   city: n.payload.city ?? '',
+                  tournament: n.payload.tournament ?? '',
+                  round: n.payload.round ?? '',
+                  table: n.payload.table ?? '',
                 })}
               </a>
               <small className="muted">{formatWhen(n.created_at, lang)}</small>

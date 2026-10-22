@@ -25,7 +25,7 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
   echo "== $(basename "$f")"
   adapt "$f" | "${PSQL[@]}" -d cftest
 done
-for s in "$ROOT"/supabase/seed.sql "$ROOT"/supabase/seed_games.sql "$ROOT"/supabase/seed_social.sql; do
+for s in "$ROOT"/supabase/seed.sql "$ROOT"/supabase/seed_games.sql "$ROOT"/supabase/seed_social.sql "$ROOT"/supabase/seed_tournament.sql; do
   echo "== $(basename "$s")"
   "${PSQL[@]}" -d cftest -f "$s"
 done

@@ -19,6 +19,8 @@ import { MyGames } from './play/pages/MyGames';
 import { GameNew } from './play/pages/GameNew';
 import { GameDetail } from './play/pages/GameDetail';
 import { TournamentDetail } from './play/pages/TournamentDetail';
+import { TournamentNew } from './play/pages/TournamentNew';
+import { TablePage, TableQrSheet } from './play/pages/TablePages';
 import { LeagueDetail, Leagues } from './play/pages/Leagues';
 import { StorePage } from './play/pages/StorePage';
 import { PlayerProfile } from './play/pages/PlayerProfile';
@@ -72,6 +74,9 @@ function Page({ route }: { route: Route }) {
     case 'play.new': return <GameNew />;
     case 'play.game': return <GameDetail id={route.params.id ?? ''} />;
     case 'play.tournament': return <TournamentDetail slug={route.params.slug ?? ''} />;
+    case 'play.tournament.new': return <TournamentNew />;
+    case 'play.tournament.tables': return <TableQrSheet slug={route.params.slug ?? ''} />;
+    case 'play.table': return <TablePage token={route.params.token ?? ''} />;
     case 'play.leagues': return <Leagues />;
     case 'play.league': return <LeagueDetail id={route.params.id ?? ''} />;
     case 'play.store': return <StorePage id={route.params.id ?? ''} />;

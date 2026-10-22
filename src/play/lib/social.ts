@@ -292,7 +292,9 @@ export async function sendGameMessage(gameId: string, me: string, body: string) 
 // --- Notifications ------------------------------------------------------------------------------
 export interface AppNotification {
   id: string;
-  kind: 'join_request' | 'join_answer' | 'game_match' | 'report_to_confirm' | 'report_answer' | 'message' | 'game_message' | 'league_game';
+  kind:
+    | 'join_request' | 'join_answer' | 'game_match' | 'report_to_confirm' | 'report_answer' | 'message' | 'game_message' | 'league_game'
+    | 'round_paired' | 'match_to_confirm' | 'match_answer';
   payload: Record<string, string>;
   read_at: string | null;
   created_at: string;
