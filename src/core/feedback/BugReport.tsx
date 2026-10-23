@@ -118,7 +118,7 @@ function BugReportDialog({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <p className="hint">
-              {t('bug.signinForShots')} <a href="#/signin" onClick={onClose}>{t('auth.signin.cta')}</a>
+              {t('bug.signinForShots')} <a href="/signin" onClick={onClose}>{t('auth.signin.cta')}</a>
             </p>
           )}
         </div>

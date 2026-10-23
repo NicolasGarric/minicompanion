@@ -1,3 +1,4 @@
+import { safeHref } from '../../core/lib/url';
 import type { Brand, Paint, PaintType } from '../types';
 
 /**
@@ -420,6 +421,6 @@ export function paintByName(name: string, brand: Brand = 'Citadel'): Paint | und
  */
 export function paintSearchUrl(p: Pick<Paint, 'brand' | 'name'>, template?: string): string {
   const q = encodeURIComponent(`${p.brand} ${p.name} paint`);
-  if (template && template.includes('{q}')) return template.replace('{q}', q);
+  if (template && template.includes('{q}')) return safeHref(template.replace('{q}', q)) ?? `https://duckduckgo.com/?q=${q}`;
   return `https://duckduckgo.com/?q=${q}`;
 }

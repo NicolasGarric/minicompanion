@@ -9,7 +9,7 @@ import { playError } from '../lib/games';
 import { confirmMatch, getTournament, reportMatch, roundSchedule, tableMatch, tableTokens, type MatchResult, type RoundSlot, type TableMatch, type Tournament } from '../lib/tournaments';
 import { RoundWhere } from '../components/RoundSchedule';
 
-const tableUrl = (token: string) => `${location.origin}${location.pathname}#/play/table/${token}`;
+const tableUrl = (token: string) => `${location.origin}/play/table/${token}`;
 
 /** Organiser: one QR code per table, to print and put on the tables. */
 export function TableQrSheet({ slug }: { slug: string }) {
@@ -42,7 +42,7 @@ export function TableQrSheet({ slug }: { slug: string }) {
     <div className="narrow qr-sheet">
       <div className="page-head no-print">
         <div>
-          <a className="small" href={`#/play/t/${slug}`}>← {tour?.name ?? ''}</a>
+          <a className="small" href={`/play/t/${slug}`}>← {tour?.name ?? ''}</a>
           <h1>{t('tour.qrCodes')}</h1>
           <p className="lead">{t('tour.qrLead')}</p>
         </div>
@@ -118,7 +118,7 @@ export function TablePage({ token }: { token: string }) {
 
   return (
     <div className="narrow table-page">
-      <a className="small" href={`#/play/t/${m.tournament_slug}`}>← {m.tournament_name}</a>
+      <a className="small" href={`/play/t/${m.tournament_slug}`}>← {m.tournament_name}</a>
       <h1>{t('tour.tableN', { n: m.table_number })}</h1>
       {!m.match_id ? (
         <p className="hint">{t('tour.tableIdle')}</p>

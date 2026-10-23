@@ -115,7 +115,7 @@ export function RoundWhere({ slot, tour, lang }: { slot: RoundSlot; tour: Tourna
     <p className="round-where muted">
       <Icon name="calendar" size={14} /> {formatWhen(slot.starts_at, lang)}
       {' · '}
-      <Icon name="map" size={14} /> {v.store_id ? <a href={`#/play/store/${v.store_id}`}>{v.name}</a> : v.name}
+      <Icon name="map" size={14} /> {v.store_id ? <a href={`/play/store/${v.store_id}`}>{v.name}</a> : v.name}
       {v.address && <> · <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(v.address)}`} target="_blank" rel="noreferrer">{v.address} ↗</a></>}
     </p>
   );

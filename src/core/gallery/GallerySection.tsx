@@ -32,7 +32,7 @@ export function GallerySection() {
       {!items && !error && <span className="spinner" />}
       {items?.length === 0 && (
         <p className="hint">
-          {t('gallery.empty')} <a href="#/paint">{t('gallery.emptyCta')}</a>
+          {t('gallery.empty')} <a href="/paint">{t('gallery.emptyCta')}</a>
         </p>
       )}
       {!!items?.length && (

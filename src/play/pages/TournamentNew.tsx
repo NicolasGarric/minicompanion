@@ -203,7 +203,7 @@ export function TournamentNew() {
 
         {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
         <div className="nav-row">
-          <a className="btn ghost" href="#/play">{t('common.back')}</a>
+          <a className="btn ghost" href="/play">{t('common.back')}</a>
           <button className="btn primary" disabled={busy}>{t('tour.createDraft')}</button>
         </div>
       </form>

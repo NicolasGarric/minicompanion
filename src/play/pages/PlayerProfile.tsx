@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
+import { setPageMeta } from '../../core/seo';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { useSession } from '../../core/auth/session';
@@ -33,6 +34,10 @@ export function PlayerProfile({ handle }: { handle: string }) {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [history, setHistory] = useState<{ game: Game; results: GameResult[] }[]>([]);
   const [gallery, setGallery] = useState<{ id: string; title: string; url?: string }[]>([]);
+  useEffect(() => {
+    // Private players stay out of search results.
+    if (p) setPageMeta({ title: p.display_name, description: `@${p.handle}${p.factions?.length ? ` · ${p.factions.join(', ')}` : ''}`, noindex: !p.is_public });
+  }, [p]);
 
   useEffect(() => {
     if (!backendConfigured) return;
@@ -68,7 +73,7 @@ export function PlayerProfile({ handle }: { handle: string }) {
           <p className="muted">@{p.handle}{p.home_city ? ` · ${p.home_city}` : ''}</p>
         </div>
         {me && !mine && (
-          <a className="btn small" href={`#/messages/${p.id}`}><Icon name="chat" size={14} /> {t('profile.message')}</a>
+          <a className="btn small" href={`/messages/${p.id}`}><Icon name="chat" size={14} /> {t('profile.message')}</a>
         )}
       </div>
       {!p.is_public && !mine ? (
@@ -124,7 +129,7 @@ export function PlayerProfile({ handle }: { handle: string }) {
                   return (
                     <li key={game.id}>
                       <span className={`tag result-${outcome}`}>{t(k(`profile.${outcome}`))}</span>{' '}
-                      <a href={`#/play/game/${game.id}`}>{game.game_system}</a>{' '}
+                      <a href={`/play/game/${game.id}`}>{game.game_system}</a>{' '}
                       <span className="muted">
                         {t('profile.versus', { names: results.filter((r) => r.player_id !== p.id).map((r) => r.profile?.display_name ?? '?').join(', ') })} · {formatWhen(game.starts_at, lang)}
                       </span>

@@ -19,7 +19,7 @@ The app is built around three growth loops:
 | **Organic social reach** | "My scheme" cards (story 1080×1920, post 1080×1080) with a "Made with MiniCompanion" footer, plus a public link that lets anyone reuse the scheme | `card_generated`, `card_shared`, `shared_link_opened` |
 | **Drive store visits** | The beginner path ends on a store finder; every paint has a neutral search link | `store_finder_opened` |
 
-The internal stats page (`#/stats`) shows these as campaign-style numbers and conversion rates.
+The internal stats page (`/stats`) shows these as campaign-style numbers and conversion rates.
 
 ## Features
 
@@ -42,7 +42,7 @@ The internal stats page (`#/stats`) shows these as campaign-style numbers and co
 - Scheme presets use neutral descriptive names ("Royal blue & gold"), not faction names.
 - Paint links open a neutral web search, or the retailer search URL the user sets on the
   Legal / About page. No affiliate links.
-- Short disclaimer in every page footer, on share cards and here; full text (EN + JP) on `#/legal`.
+- Short disclaimer in every page footer, on share cards and here; full text (EN + JP) on `/legal`.
 
 ## Run it
 
@@ -61,7 +61,7 @@ npm run build     # type-check + production build (≈110 KB gzipped)
 src/
   engine/      engine.ts (recolour renderer), maskTools.ts (brush, wand, lasso), demo.ts
   lib/         palette.ts (k-means), share.ts (card + link), beginner.ts, analytics.ts,
-               router.ts (hash router), color.ts, image.ts, recipe.ts
+               router.ts (path router), color.ts, image.ts, recipe.ts
   i18n/        en.ts (reference), ja.ts (typed against en), index.ts (useT hook)
   data/        paints.ts (text + hex only), presets.ts, stores.ts (StoreProvider + sample data)
   storage/     db.ts (IndexedDB)

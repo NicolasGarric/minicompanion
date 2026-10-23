@@ -1,5 +1,6 @@
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
 import { useEffect } from 'react';
+import { useRouteMeta } from './core/seo';
 import { useStore } from './paint/store';
 import { navigate, useRoute, type Route } from './core/router';
 import { useSession } from './core/auth/session';
@@ -97,6 +98,7 @@ function Page({ route }: { route: Route }) {
 
 export default function App() {
   const route = useRoute();
+  useRouteMeta(route);
   const projectId = useStore((s) => s.projectId);
 
   useEffect(() => {

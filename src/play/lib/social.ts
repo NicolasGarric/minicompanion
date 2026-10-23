@@ -77,14 +77,14 @@ export async function uploadReportPhoto(gameId: string, blob: Blob): Promise<str
 export async function reportPhotoUrls(paths: string[]): Promise<Map<string, string>> {
   if (!paths.length) return new Map();
   const { data } = await db().storage.from('reports').createSignedUrls(paths, 3600);
-  return new Map((data ?? []).filter((u) => u.signedUrl).map((u) => [u.path ?? '', u.signedUrl]));
+  return new Map((data ?? []).flatMap((u) => (u.signedUrl ? [[u.path ?? '', u.signedUrl] as [string, string]] : [])));
 }
 
 /** Gallery images are private files: signed URLs work for the owner and for public items. */
 export async function galleryUrls(paths: string[]): Promise<Map<string, string>> {
   if (!paths.length) return new Map();
   const { data } = await db().storage.from('gallery').createSignedUrls(paths, 3600);
-  return new Map((data ?? []).filter((u) => u.signedUrl).map((u) => [u.path ?? '', u.signedUrl]));
+  return new Map((data ?? []).flatMap((u) => (u.signedUrl ? [[u.path ?? '', u.signedUrl] as [string, string]] : [])));
 }
 
 export async function myGalleryItems(userId: string): Promise<{ id: string; title: string; image_path: string }[]> {
@@ -122,6 +122,10 @@ export interface Stats {
 }
 
 export async function profileByHandle(handle: string): Promise<PublicProfile | null> {
+  // City and armies come back only for public profiles (or my own).
+  const card = await db().rpc('player_card', { p_handle: handle });
+  if (!card.error) return ((card.data as PublicProfile[])[0] ?? null);
+  // Database set up before the security migration: the old direct read still works there.
   return must(await db().from('profiles').select('id, handle, display_name, home_city, factions, is_public').eq('handle', handle).maybeSingle());
 }
 export async function ratingsOf(userId: string): Promise<Rating[]> {

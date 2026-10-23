@@ -40,7 +40,7 @@ export async function listGallery(): Promise<GalleryItem[]> {
   if (!items.length) return items;
   const { data: urls } = await supabase.storage.from(BUCKET).createSignedUrls(items.map((i) => i.image_path), 3600);
   const byPath = new Map((urls ?? []).map((u) => [u.path, u.signedUrl]));
-  return items.map((i) => ({ ...i, url: byPath.get(i.image_path) }));
+  return items.map((i) => ({ ...i, url: byPath.get(i.image_path) ?? undefined }));
 }
 
 /** Uploads the image, then records it; the file is removed again if the record fails. */

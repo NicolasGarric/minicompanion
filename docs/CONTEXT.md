@@ -18,7 +18,9 @@ not only technical skill.
 - React 18 + Vite 5 + TypeScript (strict), Zustand for state. No other runtime dependency.
 - **Ask the owner before adding any new dependency.**
 - No backend. Persistence in IndexedDB (projects, library) and localStorage (prefs, analytics).
-- Hash router (`#/…`) written in-house, i18n written in-house.
+- Path router (History API, real URLs such as `/play/t/<slug>`) written in-house, i18n written in-house.
+  Old `#/…` links (printed table QR codes, bookmarks) are redirected on load; shared schemes stay
+  `/#/s/…` on purpose (their data never reaches the server). Vercel rewrites unknown paths to index.html.
 - CSS: one stylesheet, `rem` units, mobile-first, desktop layout from `64rem`.
 - Visual polish is deferred: keep styles simple, the owner will do a visual pass later.
 
@@ -227,7 +229,20 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    (fictional, with store pages and nights) are separate and unchanged.
 7b. **Bug reports** (footer, every page): text + up to 3 screenshots (signed in; drop / paste / pick,
    shrunk on the device) + optional technical context; anyone can report (rate limited), admins
-   read them at `#/admin/bugs` (link on the account page). Migration 000012.
+   read them at `/admin/bugs` (link on the account page). Migration 000012.
+7c. **Security pass (2026-10-23)**: migration 000013 (direct writes limited to what the app does,
+   no TRUNCATE, tournament moderation flag / owner / flow protected by a trigger, contest entries only
+   via functions, profiles: public name card only, city / armies via `player_card`, own profile via
+   `my_profile`, unused check-in tokens dropped, analytics table closed); `safeHref` for links typed
+   by users; security headers + CSP in `vercel.json` (tested on the production build, no violation);
+   supabase-js updated (auth-js advisory). Open: vite/esbuild dev-server advisory needs vite 8
+   (dev only); owner actions in the Supabase dashboard (below).
+7d. **SEO / AI assistants (2026-10-23)**: real URLs; per-page title, description, canonical, robots
+   (personal pages noindex); schema.org `WebSite` / `WebApplication` and `Event` per tournament;
+   `scripts/build-seo.mjs` (runs after `vite build`) writes static HTML for the public pages and every
+   published tournament, `sitemap.xml`, `robots.txt` (AI crawlers explicitly allowed on public pages)
+   and `llms.txt`; Open Graph image `public/og-image.png`. Not done: per-language URLs / hreflang
+   (language is a client setting), Search Console sitemap submission (owner).
 8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
 9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
    `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,

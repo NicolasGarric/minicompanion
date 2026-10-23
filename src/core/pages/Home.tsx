@@ -9,12 +9,12 @@ import { startRisoTable } from '../visual/risoTable';
  * Each step links to the module that serves it, so the page doubles as a map of the product.
  */
 const JOURNEY: { id: string; icon: string; href: string }[] = [
-  { id: 'discover', icon: 'sparkle', href: '#/paint/beginner' },
-  { id: 'paint', icon: 'brush', href: '#/paint' },
-  { id: 'share', icon: 'share', href: '#/paint' },
-  { id: 'play', icon: 'grid', href: '#/play' },
-  { id: 'watch', icon: 'eye', href: '#/play' },
-  { id: 'store', icon: 'map', href: '#/stores' },
+  { id: 'discover', icon: 'sparkle', href: '/paint/beginner' },
+  { id: 'paint', icon: 'brush', href: '/paint' },
+  { id: 'share', icon: 'share', href: '/paint' },
+  { id: 'play', icon: 'grid', href: '/play' },
+  { id: 'watch', icon: 'eye', href: '/play' },
+  { id: 'store', icon: 'map', href: '/stores' },
 ];
 
 export function Home() {
@@ -40,9 +40,9 @@ export function Home() {
           <h1>{t('platform.title')}</h1>
           <p className="lead">{t('platform.lead')}</p>
           <div className="hero-secondary">
-          <a className="btn primary" href="#/paint/beginner"><Icon name="sparkle" size={16} /> {t('platform.ctaBeginner')}</a>
-          <a className="btn" href="#/paint"><Icon name="brush" size={16} /> {t('nav.paint')}</a>
-          <a className="btn" href="#/play"><Icon name="grid" size={16} /> {t('nav.play')}</a>
+          <a className="btn primary" href="/paint/beginner"><Icon name="sparkle" size={16} /> {t('platform.ctaBeginner')}</a>
+          <a className="btn" href="/paint"><Icon name="brush" size={16} /> {t('nav.paint')}</a>
+          <a className="btn" href="/play"><Icon name="grid" size={16} /> {t('nav.play')}</a>
           </div>
         </div>
       </section>
@@ -61,12 +61,12 @@ export function Home() {
       </ol>
 
       <section className="modules">
-        <a className="module-card module-paint" href="#/paint">
+        <a className="module-card module-paint" href="/paint">
           <span className="module-tag">PAINT</span>
           <h2>{t('platform.paintTitle')}</h2>
           <p>{t('platform.paintText')}</p>
         </a>
-        <a className="module-card module-play" href="#/play">
+        <a className="module-card module-play" href="/play">
           <span className="module-tag">PLAY</span>
           <h2>{t('platform.playTitle')}</h2>
           <p>{t('platform.playText')}</p>

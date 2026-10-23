@@ -30,6 +30,7 @@ declare -A GUARD=(
   [20261029000010_languages.sql]="not exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'app_lang' and e.enumlabel = 'ko')"
   [20261030000011_round_schedule.sql]="to_regclass('public.round_schedule') is null"
   [20261031000012_bug_reports.sql]="to_regclass('public.bug_reports') is null"
+  [20261101000013_security_hardening.sql]="to_regprocedure('public.my_profile()') is null"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label

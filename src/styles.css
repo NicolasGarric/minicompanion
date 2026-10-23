@@ -929,3 +929,6 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .bug-admin-list .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: center; }
 .bug-message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .bug-fixed, .bug-wontfix { opacity: 0.6; }
+
+/* Static page content shown before the app loads (and to crawlers without JavaScript) */
+.seo-static { max-width: 46rem; margin: 2rem auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }

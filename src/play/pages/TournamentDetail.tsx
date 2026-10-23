@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { k, langName, useLang, useT } from '../../core/i18n';
+import { setPageMeta, useJsonLd } from '../../core/seo';
+import { tournamentJsonLd } from '../lib/seo';
 import { supabase, backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
@@ -95,6 +97,12 @@ export function TournamentDetail({ slug }: { slug: string }) {
   // Live pairings and results
   const tid = data?.t.id;
   useEffect(() => (tid ? onTournamentChange(tid, () => load()) : undefined), [tid, load]);
+  const seoTour = data?.t;
+  useEffect(() => {
+    if (seoTour)
+      setPageMeta({ title: seoTour.name, description: [formatWhen(seoTour.starts_at, lang), seoTour.venue_name, seoTour.description].filter(Boolean).join(' · ') });
+  }, [seoTour, lang]);
+  useJsonLd('tournament', seoTour && data ? tournamentJsonLd(seoTour, data.schedule, location.origin) : null);
 
   if (!backendConfigured) return <BackendNotice />;
   if (data === undefined) return <div className="narrow"><span className="spinner" /></div>;
@@ -102,7 +110,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
     return (
       <div className="narrow">
         <p className="hint">{error === 'not_installed' ? t('games.error.not_installed') : t('tour.notFound')}</p>
-        <a href="#/play">← {t('nav.play.tournaments')}</a>
+        <a href="/play">← {t('nav.play.tournaments')}</a>
       </div>
     );
 
@@ -117,7 +125,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
   return (
     <div className="narrow game-detail tournament">
-      <a href="#/play" className="small">← {t('nav.play.tournaments')}</a>
+      <a href="/play" className="small">← {t('nav.play.tournaments')}</a>
       <div className="page-head">
         <div>
           <h1>{tour.name}</h1>
@@ -189,7 +197,7 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
             : new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(tour.ends_at))}
         </p>
         <p>
-          <Icon name="map" size={16} /> {tour.store_id ? <a href={`#/play/store/${tour.store_id}`}>{tour.venue_name}</a> : tour.venue_name} · {tour.address}
+          <Icon name="map" size={16} /> {tour.store_id ? <a href={`/play/store/${tour.store_id}`}>{tour.venue_name}</a> : tour.venue_name} · {tour.address}
         </p>
         <p><Icon name="globe" size={16} /> {tour.language === 'both' ? t('games.lang.both') : langName(tour.language)}</p>
         <p className="muted">{t('tour.deadline', { date: formatWhen(tour.registration_deadline, lang) })}</p>
@@ -347,7 +355,7 @@ function PlayersTab({ data, organiser, onChange }: { data: Data; organiser: bool
           <li key={r.id} className={r.status}>
             <div className="player-row">
               <span className="grow">
-                <a href={`#/u/${r.profile?.handle ?? ''}`}><strong>{r.profile?.display_name ?? '?'}</strong></a>
+                <a href={`/u/${r.profile?.handle ?? ''}`}><strong>{r.profile?.display_name ?? '?'}</strong></a>
                 <small className="muted">
                   {[
                     r.status !== 'registered' ? t(k(`tour.regStatus.${r.status}`)) : null,
@@ -591,7 +599,7 @@ function OrganiserPanel({ data, onChange }: { data: Data; onChange: () => void }
       <div className="card-head">
         <h2>{t('tour.organiser')}</h2>
         {tour.status !== 'draft' && (
-          <a className="btn small" href={`#/play/t/${tour.slug}/tables`}><Icon name="grid" size={14} /> {t('tour.qrCodes')}</a>
+          <a className="btn small" href={`/play/t/${tour.slug}/tables`}><Icon name="grid" size={14} /> {t('tour.qrCodes')}</a>
         )}
       </div>
       {tour.status === 'draft' && (

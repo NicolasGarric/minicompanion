@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { k, useLang, useT } from '../i18n';
 import { useSession } from '../auth/session';
 import { listBugReports, setBugStatus, type BugReport } from './bugs';
+import { safeHref } from '../lib/url';
 
 const STATUSES: BugReport['status'][] = ['new', 'seen', 'fixed', 'wontfix'];
 
-/** Admins only (#/admin/bugs): reports sent from the footer, newest first, with screenshots. */
+/** Admins only (/admin/bugs): reports sent from the footer, newest first, with screenshots. */
 export function BugReportsAdmin() {
   const t = useT();
   const lang = useLang((s) => s.lang);
@@ -35,9 +36,9 @@ export function BugReportsAdmin() {
             <div className="card-head">
               <small className="muted">
                 {new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(r.created_at))} ·{' '}
-                {r.reporter ? <a href={`#/u/${r.reporter.handle}`}>@{r.reporter.handle}</a> : t('bug.anonymous')}
+                {r.reporter ? <a href={`/u/${r.reporter.handle}`}>@{r.reporter.handle}</a> : t('bug.anonymous')}
                 {r.contact && <> · {r.contact}</>}
-                {r.page && <> · <a href={r.page}>{r.page}</a></>}
+                {r.page && <> · {safeHref(r.page, { allowApp: true }) ? <a href={safeHref(r.page, { allowApp: true })}>{r.page}</a> : r.page}</>}
               </small>
               <select className="select" value={r.status} onChange={(e) => change(r, e.target.value as BugReport['status'])} aria-label={t('bug.adminTitle')}>
                 {STATUSES.map((s) => <option key={s} value={s}>{t(k(`bug.status.${s}`))}</option>)}

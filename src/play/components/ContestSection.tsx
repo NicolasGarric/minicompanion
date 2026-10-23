@@ -116,7 +116,7 @@ export function ContestSection({ tour, organiser }: { tour: Tournament; organise
                 </a>
                 <strong>{e.title}</strong>
                 <small className="muted">
-                  {e.author_name ? <a href={`#/u/${e.author_handle}`}>{e.author_name}</a> : t('contest.anonymous')}
+                  {e.author_name ? <a href={`/u/${e.author_handle}`}>{e.author_name}</a> : t('contest.anonymous')}
                   {e.votes !== null && ` · ${t('contest.votes', { count: e.votes })}`}
                 </small>
                 {!closed && !e.is_mine && !e.is_hidden && (
@@ -164,7 +164,7 @@ function Podium({ tour, cat, rows }: { tour: Tournament; cat: Category; rows: Re
             <img src={photoUrl(r.photo_paths[0])} alt={r.title} loading="lazy" />
             <span className="podium-rank">{r.public_rank}</span>
             <strong>{r.title}</strong>
-            <small className="muted"><a href={`#/u/${r.author_handle}`}>{r.author_name}</a> · {t('contest.votes', { count: r.votes })}</small>
+            <small className="muted"><a href={`/u/${r.author_handle}`}>{r.author_name}</a> · {t('contest.votes', { count: r.votes })}</small>
           </li>
         ))}
       </ol>

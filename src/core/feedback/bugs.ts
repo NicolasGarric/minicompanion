@@ -10,7 +10,7 @@ export async function prepareScreenshot(file: Blob): Promise<Blob> {
 /** What helps reproduce a bug, nothing personal: page, language, browser, screen, app build. */
 export function bugContext() {
   return {
-    page: location.hash || '#/',
+    page: `${location.pathname}${location.search}`,
     lang: useLang.getState().lang,
     userAgent: navigator.userAgent.slice(0, 300),
     screen: `${innerWidth}×${innerHeight} @${devicePixelRatio}x`,

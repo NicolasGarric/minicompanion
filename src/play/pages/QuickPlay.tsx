@@ -20,7 +20,7 @@ export function QuickPlay() {
   const [popular, setPopular] = useState<string[]>([]);
   const [formats, setFormats] = useState<string[]>([]);
   const countries = useMemo(() => sortedCountries(lang), [lang]);
-  const [view, setView] = useState<'games' | 'lfg'>(() => (location.hash.includes('view=lfg') ? 'lfg' : 'games'));
+  const [view, setView] = useState<'games' | 'lfg'>(() => (location.search.includes('view=lfg') ? 'lfg' : 'games'));
 
   useEffect(() => {
     if (!backendConfigured) return;
@@ -52,7 +52,7 @@ export function QuickPlay() {
           <h1>{t('quick.title')}</h1>
           <p className="lead">{t('quick.lead')}</p>
         </div>
-        <a className="btn primary" href={session ? '#/play/new' : '#/signin'}>
+        <a className="btn primary" href={session ? '/play/new' : '/signin'}>
           <Icon name="plus" size={16} /> {t('quick.create')}
         </a>
       </div>

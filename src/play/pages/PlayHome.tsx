@@ -106,7 +106,7 @@ export function PlayHome() {
           <h1>{t('play.title')}</h1>
           <p className="lead">{t('play.lead')}</p>
         </div>
-        <a className="btn primary" href={session ? '#/play/t-new' : '#/signin'}>
+        <a className="btn primary" href={session ? '/play/t-new' : '/signin'}>
           <Icon name="plus" size={16} /> {t('tour.organise')}
         </a>
       </div>
@@ -116,7 +116,7 @@ export function PlayHome() {
           <ul className="notif-list">
             {live.map((l) => (
               <li key={l.slug}>
-                <a href={`#/play/t/${l.slug}`}><strong>{l.name}</strong></a>
+                <a href={`/play/t/${l.slug}`}><strong>{l.name}</strong></a>
                 <span className="muted">{[l.game_system, l.venue_name].filter(Boolean).join(' · ')}</span>
               </li>
             ))}
@@ -129,7 +129,7 @@ export function PlayHome() {
           <ul className="notif-list">
             {mine.slice(0, 6).map((m) => (
               <li key={m.slug}>
-                <a href={`#/play/t/${m.slug}`}>{m.name}</a>
+                <a href={`/play/t/${m.slug}`}>{m.name}</a>
                 <span className="tag">{t(k(`tour.status.${m.status}`))}</span>
               </li>
             ))}
@@ -186,7 +186,7 @@ export function PlayHome() {
         <ul className="game-list">
           {shown.map((r) => (
             <li key={r.id}>
-              <a className="game-card" href={`#/play/t/${r.slug}`}>
+              <a className="game-card" href={`/play/t/${r.slug}`}>
                 <span className="game-what"><strong>{r.name}</strong></span>
                 <span className="game-when">{formatWhen(r.starts_at, lang)}</span>
                 <span className="game-where muted">

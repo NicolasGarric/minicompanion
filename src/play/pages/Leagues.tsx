@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLang, useT } from '../../core/i18n';
+import { setPageMeta } from '../../core/seo';
 import { navigate } from '../../core/router';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
@@ -57,7 +58,7 @@ export function Leagues() {
         <ul className="game-list">
           {list.map((l) => (
             <li key={l.id}>
-              <a className={`game-card ${l.ends_on < today ? 'past' : ''}`} href={`#/play/league/${l.id}`}>
+              <a className={`game-card ${l.ends_on < today ? 'past' : ''}`} href={`/play/league/${l.id}`}>
                 <span className="game-what">
                   <strong>{l.name}</strong>
                   <small className="muted">{l.game_system}</small>
@@ -152,6 +153,9 @@ export function LeagueDetail({ id }: { id: string }) {
   const session = useSession((s) => s.session);
   const me = session?.user.id;
   const [league, setLeague] = useState<League | null | undefined>(undefined);
+  useEffect(() => {
+    if (league) setPageMeta({ title: league.name, description: [league.game_system, league.description].filter(Boolean).join(' · ') });
+  }, [league]);
   const [table, setTable] = useState<Standing[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [member, setMember] = useState(false);
@@ -189,7 +193,7 @@ export function LeagueDetail({ id }: { id: string }) {
 
   return (
     <div className="narrow game-detail">
-      <a className="small" href="#/play/leagues">← {t('nav.play.leagues')}</a>
+      <a className="small" href="/play/leagues">← {t('nav.play.leagues')}</a>
       <div className="page-head">
         <div>
           <h1>{league.name}</h1>
@@ -200,12 +204,12 @@ export function LeagueDetail({ id }: { id: string }) {
         )}
       </div>
       <section className="card game-facts">
-        {league.store_id && league.store && <p><Icon name="home" size={16} /> <a href={`#/play/store/${league.store_id}`}>{league.store.name}</a></p>}
+        {league.store_id && league.store && <p><Icon name="home" size={16} /> <a href={`/play/store/${league.store_id}`}>{league.store.name}</a></p>}
         {league.city && <p><Icon name="map" size={16} /> {league.city}</p>}
         {league.description && <p className="game-note">{league.description}</p>}
         {member && open && (
           <p>
-            <a className="btn small" href={`#/play/new?league=${league.id}`}><Icon name="plus" size={14} /> {t('league.hostGame')}</a>
+            <a className="btn small" href={`/play/new?league=${league.id}`}><Icon name="plus" size={14} /> {t('league.hostGame')}</a>
           </p>
         )}
       </section>

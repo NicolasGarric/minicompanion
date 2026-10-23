@@ -46,7 +46,7 @@ export function SaveToGallery() {
         {t(session ? 'gallery.save' : 'gallery.saveSignin')}
       </button>
       {state === 'saved' && (
-        <a className="small" href="#/account">
+        <a className="small" href="/account">
           {t('gallery.open')} →
         </a>
       )}

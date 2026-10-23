@@ -66,17 +66,17 @@ export function AccountButton() {
       window.removeEventListener('focus', refresh);
     };
   }, [session]);
-  if (!session) return <a className="btn small" href="#/signin">{t('auth.signin.cta')}</a>;
+  if (!session) return <a className="btn small" href="/signin">{t('auth.signin.cta')}</a>;
   return (
     <>
-      <a className="header-icon" href="#/messages" aria-label={t('msg.title')} title={t('msg.title')}>
+      <a className="header-icon" href="/messages" aria-label={t('msg.title')} title={t('msg.title')}>
         <Icon name="chat" size={20} />
       </a>
-      <a className="header-icon" href="#/notifications" aria-label={t('notif.title')} title={t('notif.title')}>
+      <a className="header-icon" href="/notifications" aria-label={t('notif.title')} title={t('notif.title')}>
         <Icon name="bell" size={20} />
         {unread > 0 && <span className="badge-count">{unread > 9 ? '9+' : unread}</span>}
       </a>
-      <a className="account-btn" href="#/account" aria-label={t('nav.account')}>
+      <a className="account-btn" href="/account" aria-label={t('nav.account')}>
         <Avatar name={profile?.display_name ?? session.user.email ?? '?'} size={30} />
       </a>
     </>
@@ -89,7 +89,7 @@ export function Footer({ compact }: { compact?: boolean }) {
   return (
     <footer className={`site-footer ${compact ? 'compact' : ''}`}>
       <p>
-        {t('legal.short')} <a href="#/legal">{t('nav.legal')}</a>
+        {t('legal.short')} <a href="/legal">{t('nav.legal')}</a>
       </p>
       <p>
         <BugReportButton />
@@ -106,21 +106,21 @@ interface NavItem {
 
 /** The two modules are the top level of the navigation; each has its own sub-navigation. */
 const SECTIONS: NavItem[] = [
-  { href: '#/paint', key: 'nav.paint', active: (r) => r.section === 'paint' },
-  { href: '#/play', key: 'nav.play', active: (r) => r.section === 'play' },
-  { href: '#/stores', key: 'nav.stores', active: (r) => r.name === 'stores' },
+  { href: '/paint', key: 'nav.paint', active: (r) => r.section === 'paint' },
+  { href: '/play', key: 'nav.play', active: (r) => r.section === 'play' },
+  { href: '/stores', key: 'nav.stores', active: (r) => r.name === 'stores' },
 ];
 
 const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
   paint: [
-    { href: '#/paint', key: 'nav.paint.projects', active: (r) => r.name === 'paint' },
-    { href: '#/paint/beginner', key: 'nav.beginner', active: (r) => r.name === 'paint.beginner' },
+    { href: '/paint', key: 'nav.paint.projects', active: (r) => r.name === 'paint' },
+    { href: '/paint/beginner', key: 'nav.beginner', active: (r) => r.name === 'paint.beginner' },
   ],
   play: [
-    { href: '#/play', key: 'nav.play.tournaments', active: (r) => r.name.startsWith('play.tournament') || r.name === 'play' || r.name === 'play.table' },
-    { href: '#/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
-    { href: '#/play/leagues', key: 'nav.play.leagues', active: (r) => r.name === 'play.leagues' || r.name === 'play.league' },
-    { href: '#/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
+    { href: '/play', key: 'nav.play.tournaments', active: (r) => r.name.startsWith('play.tournament') || r.name === 'play' || r.name === 'play.table' },
+    { href: '/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
+    { href: '/play/leagues', key: 'nav.play.leagues', active: (r) => r.name === 'play.leagues' || r.name === 'play.league' },
+    { href: '/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
   ],
 };
 
@@ -131,7 +131,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
   return (
     <div className="shell">
       <header className="site-header">
-        <a href="#/" className="home-link" aria-label={t('nav.home')}>
+        <a href="/" className="home-link" aria-label={t('nav.home')}>
           <Logo />
         </a>
         <nav className="site-nav" aria-label={t('nav.main')}>

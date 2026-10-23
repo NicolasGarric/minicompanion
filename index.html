@@ -3,16 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Independent fan-made companion for miniature hobbyists: plan painting schemes, find tournaments and stores, share your work. Not affiliated with any brand." />
-    <meta name="theme-color" content="#121419" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>MiniCompanion — paint, play and share your miniature hobby</title>
+    <meta name="description" content="Free companion for miniature and tabletop hobbyists: plan painting schemes on your own model, find tournaments, games and hobby stores near you, share your work." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://minicompanion.vercel.app/" />
+    <meta name="theme-color" content="#f4ecdc" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MiniCompanion" />
+    <meta property="og:title" content="MiniCompanion — paint, play and share your miniature hobby" />
+    <meta property="og:description" content="Plan painting schemes on your own model, find tournaments, games and hobby stores near you, share your work." />
+    <meta property="og:url" content="https://minicompanion.vercel.app/" />
+    <meta property="og:image" content="https://minicompanion.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://minicompanion.vercel.app/#website",
+            "name": "MiniCompanion",
+            "url": "https://minicompanion.vercel.app/",
+            "inLanguage": ["en", "ja", "fr", "es", "de", "it", "pt-BR", "zh-CN", "ko"]
+          },
+          {
+            "@type": "WebApplication",
+            "name": "MiniCompanion",
+            "url": "https://minicompanion.vercel.app/",
+            "applicationCategory": "LifestyleApplication",
+            "operatingSystem": "Any (web browser)",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "Independent fan-made companion for miniature and tabletop hobbyists. PAINT: upload a photo of a miniature, extract its palette, try paints, washes, drybrushing and edge highlights on it, and share the scheme. PLAY: find tournaments, quick games, leagues and painting contests, with Swiss pairings, live standings and QR score entry. Real hobby stores worldwide from OpenStreetMap.",
+            "featureList": [
+              "Paint scheme planner working on your own photo",
+              "Paint matching across ranges",
+              "Beginner guide in five steps with a shopping list",
+              "Tournaments with Swiss pairings, live standings and QR score entry",
+              "Multi-week events with a date and venue per round",
+              "Quick casual games, leagues and painting contests",
+              "Map of real game and hobby stores worldwide"
+            ]
+          }
+        ]
+      }
+    </script>
+    <!--seo:head-->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Readable without JavaScript (search engines, AI assistants, link previews); the app replaces it on load. -->
+    <div id="root"><main class="seo-static">
+      <h1>MiniCompanion — from the first brushstroke to the first battle</h1>
+      <p>A free, independent companion for miniature and tabletop wargaming hobbyists. Plan the colours of your miniature before opening a pot, find a tournament or a game near you, and share your work.</p>
+      <h2>Paint</h2>
+      <p>Upload a photo of your miniature: the app extracts its palette, matches the closest paints, and lets you try base coats, washes, drybrushing and edge highlights directly on your own model. Share the scheme as a card or a link. A beginner mode gives five steps, a shopping list and a store nearby.</p>
+      <h2>Play</h2>
+      <p>Find tournaments, quick casual games, leagues and painting contests. Organisers get Swiss pairings, live standings, QR codes for score entry at each table, and multi-week events with a date and venue per round.</p>
+      <h2>Stores</h2>
+      <p>A map of real game, miniature and model-kit stores worldwide, from OpenStreetMap.</p>
+      <p lang="ja">ミニチュア塗装とテーブルトップゲームのための無料ツール：写真から配色を計画し、近くの大会やお店を探せます。</p>
+      <!--seo:body-->
+      <nav><ul>
+        <li><a href="/paint">Paint scheme planner</a></li>
+        <li><a href="/paint/beginner">Beginner guide</a></li>
+        <li><a href="/play">Tournaments</a></li>
+        <li><a href="/play/quick">Quick games</a></li>
+        <li><a href="/play/leagues">Leagues</a></li>
+        <li><a href="/stores">Hobby stores</a></li>
+        <li><a href="/legal">About and legal notice</a></li>
+      </ul></nav>
+      <p><small>Independent fan project, not affiliated with or endorsed by any brand or retailer. Trademarks belong to their owners.</small></p>
+    </main></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

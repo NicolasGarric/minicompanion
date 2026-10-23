@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Hash router. Routes are declared as patterns; `:name` captures one segment, `*name` the rest.
- * Hash routing keeps hosting static (any CDN) and keeps old share links working.
+ * Path router (History API): every page has a real URL that search engines can index.
+ * Routes are declared as patterns; `:name` captures one segment, `*name` the rest.
+ * Old `#/…` links (printed QR codes, bookmarks) are redirected on load; shared schemes stay in the
+ * hash (`/#/s/…`) on purpose, so their data is never sent to the server.
  */
 export type RouteName =
   | 'home'
@@ -95,8 +97,8 @@ function match(pattern: string, path: string): Record<string, string> | null {
   return p.length === s.length ? params : null;
 }
 
-export function parseHash(hash: string): Route {
-  const path = hash.replace(/^#\/?/, '').split('?')[0];
+export function parsePath(pathname: string): Route {
+  const path = pathname.replace(/^\/+/, '').replace(/\/+$/, '');
   for (const r of ROUTES) {
     const params = match(r.pattern, path);
     if (params) return { name: r.name, params, section: r.section };
@@ -104,29 +106,65 @@ export function parseHash(hash: string): Route {
   return { name: 'notFound', params: {}, section: 'none' };
 }
 
+/** Current route: the shared-scheme hash wins (its data must stay out of the path). */
+function current(): Route {
+  if (location.hash.startsWith('#/s/')) return parsePath(location.hash.slice(1).split('?')[0]);
+  return parsePath(location.pathname);
+}
+
+/** Path of the current page without the leading slash, query included (to come back after sign-in). */
+export const currentPath = () => `${location.pathname.replace(/^\//, '')}${location.search}`;
+
+const CHANGE = 'routechange';
+
 export function navigate(path: string, opts: { replace?: boolean } = {}) {
-  const target = `#/${path.replace(/^\//, '')}`;
-  if (location.hash === target) return;
-  if (opts.replace) {
-    history.replaceState(null, '', target);
-    window.dispatchEvent(new HashChangeEvent('hashchange'));
-  } else {
-    location.hash = target;
+  const target = `/${path.replace(/^[#/]+/, '')}`;
+  if (`${location.pathname}${location.search}` === target && !location.hash) return;
+  history[opts.replace ? 'replaceState' : 'pushState'](null, '', target);
+  window.dispatchEvent(new Event(CHANGE));
+}
+
+/** Old hash URLs (`/#/play/t/x`) and legacy paths become clean paths, without a reload. */
+function upgradeUrl() {
+  const hash = location.hash;
+  if (hash.startsWith('#/') && !hash.startsWith('#/s/')) {
+    history.replaceState(null, '', `/${hash.slice(2)}`);
   }
+  const legacy = LEGACY[location.pathname.replace(/^\//, '')];
+  if (legacy) history.replaceState(null, '', `/${legacy}`);
+}
+
+/** Same-origin link clicks stay in the app (no reload); new tabs, downloads and modifiers behave normally. */
+function onClick(e: MouseEvent) {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = (e.target as Element | null)?.closest?.('a');
+  if (!a || a.target || a.hasAttribute('download')) return;
+  const url = new URL(a.href, location.href);
+  if (url.origin !== location.origin || /^\/(assets|data|demo)\//.test(url.pathname)) return;
+  if (url.hash.startsWith('#/s/')) return;
+  if (url.pathname === location.pathname && url.search === location.search && url.hash) return; // in-page anchor
+  e.preventDefault();
+  navigate(`${url.pathname}${url.search}`);
 }
 
 export function useRoute(): Route {
-  const [route, setRoute] = useState(() => parseHash(location.hash));
+  const [route, setRoute] = useState(() => (upgradeUrl(), current()));
   useEffect(() => {
     const on = () => {
-      const path = location.hash.replace(/^#\/?/, '');
-      if (LEGACY[path]) return navigate(LEGACY[path], { replace: true });
-      setRoute(parseHash(location.hash));
+      upgradeUrl();
+      setRoute(current());
       window.scrollTo(0, 0);
     };
-    on();
+    window.addEventListener(CHANGE, on);
+    window.addEventListener('popstate', on);
     window.addEventListener('hashchange', on);
-    return () => window.removeEventListener('hashchange', on);
+    document.addEventListener('click', onClick);
+    return () => {
+      window.removeEventListener(CHANGE, on);
+      window.removeEventListener('popstate', on);
+      window.removeEventListener('hashchange', on);
+      document.removeEventListener('click', onClick);
+    };
   }, []);
   return route;
 }

@@ -37,7 +37,7 @@ export function LfgPanel({ filters }: { filters: GameFilters }) {
             <Icon name="plus" size={14} /> {t('lfg.post')}
           </button>
         ) : (
-          <a className="btn" href="#/signin">{t('lfg.post')}</a>
+          <a className="btn" href="/signin">{t('lfg.post')}</a>
         )}
       </div>
       {form && me && (
@@ -65,9 +65,9 @@ export function LfgPanel({ filters }: { filters: GameFilters }) {
               {p.note && <span className="game-note small">{p.note}</span>}
               <span className="game-tags">
                 <span className="tag">{t(k(`games.level.${p.level}`))}</span>
-                {p.author && <a className="small" href={`#/u/${p.author.handle}`}>{p.author.display_name}</a>}
+                {p.author && <a className="small" href={`/u/${p.author.handle}`}>{p.author.display_name}</a>}
                 {me && p.author_id !== me && (
-                  <a className="btn small" href={`#/messages/${p.author_id}?post=${p.id}`}>
+                  <a className="btn small" href={`/messages/${p.author_id}?post=${p.id}`}>
                     <Icon name="link" size={14} /> {t('lfg.contact')}
                   </a>
                 )}

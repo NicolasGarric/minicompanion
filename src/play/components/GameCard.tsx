@@ -13,7 +13,7 @@ export function GameCard({ game, myStatus }: { game: Game; myStatus?: JoinStatus
   const past = new Date(game.starts_at) < new Date();
   return (
     <li>
-      <a className={`game-card ${game.status} ${past ? 'past' : ''}`} href={`#/play/game/${game.id}`}>
+      <a className={`game-card ${game.status} ${past ? 'past' : ''}`} href={`/play/game/${game.id}`}>
         <span className="game-what">
           <strong>{game.game_system}</strong>
           {(game.format || game.points) && (

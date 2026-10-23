@@ -49,7 +49,7 @@ export function TournamentMap({ points, center, radiusKm }: { points: MapPoint[]
     const icon = L.divIcon({ className: 'map-pin', iconSize: [18, 18], iconAnchor: [9, 9], popupAnchor: [0, -10] });
     for (const p of points) {
       const link = document.createElement('a');
-      link.href = `#/play/t/${p.slug}`;
+      link.href = `/play/t/${p.slug}`;
       link.textContent = p.name;
       const pop = document.createElement('div');
       pop.className = 'map-pop';

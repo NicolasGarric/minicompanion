@@ -54,8 +54,12 @@ do $$ begin
   raise exception 'FAIL: anon recorded an event for someone else';
 exception when insufficient_privilege then raise notice 'ok - anon cannot record events as another user';
 end $$;
-insert into public.events (name, module) values ('page_view', 'core');
-select pg_temp.ok((select count(*) from public.events) = 0, 'anon can record anonymous events but cannot read them');
+do $$ begin
+  insert into public.events (name, module) values ('page_view', 'core');
+  raise exception 'FAIL: anon wrote an analytics event';
+exception when insufficient_privilege then raise notice 'ok - nobody writes analytics events from the browser (counted on the device)';
+end $$;
+select pg_temp.ok((select count(*) from public.events) = 0, 'and nobody reads them');
 reset role;
 
 -- ---------------------------------------------------------------------------------------------

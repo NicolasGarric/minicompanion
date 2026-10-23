@@ -36,7 +36,7 @@ export function Inbox() {
         <ul className="game-list">
           {list.map((c) => (
             <li key={c.other.id}>
-              <a className={`game-card convo ${c.unread ? 'unread' : ''}`} href={`#/messages/${c.other.id}`}>
+              <a className={`game-card convo ${c.unread ? 'unread' : ''}`} href={`/messages/${c.other.id}`}>
                 <span className="game-what">
                   <strong>{c.other.display_name}</strong>
                   {c.unread > 0 && <span className="tag ok">{t('msg.unread', { count: c.unread })}</span>}
@@ -64,7 +64,7 @@ export function MessageThread({ userId }: { userId: string }) {
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const end = useRef<HTMLLIElement>(null);
-  const query = new URLSearchParams(location.hash.split('?')[1] ?? '');
+  const query = new URLSearchParams(location.search);
 
   const load = () => me && thread(me, userId).then(setMsgs, (e) => setError(playError(e) ?? 'generic'));
   useEffect(() => {
@@ -104,8 +104,8 @@ export function MessageThread({ userId }: { userId: string }) {
   if (!backendConfigured) return <BackendNotice />;
   return (
     <div className="narrow">
-      <a className="small" href="#/messages">← {t('msg.title')}</a>
-      <h1>{other ? <a href={`#/u/${other.handle}`}>{other.display_name}</a> : '…'}</h1>
+      <a className="small" href="/messages">← {t('msg.title')}</a>
+      <h1>{other ? <a href={`/u/${other.handle}`}>{other.display_name}</a> : '…'}</h1>
       <section className="card chat">
         <ul className="chat-list tall">
           {msgs.length === 0 && <li className="hint">{t('msg.start')}</li>}

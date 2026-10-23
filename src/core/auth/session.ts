@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { useLang, type Lang } from '../i18n';
-import { navigate } from '../router';
+import { currentPath, navigate } from '../router';
 
 export interface Profile {
   id: string;
@@ -13,7 +13,7 @@ export interface Profile {
   preferred_lang: Lang;
   factions: string[];
   is_admin: boolean;
-  /** Public profile page (#/u/handle); private by default. Missing before the social migration. */
+  /** Public profile page (/u/handle); private by default. Missing before the social migration. */
   is_public?: boolean;
 }
 
@@ -37,7 +37,8 @@ interface SessionState {
 /** Where to go back after an OAuth or email-confirmation round trip. */
 const RETURN_KEY = 'cf.auth.return';
 
-const redirectUrl = () => `${location.origin}${location.pathname}`;
+// Always the site root (the address allowed in Supabase); the page to return to is kept in sessionStorage.
+const redirectUrl = () => `${location.origin}/`;
 
 /** PostGIS accepts EWKT for geography columns. */
 const toPoint = (p: { lat: number; lng: number }) => `SRID=4326;POINT(${p.lng} ${p.lat})`;
@@ -59,7 +60,12 @@ export const useSession = create<SessionState>((set, get) => ({
       get().refreshProfile();
       if (event === 'SIGNED_IN') {
         // Remove `?code=` left by the PKCE redirect and return to the page the user came from.
-        if (location.search) history.replaceState(null, '', location.pathname + location.hash);
+        const params = new URLSearchParams(location.search);
+        if (params.has('code')) {
+          params.delete('code');
+          const rest = params.toString();
+          history.replaceState(null, '', `${location.pathname}${rest ? `?${rest}` : ''}${location.hash}`);
+        }
         const back = sessionStorage.getItem(RETURN_KEY);
         if (back) {
           sessionStorage.removeItem(RETURN_KEY);
@@ -72,12 +78,12 @@ export const useSession = create<SessionState>((set, get) => ({
   refreshProfile: async () => {
     const uid = get().session?.user.id;
     if (!supabase || !uid) return;
-    const { data } = await supabase
-      .from('profiles')
-      // '*' keeps working whichever optional columns the database has (e.g. is_public).
-      .select('*')
-      .eq('id', uid)
-      .single();
+    // Private columns (city, armies, language…) are only readable through my_profile();
+    // the plain select is the fallback for databases set up before the security migration.
+    const own = await supabase.rpc('my_profile');
+    const data = own.error
+      ? (await supabase.from('profiles').select('*').eq('id', uid).single()).data
+      : ((own.data as Profile[] | null)?.[0] ?? null);
     if (!data) return;
     set({ profile: data as Profile });
     useLang.getState().setLang((data as Profile).preferred_lang);
@@ -106,7 +112,7 @@ export const useSession = create<SessionState>((set, get) => ({
 
   signInWithGoogle: async () => {
     if (!supabase) return { error: 'backend' };
-    const back = location.hash.replace(/^#\/?/, '');
+    const back = currentPath();
     sessionStorage.setItem(RETURN_KEY, back && back !== 'signin' ? back : 'account');
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl() } });
     return error ? { error: error.message } : {};
@@ -132,6 +138,6 @@ export const useSession = create<SessionState>((set, get) => ({
 
 /** Remember where to come back to after signing in, then open the sign-in page. */
 export function requireSignIn() {
-  sessionStorage.setItem(RETURN_KEY, location.hash.replace(/^#\/?/, ''));
+  sessionStorage.setItem(RETURN_KEY, currentPath());
   navigate('signin');
 }

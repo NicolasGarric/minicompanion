@@ -1,4 +1,6 @@
+import { safeHref } from '../../core/lib/url';
 import { useEffect, useState } from 'react';
+import { setPageMeta } from '../../core/seo';
 import { k, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
@@ -26,6 +28,9 @@ export function StorePage({ id }: { id: string }) {
   const lang = useLang((s) => s.lang);
   const session = useSession((s) => s.session);
   const [store, setStore] = useState<Awaited<ReturnType<typeof getStore>> | undefined>(undefined);
+  useEffect(() => {
+    if (store) setPageMeta({ title: store.name, description: store.address });
+  }, [store]);
   const [slots, setSlots] = useState<StoreSlot[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [tours, setTours] = useState<Awaited<ReturnType<typeof storeTournaments>>>([]);
@@ -70,7 +75,7 @@ export function StorePage({ id }: { id: string }) {
       <h1>{store.name}</h1>
       <section className="card game-facts">
         <p><Icon name="map" size={16} /> {store.address}</p>
-        {store.website && <p><Icon name="link" size={16} /> <a href={store.website} target="_blank" rel="noreferrer">{store.website}</a></p>}
+        {safeHref(store.website) && <p><Icon name="link" size={16} /> <a href={safeHref(store.website)} target="_blank" rel="noopener noreferrer">{store.website}</a></p>}
       </section>
 
       <section className="card">
@@ -107,7 +112,7 @@ export function StorePage({ id }: { id: string }) {
         <section className="card">
           <h2>{t('nav.play.tournaments')}</h2>
           <ul className="notif-list">
-            {tours.map((x) => <li key={x.id}><a href={`#/play/t/${x.slug}`}>{x.name}</a> <small className="muted">{formatWhen(x.starts_at, lang)}</small></li>)}
+            {tours.map((x) => <li key={x.id}><a href={`/play/t/${x.slug}`}>{x.name}</a> <small className="muted">{formatWhen(x.starts_at, lang)}</small></li>)}
           </ul>
         </section>
       )}
@@ -115,7 +120,7 @@ export function StorePage({ id }: { id: string }) {
         <section className="card">
           <h2>{t('nav.play.leagues')}</h2>
           <ul className="notif-list">
-            {leagues.map((l) => <li key={l.id}><a href={`#/play/league/${l.id}`}>{l.name}</a> <small className="muted">{l.game_system}</small></li>)}
+            {leagues.map((l) => <li key={l.id}><a href={`/play/league/${l.id}`}>{l.name}</a> <small className="muted">{l.game_system}</small></li>)}
           </ul>
         </section>
       )}

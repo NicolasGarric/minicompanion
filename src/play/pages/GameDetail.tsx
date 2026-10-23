@@ -36,7 +36,7 @@ export function GameDetail({ id }: { id: string }) {
 
   if (!backendConfigured) return <BackendNotice />;
   if (data === undefined) return <div className="narrow"><span className="spinner" /></div>;
-  if (data === null) return <div className="narrow"><p className="hint">{t('games.notFound')}</p><a href="#/play/quick">← {t('nav.play.quick')}</a></div>;
+  if (data === null) return <div className="narrow"><p className="hint">{t('games.notFound')}</p><a href="/play/quick">← {t('nav.play.quick')}</a></div>;
 
   const { game, players, address } = data;
   const isHost = me === game.host_id;
@@ -59,7 +59,7 @@ export function GameDetail({ id }: { id: string }) {
 
   return (
     <div className="narrow game-detail">
-      <a href="#/play/quick" className="small">← {t('nav.play.quick')}</a>
+      <a href="/play/quick" className="small">← {t('nav.play.quick')}</a>
       <div className="page-head">
         <div>
           <h1>{game.game_system}</h1>
@@ -82,11 +82,11 @@ export function GameDetail({ id }: { id: string }) {
         {game.host && (
           <p className="muted">
             {t('games.hostedBy', { name: '' })}
-            <a href={`#/u/${game.host.handle}`}>{game.host.display_name}</a>
+            <a href={`/u/${game.host.handle}`}>{game.host.display_name}</a>
           </p>
         )}
-        {game.league_id && <p><Icon name="star" size={16} /> <a href={`#/play/league/${game.league_id}`}>{t('games.leagueGame')}</a></p>}
-        {game.store_id && game.store && <p><Icon name="home" size={16} /> <a href={`#/play/store/${game.store_id}`}>{game.store.name}</a></p>}
+        {game.league_id && <p><Icon name="star" size={16} /> <a href={`/play/league/${game.league_id}`}>{t('games.leagueGame')}</a></p>}
+        {game.store_id && game.store && <p><Icon name="home" size={16} /> <a href={`/play/store/${game.store_id}`}>{game.store.name}</a></p>}
         <div className="field-row wrap">
           {game.status !== 'cancelled' && !past && (
             <button
@@ -106,7 +106,7 @@ export function GameDetail({ id }: { id: string }) {
             </button>
           )}
           {session && !isHost && (
-            <a className="btn small" href={`#/messages/${game.host_id}`}>
+            <a className="btn small" href={`/messages/${game.host_id}`}>
               <Icon name="chat" size={14} /> {t('games.contactHost')}
             </a>
           )}

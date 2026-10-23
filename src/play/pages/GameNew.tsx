@@ -33,7 +33,7 @@ export function GameNew() {
   const [f, setF] = useState({
     game_system: '', format: '', points: '', starts_at: defaultStart(), duration_minutes: '120', max_players: '2',
     level: 'casual', language: lang, country: 'JP', city: profile?.home_city ?? '', area: '', address: '', store_id: '', note: '',
-    league_id: new URLSearchParams(location.hash.split('?')[1] ?? '').get('league') ?? '',
+    league_id: new URLSearchParams(location.search).get('league') ?? '',
   });
 
   useEffect(() => {
@@ -200,7 +200,7 @@ export function GameNew() {
 
         {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
         <div className="nav-row">
-          <a className="btn ghost" href="#/play/quick">{t('common.back')}</a>
+          <a className="btn ghost" href="/play/quick">{t('common.back')}</a>
           <button className="btn primary" disabled={busy}>{busy ? <span className="spinner small" /> : t('games.publish')}</button>
         </div>
       </form>

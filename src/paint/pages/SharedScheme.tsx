@@ -35,7 +35,7 @@ export function SharedScheme({ param }: { param: string }) {
       <div className="narrow">
         <h1>{t('shared.invalidTitle')}</h1>
         <p>{t('shared.invalid')}</p>
-        <a className="btn" href="#/">{t('nav.home')}</a>
+        <a className="btn" href="/">{t('nav.home')}</a>
       </div>
     );
   }

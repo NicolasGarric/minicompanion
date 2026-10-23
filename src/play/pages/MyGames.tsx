@@ -34,7 +34,7 @@ export function MyGames() {
     <div className="narrow">
       <div className="page-head">
         <h1>{t('mine.title')}</h1>
-        <a className="btn primary" href="#/play/new">{t('quick.create')}</a>
+        <a className="btn primary" href="/play/new">{t('quick.create')}</a>
       </div>
       {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
       {!data && !error && <span className="spinner" />}
@@ -49,7 +49,7 @@ export function MyGames() {
             return items.length ? (
               <ul className="game-list">{items.map(({ g, s }) => <GameCard key={g.id} game={g} myStatus={s} />)}</ul>
             ) : (
-              <p className="hint">{t('mine.none')} <a href="#/play/quick">{t('nav.play.quick')}</a></p>
+              <p className="hint">{t('mine.none')} <a href="/play/quick">{t('nav.play.quick')}</a></p>
             );
           })()}
           {posts.length > 0 && (

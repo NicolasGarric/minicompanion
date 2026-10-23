@@ -11,9 +11,9 @@ import { useUnread } from '../../core/social/unread';
 
 /** Where a notification leads. */
 function linkOf(n: AppNotification) {
-  if (n.kind === 'message') return `#/messages/${n.payload.from_id}`;
-  if (n.payload.slug) return `#/play/t/${n.payload.slug}`;
-  return n.payload.game_id ? `#/play/game/${n.payload.game_id}` : '#/play/quick';
+  if (n.kind === 'message') return `/messages/${n.payload.from_id}`;
+  if (n.payload.slug) return `/play/t/${n.payload.slug}`;
+  return n.payload.game_id ? `/play/game/${n.payload.game_id}` : '/play/quick';
 }
 
 /** In-app alerts, plus reminders of my games and tournament rounds in the next 24 hours (computed, not stored). */
@@ -58,12 +58,12 @@ export function Notifications() {
           <ul className="notif-list">
             {soon.map((g) => (
               <li key={g.id}>
-                <a href={`#/play/game/${g.id}`}>{g.game_system}</a> · {formatWhen(g.starts_at, lang)}
+                <a href={`/play/game/${g.id}`}>{g.game_system}</a> · {formatWhen(g.starts_at, lang)}
               </li>
             ))}
             {rounds.map((r) => (
               <li key={`${r.tournament?.slug}-${r.number}`}>
-                <a href={`#/play/t/${r.tournament?.slug}`}>{r.tournament?.name} · {t('tour.roundN', { n: r.number })}</a> · {formatWhen(r.starts_at, lang)}
+                <a href={`/play/t/${r.tournament?.slug}`}>{r.tournament?.name} · {t('tour.roundN', { n: r.number })}</a> · {formatWhen(r.starts_at, lang)}
                 {r.venue_name ? ` · ${r.venue_name}` : ''}
               </li>
             ))}
