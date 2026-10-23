@@ -46,7 +46,21 @@ select pg_temp.ok((select factions = '{Secret army}' from public.player_card((se
 
 -- Tournaments: organisers cannot touch moderation, ownership or the flow
 select pg_temp.as_user(pg_temp.uid(0));
-select pg_temp.expect_error($q$update public.tournaments set is_hidden = false where id = (select id from ev)$q$, '42501', 'organiser cannot change the moderation flag');
+reset role;
+update public.tournaments set is_hidden = true where id = (select id from ev);
+set role authenticated;
+select pg_temp.as_user(pg_temp.uid(0));
+select pg_temp.expect_error($q$update public.tournaments set is_hidden = false where id = (select id from ev)$q$, 'forbidden', 'organiser cannot undo a moderation hide');
+reset role;
+update public.tournaments set is_hidden = false where id = (select id from ev);
+set role authenticated;
+select pg_temp.as_user(pg_temp.uid(0));
+update public.tournaments set is_hidden = true where id = (select id from ev);
+select pg_temp.ok((select count(*) from public.tournaments where id = (select id from ev)) = 1, 'organiser archives (hides) their own event and still sees it');
+reset role;
+update public.tournaments set is_hidden = false where id = (select id from ev);
+set role authenticated;
+select pg_temp.as_user(pg_temp.uid(0));
 select pg_temp.expect_error($q$update public.tournaments set organiser_id = md5('demo-user-3')::uuid where id = (select id from ev)$q$, '42501', 'organiser cannot hand the event to someone else');
 select pg_temp.expect_error($q$update public.tournaments set status = 'finished' where id = (select id from ev)$q$, 'bad_status', 'organiser cannot skip to finished');
 update public.tournaments set status = 'draft' where id = (select id from ev);

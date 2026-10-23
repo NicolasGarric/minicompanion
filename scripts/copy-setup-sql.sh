@@ -31,6 +31,7 @@ declare -A GUARD=(
   [20261030000011_round_schedule.sql]="to_regclass('public.round_schedule') is null"
   [20261031000012_bug_reports.sql]="to_regclass('public.bug_reports') is null"
   [20261101000013_security_hardening.sql]="to_regprocedure('public.my_profile()') is null"
+  [20261102000014_organiser_archive.sql]="not has_column_privilege('authenticated', 'public.tournaments', 'is_hidden', 'UPDATE')"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label

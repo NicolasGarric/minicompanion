@@ -49,8 +49,18 @@ const signIn = await player.auth.signInWithPassword({ email: 'player@demo.exampl
 ok(!signIn.error, 'demo player signs in with email + password', signIn.error?.message);
 const playerId = signIn.data.user?.id;
 if (playerId) {
-  const me = await player.from('profiles').select('handle, display_name, preferred_lang').eq('id', playerId).single();
-  ok(me.data?.handle === 'demo_player', 'profile created by the sign-up trigger', JSON.stringify(me.data));
+  const me = await player.rpc('my_profile');
+  ok(me.data?.[0]?.handle === 'demo_player', 'profile created by the sign-up trigger', me.error?.message ?? JSON.stringify(me.data));
+  // Private profile fields are not readable directly, only the name card
+  const peek = await anon.from('profiles').select('home_city, factions').limit(1);
+  ok(!!peek.error, 'private profile fields are not readable by visitors', peek.error?.message);
+  // Bug reports: visitors cannot attach files (refused before anything is written)
+  const bug = await anon.rpc('submit_bug_report', { p_message: 'live check', p_page: '/', p_context: {}, p_contact: null, p_photos: ['x/y.jpg'] });
+  ok(bug.error?.message === 'bad_photos', 'bug reports installed (visitor screenshots refused)', bug.error?.message);
+  const bugsRead = await player.from('bug_reports').select('id');
+  ok(!bugsRead.error && bugsRead.data.length === 0, 'players cannot read bug reports');
+  const card = await anon.rpc('player_card', { p_handle: 'demo_player' });
+  ok(!card.error && card.data?.length === 1, 'player card readable through its function', card.error?.message);
 
   const admin = await player.from('profiles').update({ is_admin: true }).eq('id', playerId);
   ok(!!admin.error, 'player cannot make themselves admin', admin.error?.message);
