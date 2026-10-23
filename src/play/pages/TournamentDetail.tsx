@@ -113,14 +113,17 @@ export function TournamentDetail({ slug }: { slug: string }) {
         <div>
           <h1>{tour.name}</h1>
           <p className="lead">
-            {[tour.game_system, t(k(`tour.type.${tour.type}`)), tour.format ? t('games.points', { points: tour.format.points_limit }) : null, t('tour.rounds', { n: tour.rounds_planned })]
+            {(tour.type === 'painting_contest'
+              ? [tour.game_system, t(k(`tour.type.${tour.type}`))]
+              : [tour.game_system, t(k(`tour.type.${tour.type}`)), tour.format ? t('games.points', { points: tour.format.points_limit }) : null, t('tour.rounds', { n: tour.rounds_planned })]
+            )
               .filter(Boolean)
               .join(' · ')}
           </p>
         </div>
         <span className="game-tags">
           <span className={`tag status-${tour.status}`}>{t(k(`tour.status.${tour.status}`))}</span>
-          <span className="tag">{t('games.seats', { taken: registered.length, max: tour.max_players })}</span>
+          {tour.type !== 'painting_contest' && <span className="tag">{t('games.seats', { taken: registered.length, max: tour.max_players })}</span>}
         </span>
       </div>
 

@@ -9,6 +9,9 @@ export const en = {
   'nav.stores': 'Hobby stores',
   'nav.legal': 'Legal / About',
   'nav.language': 'Language',
+  'home.measureHint': 'Move to measure · click a unit',
+  'home.inRange': 'in range',
+  'home.outOfRange': 'out of range',
 
   // Legal
   'legal.short':

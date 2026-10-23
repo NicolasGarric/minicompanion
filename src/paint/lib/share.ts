@@ -7,7 +7,7 @@ import { translate, type Lang } from '../../core/i18n';
 import { buildRecipe } from './recipe';
 
 import { APP_NAME } from '../../core/brand';
-import { drawCover, fitText, FONT, wrap } from '../../core/lib/card';
+import { DISPLAY, drawCover, fitText, FONT, wrap } from '../../core/lib/card';
 export { APP_NAME };
 
 // --- Public scheme links ---------------------------------------------------------------------
@@ -152,14 +152,14 @@ export async function generateCard(opts: {
 }): Promise<Blob> {
   const { format, name, zones, primer, library, lang } = opts;
   const t = (key: Parameters<typeof translate>[0], vars?: Record<string, string | number>) => translate(key, vars, lang);
-  await Promise.allSettled([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 28px ${FONT}`)]);
+  await Promise.allSettled([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 28px ${FONT}`), document.fonts.load(`400 52px ${DISPLAY}`)]);
 
   const [W, H] = CARD_SIZE[format];
   const c = document.createElement('canvas');
   c.width = W;
   c.height = H;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#15171c';
+  ctx.fillStyle = '#f4ecdc';
   ctx.fillRect(0, 0, W, H);
 
   const pad = 64;
@@ -174,18 +174,18 @@ export async function generateCard(opts: {
     const img = story ? { x: pad, y: 200, w: W - pad * 2, h: 940 } : { x: pad, y: 170, w: 470, h: 700 };
     const list = story ? { x: pad, y: 1200, w: W - pad * 2 } : { x: pad + 470 + 40, y: 170, w: W - pad * 2 - 510 };
 
-    ctx.fillStyle = '#e3b04b';
+    ctx.fillStyle = '#ff4f7b';
     ctx.font = `700 ${story ? 30 : 26}px ${FONT}`;
     ctx.fillText(t('card.kicker'), pad, story ? 96 : 84);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `700 ${story ? 64 : 52}px ${FONT}`;
+    ctx.fillStyle = '#1d2a5b';
+    ctx.font = `400 ${story ? 64 : 52}px ${DISPLAY}`;
     ctx.fillText(fitText(ctx, name, W - pad * 2), pad, story ? 164 : 140);
 
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(img.x, img.y, img.w, img.h, 24);
     ctx.clip();
-    ctx.fillStyle = '#0d0e11';
+    ctx.fillStyle = '#e4d8bd';
     ctx.fillRect(img.x, img.y, img.w, img.h);
     drawCover(ctx, painted, img.x, img.y, img.w, img.h);
     ctx.restore();
@@ -200,14 +200,14 @@ export async function generateCard(opts: {
     ctx.clip();
     drawCover(ctx, reference, ix, iy, inset, inset);
     ctx.restore();
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = '#1d2a5b';
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.roundRect(ix, iy, inset, inset, 16);
     ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = 'rgba(29,42,91,0.85)';
     ctx.fillRect(ix, iy + inset - 40, inset, 40);
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#f4ecdc';
     ctx.font = `500 22px ${FONT}`;
     ctx.fillText(t('card.reference'), ix + 12, iy + inset - 12);
 
@@ -223,7 +223,7 @@ export async function generateCard(opts: {
       ctx.beginPath();
       ctx.roundRect(list.x, y, 56, 56, 12);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.strokeStyle = 'rgba(29,42,91,0.35)';
       ctx.lineWidth = 2;
       ctx.stroke();
       // Effect dots (wash / drybrush / highlight)
@@ -235,28 +235,28 @@ export async function generateCard(opts: {
       });
       const tx = list.x + (story ? 150 : 140);
       const tw = list.w - (tx - list.x);
-      ctx.fillStyle = '#9aa0ab';
+      ctx.fillStyle = '#3e4a7a';
       ctx.font = `500 ${story ? 24 : 22}px ${FONT}`;
       ctx.fillText(fitText(ctx, l.zone, tw), tx, y + 22);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#1d2a5b';
       ctx.font = `600 ${story ? 30 : 26}px ${FONT}`;
       ctx.fillText(fitText(ctx, base.brand ? `${base.name} · ${base.brand}` : base.name, tw), tx, y + 56);
       y += rowH;
     }
     if (lines.length > maxRows) {
-      ctx.fillStyle = '#9aa0ab';
+      ctx.fillStyle = '#3e4a7a';
       ctx.font = `500 24px ${FONT}`;
       ctx.fillText(t('card.more', { count: lines.length - maxRows }), list.x, y + 24);
     }
   }
 
   // Footer: organic reach + short disclaimer
-  ctx.fillStyle = '#2a2e38';
+  ctx.fillStyle = '#1d2a5b';
   ctx.fillRect(0, H - (story ? 200 : 150), W, 2);
-  ctx.fillStyle = '#e3b04b';
+  ctx.fillStyle = '#ff4f7b';
   ctx.font = `700 ${story ? 32 : 28}px ${FONT}`;
   ctx.fillText(t('card.madeWith', { app: APP_NAME }), pad, H - (story ? 140 : 100));
-  ctx.fillStyle = '#7d8492';
+  ctx.fillStyle = '#6b6d86';
   ctx.font = `400 ${story ? 21 : 19}px ${FONT}`;
   wrap(ctx, t('legal.short'), pad, H - (story ? 96 : 64), W - pad * 2, story ? 30 : 26);
 
@@ -271,11 +271,11 @@ function drawCompare(
   o: { W: number; pad: number; name: string; zones: Zone[]; painted: HTMLCanvasElement; reference: HTMLCanvasElement; t: T },
 ) {
   const { W, pad, name, zones, painted, reference, t } = o;
-  ctx.fillStyle = '#e3b04b';
+  ctx.fillStyle = '#ff4f7b';
   ctx.font = `700 26px ${FONT}`;
   ctx.fillText(t('card.kicker'), pad, 84);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `700 52px ${FONT}`;
+  ctx.fillStyle = '#1d2a5b';
+  ctx.font = `400 52px ${DISPLAY}`;
   ctx.fillText(fitText(ctx, name, W - pad * 2), pad, 140);
 
   const gap = 24;
@@ -290,17 +290,17 @@ function drawCompare(
     ctx.beginPath();
     ctx.roundRect(x, top, pw, ph, 20);
     ctx.clip();
-    ctx.fillStyle = '#0d0e11';
+    ctx.fillStyle = '#e4d8bd';
     ctx.fillRect(x, top, pw, ph);
     drawCover(ctx, img, x, top, pw, ph);
     ctx.restore();
     ctx.font = `700 24px ${FONT}`;
     const lw = ctx.measureText(label).width + 28;
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillStyle = 'rgba(29,42,91,0.85)';
     ctx.beginPath();
     ctx.roundRect(x + 16, top + 16, lw, 44, 22);
     ctx.fill();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#f4ecdc';
     ctx.fillText(label, x + 30, top + 46);
   });
 
@@ -314,14 +314,14 @@ function drawCompare(
     ctx.beginPath();
     ctx.roundRect(x, y, 44, 44, 10);
     ctx.fill();
-    ctx.fillStyle = '#9aa0ab';
+    ctx.fillStyle = '#3e4a7a';
     ctx.font = `500 26px ${FONT}`;
     ctx.fillText('→', x + 52, y + 32);
     ctx.fillStyle = z.base.hex;
     ctx.beginPath();
     ctx.roundRect(x + 86, y, 44, 44, 10);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = 'rgba(29,42,91,0.35)';
     ctx.lineWidth = 2;
     ctx.stroke();
   });

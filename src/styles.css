@@ -1,20 +1,32 @@
-/* MiniCompanion — base styles. Mobile-first, rem units. Visual polish comes later. */
+/*
+ * MiniCompanion — "Riso tactique" theme (owner choice, 2026-10-23): a risograph print on paper with
+ * two inks (pink + navy) and a yellow marker, thick ink borders and offset shadows.
+ * Mobile-first, rem units. Theme layer at the end of the file.
+ */
 
 :root {
-  --bg: #121419;
-  --surface: #1a1d24;
-  --surface-2: #222631;
-  --border: #2d323e;
-  --text: #e8eaee;
-  --text-2: #a3a9b5;
-  --muted: #7a8190;
-  --accent: #e3b04b;
-  --accent-ink: #1a1408;
-  --danger: #e5566b;
-  --ok: #5fbf8a;
-  --radius: 0.5rem;
-  --font: 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color-scheme: dark;
+  /* Inks */
+  --paper: #f4ecdc;
+  --ink1: #ff4f7b;   /* pink: shadows, highlights, decoration (not for small text) */
+  --ink2: #1d2a5b;   /* navy: text, borders, primary buttons */
+  --ink3: #ffd23f;   /* yellow marker */
+  /* Roles */
+  --bg: var(--paper);
+  --surface: #fffaf0;
+  --surface-2: #f0e5cf;
+  --border: #d8cbb0;
+  --text: var(--ink2);
+  --text-2: #3e4a7a;
+  --muted: #6b6d86;
+  --accent: var(--ink1);
+  --accent-ink: #ffffff;
+  --link: #c4224f;
+  --danger: #c8283f;
+  --ok: #1f7a4d;
+  --radius: 0.25rem;
+  --font: 'Zen Maru Gothic', 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Dela Gothic One', 'Noto Sans JP', sans-serif;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -40,7 +52,7 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .hint { color: var(--muted); font-size: 0.8125rem; }
 .error { color: var(--danger); font-size: 0.875rem; }
 .lead { color: var(--text-2); font-size: 1.0625rem; }
-.notice { background: #3a2f12; border: 1px solid #6b5420; color: #f1d58e; padding: 0.5rem 0.75rem; border-radius: var(--radius); font-size: 0.875rem; }
+.notice { background: #fff3c4; border: 2px solid var(--ink2); color: var(--ink2); padding: 0.5rem 0.75rem; border-radius: var(--radius); font-size: 0.875rem; }
 .kicker { color: var(--accent); font-weight: 700; letter-spacing: 0.08em; font-size: 0.8rem; margin: 0; }
 .narrow { max-width: 56rem; margin: 0 auto; }
 .spacer { flex: 1; }
@@ -100,7 +112,7 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .toggle input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
 .check { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
 
-.swatch { display: inline-block; border-radius: 0.35rem; border: 1px solid rgba(255, 255, 255, 0.15); flex: none; }
+.swatch { display: inline-block; border-radius: 0.35rem; border: 1px solid rgba(29, 42, 91, 0.35); flex: none; }
 .color-input { position: relative; display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 0.4rem; border: 1px solid var(--border); cursor: pointer; overflow: hidden; }
 .color-input input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .color-native { width: 2.5rem; height: 2.5rem; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); background: none; }
@@ -147,7 +159,7 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .busy { position: fixed; inset: 0; z-index: 150; display: flex; align-items: center; justify-content: center; gap: 0.75rem; background: rgba(0, 0, 0, 0.55); }
 
 /* ---------- Shell (all pages except the editor) ---------- */
-.shell { min-height: 100%; display: flex; flex-direction: column; }
+.shell { min-height: 100%; display: flex; flex-direction: column; overflow-x: clip; }
 .site-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
 .home-link { text-decoration: none; color: inherit; }
 .logo { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.05rem; letter-spacing: 0.02em; }
@@ -223,12 +235,12 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .tool-options .slider { min-width: 7rem; }
 
 .canvas-area { position: relative; height: 60vh; min-height: 18rem; }
-.canvas-wrap { position: absolute; inset: 0; overflow: hidden; touch-action: none; background: repeating-conic-gradient(#181a20 0% 25%, #1c1f26 0% 50%) 0 0 / 1.5rem 1.5rem; }
+.canvas-wrap { position: absolute; inset: 0; overflow: hidden; touch-action: none; background: repeating-conic-gradient(#ece2cc 0% 25%, #e4d8bd 0% 50%) 0 0 / 1.5rem 1.5rem; }
 .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .stage canvas, .stage .lasso { position: absolute; inset: 0; width: 100%; height: 100%; }
 .stage canvas.pixelated { image-rendering: pixelated; }
 .lasso { pointer-events: none; overflow: visible; }
-.lasso polyline { fill: rgba(227, 176, 75, 0.15); stroke: var(--accent); stroke-dasharray: 4 3; }
+.lasso polyline { fill: rgba(255, 79, 123, 0.15); stroke: var(--accent); stroke-dasharray: 4 3; }
 .brush-cursor { position: absolute; pointer-events: none; border: 1px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 .split-handle { position: absolute; top: 0; bottom: 0; width: 0.15rem; background: #fff; transform: translateX(-50%); cursor: ew-resize; }
 .split-knob { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2rem; height: 2rem; border-radius: 50%; background: #fff; color: #111; display: grid; place-items: center; }
@@ -328,7 +340,7 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .search input { flex: 1; min-height: 2.5rem; border: 0; background: transparent; outline: none; color: var(--text); min-width: 0; }
 .filter-toggles { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .paint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.3rem; }
-.paint-tile { position: relative; aspect-ratio: 1; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.4rem; cursor: pointer; padding: 0.25rem; display: flex; align-items: flex-end; text-align: left; }
+.paint-tile { position: relative; aspect-ratio: 1; border: 1px solid rgba(29, 42, 91, 0.25); border-radius: 0.4rem; cursor: pointer; padding: 0.25rem; display: flex; align-items: flex-end; text-align: left; }
 .paint-tile.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
 .paint-name { font-size: 0.625rem; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .badge { position: absolute; top: 0.15rem; font-size: 0.65rem; }
@@ -438,7 +450,7 @@ th, td { padding: 0.35rem 0.6rem; border-bottom: 1px solid var(--border); text-a
 th:first-child, td:first-child { text-align: left; }
 
 /* ---------- Platform: navigation, account, home ---------- */
-:root { --paint: #e3b04b; --play: #5b8def; }
+:root { --paint: var(--ink1); --play: var(--ink2); }
 .header-tools { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
 .header-tools .lang-switch { margin-left: 0; }
 .site-nav a.on { box-shadow: inset 0 -2px 0 var(--accent); }
@@ -586,7 +598,7 @@ th:first-child, td:first-child { text-align: left; }
 .account .gallery { margin-top: 1rem; display: grid; gap: 0.75rem; }
 .gallery-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.75rem; }
 .gallery-item { display: grid; gap: 0.4rem; align-content: start; justify-items: start; }
-.gallery-img { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: repeating-conic-gradient(#181a20 0% 25%, #1c1f26 0% 50%) 0 0 / 1rem 1rem; }
+.gallery-img { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: repeating-conic-gradient(#ece2cc 0% 25%, #e4d8bd 0% 50%) 0 0 / 1rem 1rem; }
 .gallery-img img { width: 100%; height: 100%; object-fit: contain; }
 .gallery-meta { display: grid; gap: 0.15rem; min-width: 0; }
 .gallery-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -594,7 +606,7 @@ th:first-child, td:first-child { text-align: left; }
 .save-gallery { display: grid; gap: 0.35rem; justify-items: center; }
 .backdrop-choice { display: grid; gap: 0.4rem; justify-items: start; }
 .primer-look { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.chip-swatch { width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3); display: inline-block; }
+.chip-swatch { width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 1px solid rgba(29, 42, 91, 0.4); display: inline-block; }
 .chip-swatch.bw { background: linear-gradient(90deg, #111 50%, #eee 50%); }
 
 /* Priority badge, painting steps */
@@ -773,3 +785,93 @@ a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--bo
 .jury-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .jury-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
 .jury-list img { width: 3.5rem; height: 3.5rem; object-fit: cover; border-radius: 0.4rem; }
+
+/* =============================================================================================
+   Riso tactique — theme layer. Inks: --ink1 (pink), --ink2 (navy), --ink3 (yellow marker).
+   ============================================================================================= */
+body { font-family: var(--font); font-weight: 500; }
+a { color: var(--link); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+h1, h2, h3, .logo, .tool-name { font-family: var(--display); font-weight: 400; letter-spacing: 0.01em; }
+h1 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); line-height: 1.15; text-wrap: balance; }
+h2 { font-size: 1.2rem; }
+h4, .section-title { font-family: var(--display); font-weight: 400; color: var(--ink2); letter-spacing: 0.06em; }
+/* Section titles carry the yellow marker */
+.card > h2, .page > div > h2, .narrow > h2, .card-head h2 { display: inline; background: linear-gradient(transparent 58%, var(--ink3) 58%); padding: 0 0.1em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.card-head h2 { display: inline; }
+.card > h2 { display: inline-block; margin-bottom: 0.75rem; }
+.lead { color: var(--text-2); }
+::selection { background: var(--ink3); color: var(--ink2); }
+
+/* Header and navigation */
+.site-header { background: var(--paper); border-bottom: 3px solid var(--ink2); }
+.site-nav a, .sub-nav a { color: var(--ink2); font-weight: 700; border-radius: 0; }
+.site-nav a.on, .sub-nav a.on { background: none; box-shadow: inset 0 -4px 0 var(--ink1); color: var(--ink2); }
+.sub-nav { background: var(--surface-2); border-bottom: 2px solid var(--ink2); }
+.logo { color: var(--ink2); }
+.site-footer { background: var(--paper); border-top: 3px solid var(--ink2); color: var(--muted); }
+.lang-select { font: 700 0.85rem/1 var(--font); color: var(--ink2); background: var(--surface); border: 2px solid var(--ink2); padding: 0.35rem 0.5rem; border-radius: 0; box-shadow: 3px 3px 0 var(--ink1); cursor: pointer; }
+
+/* Cards: thick ink border, offset marker shadow */
+.card { background: var(--surface); border: 3px solid var(--ink2); border-radius: 0; box-shadow: 6px 6px 0 var(--ink3); }
+.card.accent { border-color: var(--ink2); box-shadow: 6px 6px 0 var(--ink1); background: var(--surface); }
+.game-card, .match, .entry, .journey-step, .module-card, .colour-item, .gallery-item .gallery-img, .tile {
+  border: 2px solid var(--ink2); border-radius: 0; background: var(--surface); }
+a.game-card, .journey-step, .module-card { transition: transform 0.12s, box-shadow 0.12s; }
+a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink1); border-color: var(--ink2); }
+.match.mine, .entry.voted, .convo.unread { box-shadow: 4px 4px 0 var(--ink1); border-color: var(--ink2); }
+
+/* Buttons: printed blocks with a pink offset */
+.btn { border: 2px solid var(--ink2); border-radius: 0; background: var(--surface); color: var(--ink2); font-weight: 700; box-shadow: 3px 3px 0 var(--ink1); transition: transform 0.08s, box-shadow 0.08s; }
+.btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink1); }
+.btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink1); }
+.btn.primary { background: var(--ink2); color: var(--paper); border-color: var(--ink2); }
+.btn.ghost { box-shadow: none; border-color: transparent; background: transparent; text-decoration: underline; text-decoration-color: var(--ink1); }
+.btn.danger-ghost { box-shadow: none; border-color: var(--danger); color: var(--danger); background: transparent; }
+.btn:disabled { opacity: 0.45; box-shadow: none; }
+.icon-btn { border-radius: 0; color: var(--ink2); }
+
+/* Pills, tabs, tags */
+.chip { border: 2px solid var(--ink2); color: var(--ink2); border-radius: 999px; font-weight: 700; background: var(--surface); }
+.chip.on { background: var(--ink2); color: var(--paper); border-color: var(--ink2); }
+.segmented { border: 2px solid var(--ink2); border-radius: 999px; background: var(--surface); }
+.segmented button { border-radius: 999px; color: var(--ink2); font-weight: 700; }
+.segmented button.on { background: var(--ink2); color: var(--paper); }
+.tag { border: 1.5px solid var(--ink2); background: var(--surface); color: var(--ink2); font-weight: 700; border-radius: 999px; }
+.tag.ok, .tag.list-approved, .tag.match-confirmed, .tag.match-resolved, .tag.report-confirmed, .tag.mine-accepted, .tag.status-published { background: #d9f2e3; color: var(--ok); border-color: var(--ok); }
+.tag.match-disputed, .tag.list-rejected, .tag.report-disputed, .tag.status-in_progress { background: #ffe1e8; color: var(--danger); border-color: var(--danger); }
+.tag.match-reported, .tag.mine-pending { background: #fff3c4; }
+.badge-count { background: var(--ink1); color: #fff; }
+
+/* Forms */
+.text-input, .select, .num-input { border: 2px solid var(--ink2); border-radius: 0; background: var(--surface); color: var(--ink2); }
+.text-input:focus, .select:focus { outline: 3px solid var(--ink3); outline-offset: 0; }
+.toggle .track { background: #c9bda3; }
+.toggle input:checked + .track { background: var(--ink2); }
+
+/* Notices, toasts, modals */
+.toast { background: var(--surface); border: 2px solid var(--ink2); border-left: 0.5rem solid var(--ink1); border-radius: 0; color: var(--ink2); box-shadow: 4px 4px 0 var(--ink3); }
+.modal { background: var(--surface); border: 3px solid var(--ink2); border-radius: 0; box-shadow: 8px 8px 0 var(--ink1); }
+.modal-backdrop { background: rgba(29, 42, 91, 0.45); }
+.error { color: var(--danger); font-weight: 700; }
+.success { color: var(--ok); font-weight: 700; }
+
+/* Tables */
+.standings th { font-family: var(--display); font-weight: 400; color: var(--ink2); letter-spacing: 0.04em; border-bottom: 3px solid var(--ink2); }
+.standings tr.me td { color: var(--link); font-weight: 700; }
+
+/* PAINT editor surfaces */
+.topbar, .toolbar, .tool-options, .side, .stepbar { background: var(--surface); }
+.topbar { border-bottom: 3px solid var(--ink2); }
+.toolbar { border-color: var(--ink2); }
+.side { border-color: var(--ink2); }
+.editor .panel-col { box-shadow: 0 -0.5rem 1.5rem rgba(29, 42, 91, 0.2); }
+
+/* Home: the tactical table hero */
+.riso-hero { position: relative; isolation: isolate; overflow: hidden; margin: -1.25rem -1rem 1.5rem; min-height: 34rem; border-bottom: 3px solid var(--ink2); }
+.riso-hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
+.riso-hero .hero-body { position: relative; padding: calc(var(--title-bottom, 14rem) + 0.75rem) 1rem 2rem; max-width: 44rem; }
+.riso-hero h1 { background: linear-gradient(transparent 58%, var(--ink3) 58%); display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone; padding: 0 0.1em; }
+.riso-hero .lead { max-width: 40ch; margin-top: 0.75rem; font-size: 1.05rem; background: color-mix(in srgb, var(--paper) 82%, transparent); }
+.riso-hero .hud { position: absolute; right: 1rem; top: 1rem; font: 500 0.72rem/1.4 ui-monospace, monospace; color: var(--ink2); background: color-mix(in srgb, var(--paper) 85%, transparent); padding: 0.25rem 0.45rem; pointer-events: none; }
+@media (min-width: 48rem) { .riso-hero { margin-inline: calc(50% - 50vw); padding-inline: max(1rem, calc(50vw - 36rem)); } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

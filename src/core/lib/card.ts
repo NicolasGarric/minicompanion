@@ -1,5 +1,23 @@
 /** Canvas helpers shared by the share cards (PAINT scheme card, PLAY result card). */
 export const FONT = '"Noto Sans JP", system-ui, sans-serif';
+/** Poster face of the riso theme, for card titles. */
+export const DISPLAY = '"Dela Gothic One", "Noto Sans JP", sans-serif';
+
+/** Riso halftone band (decoration): dots growing towards the bottom-right, in `color`. */
+export function halftoneBand(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
+  ctx.save();
+  ctx.fillStyle = color;
+  const cell = 22;
+  for (let yy = y + cell / 2; yy < y + h; yy += cell) {
+    for (let xx = x + cell / 2; xx < x + w; xx += cell) {
+      const k = ((xx - x) / w) * 0.5 + ((yy - y) / h) * 0.5;
+      ctx.beginPath();
+      ctx.arc(xx, yy, (cell / 2) * Math.max(0.08, k), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
 
 /** Draws `src` to cover the target box (centre crop). */
 export function drawCover(ctx: CanvasRenderingContext2D, src: CanvasImageSource & { width: number; height: number }, x: number, y: number, w: number, h: number) {

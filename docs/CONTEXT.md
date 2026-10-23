@@ -196,6 +196,8 @@ discover → paint → share → play → watch → back to physical stores.
 | DB password (leaked once) | Not rotated for now, owner's choice |
 | "Automated check" games | Deleted after each live check (admin-only cleanup function) |
 | Next priorities | Full tournament flow, painting contest, visual pass, PAINT performance |
+| Visual identity (2026-10-23) | **Riso tactique**: risograph print on paper, inks pink `#ff4f7b` + navy `#1d2a5b` + yellow marker `#ffd23f`, Dela Gothic One (titles) + Zen Maru Gothic (text); home = tabletop seen from above in halftone (terrain, deployment zones, objectives, units, measuring tape) with the app name airbrushed by particles (`src/core/visual/risoTable.ts`) |
+| Languages (2026-10-23) | **One language at a time + a selector** in the header (language names in their own script), first visit follows the browser language; international project: which languages to add next is open |
 
 ## Open points / next steps (updated 2026-10-23)
 
@@ -203,11 +205,9 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 
 1. **Multi-week tournaments** (owner request): date and time **per round**, **venue per round**
    (store or address); shown in pairings, table pages, .ics, reminders per round.
-2. **PAINT performance**: render in a Web Worker (or WebGL) so colour changes stay fluid on 2048 px
-   images (full render ≈190 ms today).
-3. **Visual pass** on the whole app (typography, spacing, tablet layout, editor). Known details:
-   painting-contest pages still show "pts / rounds / players" of the tournament header; the empty
-   middle of the result card when no photo is attached.
+2. ~~PAINT performance~~ done: low-res preview + full render in bands (commit 360f6fc).
+3. ~~Visual pass~~ done: Riso tactique theme on the whole app, share / result / podium cards in riso
+   inks. Next: more languages (owner to choose), tablet fine-tuning.
 4. Tournaments list: **map and filters** (city, distance, format, type; Leaflet is already approved).
 5. **Organiser dashboard** (registrations over time, check-ins, list status, contest entries) and
    **bridges** PAINT ↔ PLAY (e.g. "paint this army" from a list, contest entry from a PAINT project).

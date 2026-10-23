@@ -31,18 +31,17 @@ export function Logo() {
 export function LangSwitch() {
   const { lang, setLang } = useLang();
   const t = useT();
+  // Each language in its own name; the first visit follows the browser language.
   const options: { value: Lang; label: string }[] = [
-    { value: 'en', label: 'EN' },
+    { value: 'en', label: 'English' },
     { value: 'ja', label: '日本語' },
   ];
   return (
-    <div className="lang-switch" role="group" aria-label={t('nav.language')}>
+    <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t('nav.language')}>
       {options.map((o) => (
-        <button key={o.value} type="button" className={lang === o.value ? 'on' : ''} aria-pressed={lang === o.value} onClick={() => setLang(o.value)}>
-          {o.label}
-        </button>
+        <option key={o.value} value={o.value}>{o.label}</option>
       ))}
-    </div>
+    </select>
   );
 }
 

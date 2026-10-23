@@ -1,5 +1,5 @@
 import { APP_NAME } from '../../core/brand';
-import { drawCover, fitText, FONT, wrap } from '../../core/lib/card';
+import { DISPLAY, drawCover, fitText, FONT, halftoneBand, wrap } from '../../core/lib/card';
 import { translate, type Lang } from '../../core/i18n';
 import type { Game } from './games';
 import type { GameReport } from './social';
@@ -8,7 +8,7 @@ import type { GameReport } from './social';
 export async function resultCard(o: { game: Game; report: GameReport; lang: Lang; when: string; place: string; images: string[] }): Promise<Blob> {
   const { game, report, lang } = o;
   const t = (key: Parameters<typeof translate>[0], vars?: Record<string, string | number>) => translate(key, vars, lang);
-  await Promise.allSettled([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 28px ${FONT}`)]);
+  await Promise.allSettled([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 28px ${FONT}`), document.fonts.load(`400 56px ${DISPLAY}`)]);
   const W = 1080;
   const H = 1080;
   const pad = 64;
@@ -16,7 +16,7 @@ export async function resultCard(o: { game: Game; report: GameReport; lang: Lang
   c.width = W;
   c.height = H;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#15171c';
+  ctx.fillStyle = '#f4ecdc';
   ctx.fillRect(0, 0, W, H);
 
   // Up to two pictures (painted armies or report photos) on the right
@@ -30,20 +30,20 @@ export async function resultCard(o: { game: Game; report: GameReport; lang: Lang
     ctx.beginPath();
     ctx.roundRect(x, y, W - pad - x, h, 24);
     ctx.clip();
-    ctx.fillStyle = '#0d0e11';
+    ctx.fillStyle = '#e4d8bd';
     ctx.fillRect(x, y, W - pad - x, h);
     drawCover(ctx, img, x, y, W - pad - x, h);
     ctx.restore();
   });
 
-  ctx.fillStyle = '#e3b04b';
+  ctx.fillStyle = '#ff4f7b';
   ctx.font = `700 26px ${FONT}`;
   ctx.fillText(t('report.cardKicker'), pad, 84);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `700 52px ${FONT}`;
+  ctx.fillStyle = '#1d2a5b';
+  ctx.font = `400 56px ${DISPLAY}`;
   ctx.fillText(fitText(ctx, game.game_system, W - pad * 2), pad, 140);
 
-  ctx.fillStyle = '#9aa0ab';
+  ctx.fillStyle = '#3e4a7a';
   ctx.font = `500 24px ${FONT}`;
   let y = 200;
   for (const line of [[game.format, game.points ? t('games.points', { points: game.points }) : null].filter(Boolean).join(' · '), o.when, o.place]) {
@@ -58,11 +58,15 @@ export async function resultCard(o: { game: Game; report: GameReport; lang: Lang
   const winners = report.results.filter((r) => r.placement === best).length;
   for (const r of report.results.slice(0, 6)) {
     const win = r.placement === best;
-    ctx.fillStyle = win ? '#e3b04b' : '#2a2e38';
+    ctx.fillStyle = win ? '#ffd23f' : '#fffaf0';
     ctx.beginPath();
     ctx.roundRect(pad, y, textW, 84, 16);
     ctx.fill();
-    ctx.fillStyle = win ? '#15171c' : '#ffffff';
+    // Printed block: ink outline
+    ctx.strokeStyle = '#1d2a5b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = win ? '#1d2a5b' : '#1d2a5b';
     ctx.font = `700 34px ${FONT}`;
     ctx.fillText(fitText(ctx, r.profile?.display_name ?? '?', textW - 200), pad + 24, y + 40);
     ctx.font = `500 22px ${FONT}`;
@@ -75,17 +79,19 @@ export async function resultCard(o: { game: Game; report: GameReport; lang: Lang
     y += 100;
   }
   if (report.summary) {
-    ctx.fillStyle = '#c9ccd3';
+    ctx.fillStyle = '#3e4a7a';
     ctx.font = `400 24px ${FONT}`;
     wrap(ctx, `“${report.summary.slice(0, 160)}”`, pad, y + 20, textW, 34);
   }
 
-  ctx.fillStyle = '#2a2e38';
+  // No photo: a riso halftone band fills the lower part of the card
+  if (!pics.length) halftoneBand(ctx, 0, Math.max(y + 60, 640), W, H - 150 - Math.max(y + 60, 640), '#ff4f7b');
+  ctx.fillStyle = '#1d2a5b';
   ctx.fillRect(0, H - 150, W, 2);
-  ctx.fillStyle = '#e3b04b';
+  ctx.fillStyle = '#ff4f7b';
   ctx.font = `700 28px ${FONT}`;
   ctx.fillText(t('card.madeWith', { app: APP_NAME }), pad, H - 100);
-  ctx.fillStyle = '#7d8492';
+  ctx.fillStyle = '#6b6d86';
   ctx.font = `400 19px ${FONT}`;
   wrap(ctx, t('legal.short'), pad, H - 64, W - pad * 2, 26);
   return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('card'))), 'image/png'));
