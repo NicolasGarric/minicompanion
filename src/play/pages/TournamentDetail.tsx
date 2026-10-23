@@ -247,8 +247,8 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
 
       {place && (
         <section className="card tour-map">
-          <iframe title={t('tour.map')} src={osmEmbedUrl({ lat: place.lat, lng: place.lng } as never)} loading="lazy" />
-          <a className="small" href={osmLink({ lat: place.lat, lng: place.lng } as never)} target="_blank" rel="noreferrer">{t('tour.openMap')} ↗</a>
+          <iframe title={t('tour.map')} src={osmEmbedUrl(place)} loading="lazy" />
+          <a className="small" href={osmLink(place)} target="_blank" rel="noreferrer">{t('tour.openMap')} ↗</a>
         </section>
       )}
 

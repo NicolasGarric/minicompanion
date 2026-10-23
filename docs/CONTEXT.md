@@ -219,8 +219,15 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 5. **Organiser dashboard** (registrations over time, check-ins, list status, contest entries) and
    **bridges** PAINT ↔ PLAY (e.g. "paint this army" from a list, contest entry from a PAINT project).
 6. **Moderation**: report button (table `reports` exists) and an admin review page.
-7. **Stores page**: still a client-side sample list; switch it to the database stores (store pages,
-   regular nights and leagues already use the database).
+7. ~~Stores page~~ done: **5,588 real shops worldwide** from OpenStreetMap (games & miniatures,
+   model kits, hobby shops; anime / cards-only / crafts filtered out) in `public/data/shops.json`,
+   rebuilt with `node scripts/fetch-osm-shops.mjs` (ODbL credit shown). Leaflet map drives the list,
+   place search (Nominatim, typed text only), "Near me" in the browser only. OSM coverage is uneven
+   (good in Europe / US, thin in Japan): shops can add themselves on OSM. The PLAY demo stores
+   (fictional, with store pages and nights) are separate and unchanged.
+7b. **Bug reports** (footer, every page): text + up to 3 screenshots (signed in; drop / paste / pick,
+   shrunk on the device) + optional technical context; anyone can report (rate limited), admins
+   read them at `#/admin/bugs` (link on the account page). Migration 000012.
 8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
 9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
    `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,

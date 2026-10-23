@@ -1,3 +1,4 @@
+import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
 import { useEffect } from 'react';
 import { useStore } from './paint/store';
 import { navigate, useRoute, type Route } from './core/router';
@@ -89,6 +90,7 @@ function Page({ route }: { route: Route }) {
     case 'account': return <AccountPage />;
     case 'legal': return <Legal />;
     case 'stats': return <Stats />;
+    case 'admin.bugs': return <BugReportsAdmin />;
     default: return <Home />;
   }
 }

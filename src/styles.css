@@ -903,3 +903,29 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
   .tour-filters .field-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .tour-filters .select { min-width: 0; width: 100%; }
 }
+
+/* Store finder: real shops on a map, list follows the map view */
+.store-search { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+.store-search .text-input { flex: 1 1 14rem; min-width: 0; }
+.store-kinds { margin-bottom: 0.75rem; }
+.kind-dot { display: inline-block; width: 0.7em; height: 0.7em; border: 2px solid currentColor; border-radius: 50%; vertical-align: -0.05em; }
+.store-map-live { height: 24rem; max-width: 100%; border: 2px solid var(--ink2); box-shadow: 4px 4px 0 var(--ink1); z-index: 0; }
+.store-map-live .leaflet-tile-pane { filter: grayscale(1) sepia(0.35) contrast(0.95) brightness(1.04); }
+.store-finder .store-list { max-height: none; overflow: visible; }
+.osm-credit { margin-top: 1rem; }
+@media (max-width: 600px) { .store-map-live { height: 18rem; } }
+
+/* Bug report (footer) */
+.link-button { background: none; border: 0; padding: 0; font: inherit; color: var(--link); text-decoration: underline; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+.bug-form { display: grid; gap: 0.9rem; }
+.bug-drop { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem; border: 2px dashed var(--ink2); }
+.bug-drop .hint { flex-basis: 100%; }
+.bug-shot { position: relative; margin: 0; width: 6rem; height: 6rem; border: 2px solid var(--ink2); background: var(--surface); }
+.bug-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bug-shot .icon-btn { position: absolute; top: -0.6rem; right: -0.6rem; width: 1.6rem; height: 1.6rem; padding: 0; display: grid; place-items: center; background: var(--paper); border: 2px solid var(--ink2); }
+.bug-add { width: 6rem; height: 6rem; display: grid; place-content: center; justify-items: center; gap: 0.25rem; text-align: center; font-size: 0.8rem; border: 2px solid var(--ink2); background: var(--surface); cursor: pointer; }
+.bug-context pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.75rem; max-height: 12rem; overflow: auto; }
+.bug-admin-list { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.bug-admin-list .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: center; }
+.bug-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.bug-fixed, .bug-wontfix { opacity: 0.6; }

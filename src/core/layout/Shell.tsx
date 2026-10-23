@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { LANGS, useLang, useT, type Lang, type MessageKey } from '../i18n';
 import type { Route } from '../router';
 import { APP_NAME } from '../brand';
+import { BugReportButton } from '../feedback/BugReport';
 import { useSession } from '../auth/session';
 import { backendConfigured } from '../auth/supabase';
 import { Avatar } from '../ui/Avatar';
@@ -89,6 +90,9 @@ export function Footer({ compact }: { compact?: boolean }) {
     <footer className={`site-footer ${compact ? 'compact' : ''}`}>
       <p>
         {t('legal.short')} <a href="#/legal">{t('nav.legal')}</a>
+      </p>
+      <p>
+        <BugReportButton />
       </p>
     </footer>
   );
