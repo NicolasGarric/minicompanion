@@ -212,7 +212,10 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 2. ~~PAINT performance~~ done: low-res preview + full render in bands (commit 360f6fc).
 3. ~~Visual pass~~ done: Riso tactique theme on the whole app, share / result / podium cards in riso
    inks. ~~More languages~~ done (9 languages, migration 000010). Next: tablet fine-tuning.
-4. Tournaments list: **map and filters** (city, distance, format, type; Leaflet is already approved).
+4. ~~Tournaments list: map and filters~~ done: Leaflet map (OSM tiles tinted in riso inks, loaded
+   only on that page), filters city / distance / game size / type, starts on the profile's city,
+   "Around me" asks for the position on click only and filters in the browser (never stored or sent).
+   Possible follow-up: the main bundle is ~1 MB since the 9 dictionaries are bundled (lazy-load them).
 5. **Organiser dashboard** (registrations over time, check-ins, list status, contest entries) and
    **bridges** PAINT ↔ PLAY (e.g. "paint this army" from a list, contest entry from a PAINT project).
 6. **Moderation**: report button (table `reports` exists) and an admin review page.

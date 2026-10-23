@@ -890,3 +890,16 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .round-where { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.35rem; margin: 0.25rem 0 0.75rem; }
 .round-where a { overflow-wrap: anywhere; }
 .schedule-form { display: grid; gap: 0.75rem; margin-top: 0.5rem; }
+
+/* Tournaments map (Leaflet): tiles printed in the riso inks, square pins */
+.tour-map-live { height: 22rem; max-width: 100%; border: 2px solid var(--ink2); box-shadow: 4px 4px 0 var(--ink1); margin-bottom: 1rem; z-index: 0; }
+.tour-map-live .leaflet-tile-pane { filter: grayscale(1) sepia(0.35) contrast(0.95) brightness(1.04); }
+.map-pin { background: var(--ink1); border: 3px solid var(--ink2); box-sizing: border-box; }
+.map-pop { display: grid; gap: 0.15rem; font-family: var(--font); }
+.map-pop a { font-weight: 700; color: var(--link); }
+.tour-filters { margin-bottom: 1rem; display: grid; gap: 0.75rem; }
+@media (max-width: 600px) {
+  .tour-map-live { height: 16rem; }
+  .tour-filters .field-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .tour-filters .select { min-width: 0; width: 100%; }
+}
