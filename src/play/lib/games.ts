@@ -1,10 +1,12 @@
 import { supabase } from '../../core/auth/supabase';
+import type { Lang } from '../../core/i18n';
 
 /** Quick play: casual games hosted by players (see supabase/migrations/*_quick_play.sql). */
 export type GameLevel = 'beginner' | 'casual' | 'competitive';
 export type GameStatus = 'open' | 'full' | 'cancelled';
 export type JoinStatus = 'pending' | 'accepted' | 'declined' | 'withdrawn';
-export type GameLanguage = 'en' | 'ja' | 'both';
+/** Language spoken at the table: any app language, or 'both' (Japanese and English). */
+export type GameLanguage = Lang | 'both';
 
 export interface Game {
   id: string;

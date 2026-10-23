@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { EVENTS, readAnalytics, resetAnalytics, type AnalyticsEvent } from '../analytics';
-import { k, useLang, useT } from '../i18n';
+import { k, localeOf, useLang, useT } from '../i18n';
 import { download } from '../lib/image';
 import { APP_ID } from '../brand';
 
@@ -29,7 +29,7 @@ export function Stats() {
   const days = useMemo(() => lastDays(DAYS), []);
   const daily = days.map((d) => ({ day: d, total: EVENTS.reduce((acc, e) => acc + (data.daily[d]?.[e] ?? 0), 0) }));
   const max = Math.max(1, ...daily.map((d) => d.total));
-  const fmtDay = (d: string) => new Date(d).toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-GB', { month: 'short', day: 'numeric' });
+  const fmtDay = (d: string) => new Date(d).toLocaleDateString(localeOf(lang), { month: 'short', day: 'numeric' });
   const shareMethods = Object.entries(data.detail).filter(([key]) => key.startsWith('card_shared:'));
 
   return (

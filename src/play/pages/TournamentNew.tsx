@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { k, useT, useLang } from '../../core/i18n';
+import { k, LANGS, useT, useLang } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
@@ -122,8 +122,7 @@ export function TournamentNew() {
           <label className="field">
             <span>{t('games.language')}</span>
             <select className="select" value={f.language} onChange={(e) => set({ language: e.target.value })}>
-              <option value="ja">日本語</option>
-              <option value="en">English</option>
+              {LANGS.map((l) => <option key={l.code} value={l.code} lang={l.code}>{l.name}</option>)}
               <option value="both">{t('games.lang.both')}</option>
             </select>
           </label>

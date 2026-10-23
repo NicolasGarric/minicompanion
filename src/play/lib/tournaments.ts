@@ -1,5 +1,6 @@
 import { supabase } from '../../core/auth/supabase';
 import { computeStandings, pairSwiss, type PlayedMatch, type Pairing, type Standing } from './pairing';
+import type { GameLanguage } from './games';
 
 /**
  * Tournament flow (supabase/migrations/*_tournament_flow.sql): registrations, rounds, matches,
@@ -33,7 +34,7 @@ export interface Tournament {
   list_deadline: string;
   format_id: string;
   type: string;
-  language: 'en' | 'ja' | 'both';
+  language: GameLanguage;
   max_players: number;
   rounds_planned: number;
   lists_visibility: 'hidden_until_start' | 'public';

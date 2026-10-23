@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { useLang, useT, type Lang, type MessageKey } from '../i18n';
+import { LANGS, useLang, useT, type Lang, type MessageKey } from '../i18n';
 import type { Route } from '../router';
 import { APP_NAME } from '../brand';
 import { useSession } from '../auth/session';
@@ -31,15 +31,17 @@ export function Logo() {
 export function LangSwitch() {
   const { lang, setLang } = useLang();
   const t = useT();
+  const signedIn = useSession((s) => !!s.profile);
   // Each language in its own name; the first visit follows the browser language.
-  const options: { value: Lang; label: string }[] = [
-    { value: 'en', label: 'English' },
-    { value: 'ja', label: '日本語' },
-  ];
+  const choose = (next: Lang) => {
+    setLang(next);
+    // Signed in: the profile remembers it too, so other devices open in the same language.
+    if (signedIn) void useSession.getState().updateProfile({ preferred_lang: next });
+  };
   return (
-    <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t('nav.language')}>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+    <select className="lang-select" value={lang} onChange={(e) => choose(e.target.value as Lang)} aria-label={t('nav.language')}>
+      {LANGS.map((l) => (
+        <option key={l.code} value={l.code} lang={l.code}>{l.name}</option>
       ))}
     </select>
   );

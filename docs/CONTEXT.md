@@ -29,7 +29,7 @@ src/
   engine/       engine.ts (recolour renderer), maskTools.ts (brush, wand, lasso), demo.ts
   lib/          color.ts, image.ts (resize, export), palette.ts (k-means extraction),
                 share.ts (card + link), recipe.ts, beginner.ts, analytics.ts, router.ts
-  i18n/         en.ts, ja.ts, index.ts (useT hook)
+  i18n/         en.ts (reference), ja, fr, es, de, it, pt (BR), zh (simplified), ko; index.ts (LANGS, useT)
   data/         paints.ts (text + hex only), presets.ts (neutral scheme names), stores.ts (sample)
   storage/      db.ts (IndexedDB)
   components/   UI, one component per file
@@ -63,8 +63,9 @@ Deadline ≈ 10 days: favour simple working features over complete ones.
 
 ## Decisions taken
 
-- **UI languages are EN + JP only** (the earlier French UI was converted). Adding FR later is a
-  new file in `src/i18n/`.
+- **UI languages (2026-10-23)**: EN, JA, FR, ES, DE, IT, PT-BR, ZH (simplified), KO. Each file is
+  typed `Record<MessageKey, string>` against `en.ts`, so a missing key fails the build. Adding a
+  language = one file + one `LANGS` entry + the enum value in a migration (`app_lang`, `event_language`).
 - **Scheme presets renamed to neutral descriptions** ("Royal blue & gold"…). Faction / chapter
   names are trademarks and are not used anywhere. The demo figure is a generic "armoured trooper".
 - **Public share links without backend**: the scheme (recipes per role, no image) is encoded in
@@ -197,7 +198,8 @@ discover → paint → share → play → watch → back to physical stores.
 | "Automated check" games | Deleted after each live check (admin-only cleanup function) |
 | Next priorities | Full tournament flow, painting contest, visual pass, PAINT performance |
 | Visual identity (2026-10-23) | **Riso tactique**: risograph print on paper, inks pink `#ff4f7b` + navy `#1d2a5b` + yellow marker `#ffd23f`, Dela Gothic One (titles) + Zen Maru Gothic (text); home = tabletop seen from above in halftone (terrain, deployment zones, objectives, units, measuring tape) with the app name airbrushed by particles (`src/core/visual/risoTable.ts`) |
-| Languages (2026-10-23) | **One language at a time + a selector** in the header (language names in their own script), first visit follows the browser language; international project: which languages to add next is open |
+| Languages (2026-10-23) | **One language at a time + a selector** in the header (language names in their own script), first visit follows the browser language; signed in, the choice is saved on the profile |
+| Languages added (2026-10-23) | French, Spanish, German, Italian, Brazilian Portuguese, **Simplified** Chinese, Korean (Noto Sans SC / KR for those two); events can be in any of them or "Japanese and English" (migration 000010) |
 
 ## Open points / next steps (updated 2026-10-23)
 
@@ -207,7 +209,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    (store or address); shown in pairings, table pages, .ics, reminders per round.
 2. ~~PAINT performance~~ done: low-res preview + full render in bands (commit 360f6fc).
 3. ~~Visual pass~~ done: Riso tactique theme on the whole app, share / result / podium cards in riso
-   inks. Next: more languages (owner to choose), tablet fine-tuning.
+   inks. ~~More languages~~ done (9 languages, migration 000010). Next: tablet fine-tuning.
 4. Tournaments list: **map and filters** (city, distance, format, type; Leaflet is already approved).
 5. **Organiser dashboard** (registrations over time, check-ins, list status, contest entries) and
    **bridges** PAINT ↔ PLAY (e.g. "paint this army" from a list, contest entry from a PAINT project).
@@ -215,8 +217,9 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 7. **Stores page**: still a client-side sample list; switch it to the database stores (store pages,
    regular nights and leagues already use the database).
 8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
-9. **Japanese review** by a native hobbyist: `// CHECK:` markers in `src/core/i18n/ja.ts` and all
-   PLAY texts added since (owner: later).
+9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
+   `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,
+   hobby terms to check first: wash, drybrush, edge highlight, contrast paints, Swiss pairing terms).
 10. **Security**: the database password leaked once and is not rotated yet (owner's choice).
 11. Demo data: in the live database the "Friday Live Clash" table 3 shows 14–14 marked as a win
     (fixed in `seed_tournament.sql` for new installs).

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { k, useLang, useT } from '../../core/i18n';
+import { k, LANGS, useLang, useT } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
@@ -130,8 +130,7 @@ export function GameNew() {
           <label className="field">
             <span>{t('games.language')}</span>
             <select className="select" value={f.language} onChange={(e) => set({ language: e.target.value as typeof f.language })}>
-              <option value="ja">日本語</option>
-              <option value="en">English</option>
+              {LANGS.map((l) => <option key={l.code} value={l.code} lang={l.code}>{l.name}</option>)}
               <option value="both">{t('games.lang.both')}</option>
             </select>
           </label>

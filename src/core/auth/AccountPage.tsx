@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { k, useT, type Lang } from '../i18n';
+import { k, LANGS, useT, type Lang } from '../i18n';
 import { CITIES, cityById } from '../data/cities';
 import { requireSignIn, useSession } from './session';
 import { backendConfigured } from './supabase';
@@ -94,8 +94,7 @@ export function AccountPage() {
         <label className="field">
           <span>{t('profile.lang')}</span>
           <select className="select" value={form.preferred_lang} onChange={(e) => setForm({ ...form, preferred_lang: e.target.value as Lang })}>
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
+            {LANGS.map((l) => <option key={l.code} value={l.code} lang={l.code}>{l.name}</option>)}
           </select>
         </label>
         <label className="field">

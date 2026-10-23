@@ -1,10 +1,12 @@
 import { usePrefs } from '../prefs';
-import { translate, useT } from '../i18n';
+import { translate, useLang, useT } from '../i18n';
 import { APP_NAME } from '../brand';
 
-/** Legal / About page. The full disclaimer is always shown in both languages. */
+/** Legal / About page. The full disclaimer is shown in the reader's language, plus English and Japanese. */
 export function Legal() {
   const t = useT();
+  const lang = useLang((s) => s.lang);
+  const disclaimerLangs = [...new Set([lang, 'en', 'ja'] as const)];
   const { retailerTemplate: template, setRetailerTemplate } = usePrefs();
 
   return (
@@ -13,8 +15,7 @@ export function Legal() {
 
       <section className="card">
         <h2>{t('legal.disclaimerTitle')}</h2>
-        <p lang="en">{translate('legal.full', undefined, 'en')}</p>
-        <p lang="ja">{translate('legal.full', undefined, 'ja')}</p>
+        {disclaimerLangs.map((l) => <p key={l} lang={l}>{translate('legal.full', undefined, l)}</p>)}
       </section>
 
       <section>

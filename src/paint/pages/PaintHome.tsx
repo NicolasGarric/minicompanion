@@ -6,7 +6,7 @@ import { parseProjectFile } from '../lib/projectFile';
 import { createDemo } from '../engine/demo';
 import { BUILTIN_SCHEMES } from '../data/presets';
 import { navigate } from '../../core/router';
-import { useLang, useT } from '../../core/i18n';
+import { localeOf, useLang, useT } from '../../core/i18n';
 import { ImageUpload } from '../../core/ui/ImageUpload';
 import { Icon, IconButton } from '../../core/ui/ui';
 
@@ -111,7 +111,7 @@ export function PaintHome() {
                 </button>
                 <div className="project-info">
                   <strong>{p.name}</strong>
-                  <small>{new Date(p.updatedAt).toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</small>
+                  <small>{new Date(p.updatedAt).toLocaleString(localeOf(lang), { dateStyle: 'medium', timeStyle: 'short' })}</small>
                 </div>
                 <IconButton
                   icon="trash"

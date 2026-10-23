@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { k, useLang, useT } from '../../core/i18n';
+import { k, langName, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
@@ -77,7 +77,7 @@ export function GameDetail({ id }: { id: string }) {
         <p className={address ? '' : 'muted'}>
           <Icon name="home" size={16} /> {address ?? t('games.addressHidden')}
         </p>
-        <p><Icon name="globe" size={16} /> {game.language === 'both' ? t('games.lang.both') : game.language === 'ja' ? '日本語' : 'English'}</p>
+        <p><Icon name="globe" size={16} /> {game.language === 'both' ? t('games.lang.both') : langName(game.language)}</p>
         {game.note && <p className="game-note">{game.note}</p>}
         {game.host && (
           <p className="muted">

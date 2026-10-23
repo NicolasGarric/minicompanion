@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { k, useLang, useT } from '../../core/i18n';
+import { k, langName, useLang, useT } from '../../core/i18n';
 import { supabase, backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
@@ -177,7 +177,7 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
         <p>
           <Icon name="map" size={16} /> {tour.store_id ? <a href={`#/play/store/${tour.store_id}`}>{tour.venue_name}</a> : tour.venue_name} · {tour.address}
         </p>
-        <p><Icon name="globe" size={16} /> {tour.language === 'both' ? t('games.lang.both') : tour.language === 'ja' ? '日本語' : 'English'}</p>
+        <p><Icon name="globe" size={16} /> {tour.language === 'both' ? t('games.lang.both') : langName(tour.language)}</p>
         <p className="muted">{t('tour.deadline', { date: formatWhen(tour.registration_deadline, lang) })}</p>
         {tour.description && <p className="game-note">{tour.description}</p>}
         {tour.twitch_channel && (
@@ -237,6 +237,7 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
 
 function ListSection({ tour, reg, onChange }: { tour: Tournament; reg: Registration; onChange: () => void }) {
   const t = useT();
+  const lang = useLang((s) => s.lang);
   const list = listOf(reg);
   const [text, setText] = useState(list?.raw_text ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -273,7 +274,7 @@ function ListSection({ tour, reg, onChange }: { tour: Tournament; reg: Registrat
             {[parsed.faction, parsed.points ? t('games.points', { points: parsed.points }) : null].filter(Boolean).join(' · ') || t('tour.listUnparsed')}
             {over && ` — ${t('tour.listOver', { limit: tour.format!.points_limit })}`}
           </p>
-          <p className="hint">{t('tour.listDeadline', { date: new Date(tour.list_deadline).toLocaleString() })}</p>
+          <p className="hint">{t('tour.listDeadline', { date: formatWhen(tour.list_deadline, lang) })}</p>
           {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
           <div className="nav-row">
             {saved && <span className="success">{t('tour.listSaved')}</span>}

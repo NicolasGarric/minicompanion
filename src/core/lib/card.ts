@@ -1,7 +1,7 @@
 /** Canvas helpers shared by the share cards (PAINT scheme card, PLAY result card). */
-export const FONT = '"Noto Sans JP", system-ui, sans-serif';
+export const FONT = '"Noto Sans JP", "Noto Sans SC", "Noto Sans KR", system-ui, sans-serif';
 /** Poster face of the riso theme, for card titles. */
-export const DISPLAY = '"Dela Gothic One", "Noto Sans JP", sans-serif';
+export const DISPLAY = '"Dela Gothic One", "Noto Sans JP", "Noto Sans SC", "Noto Sans KR", sans-serif';
 
 /** Riso halftone band (decoration): dots growing towards the bottom-right, in `color`. */
 export function halftoneBand(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {

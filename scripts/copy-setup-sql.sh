@@ -27,6 +27,7 @@ declare -A GUARD=(
   [20261026000007_owner_decisions.sql]="to_regprocedure('public.purge_check_games()') is null"
   [20261027000008_tournament_flow.sql]="to_regprocedure('public.create_round(uuid,jsonb)') is null"
   [20261028000009_painting_contest.sql]="to_regprocedure('public.cast_contest_vote(uuid)') is null"
+  [20261029000010_languages.sql]="not exists (select 1 from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'app_lang' and e.enumlabel = 'ko')"
 )
 
 wrap() { # $1 = file, $2 = condition, $3 = label

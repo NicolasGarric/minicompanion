@@ -791,6 +791,12 @@ a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--bo
    ============================================================================================= */
 body { font-family: var(--font); font-weight: 500; }
 a { color: var(--link); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+/* Chinese and Korean get their own faces: the Japanese ones would draw Han characters the Japanese way
+   (or miss simplified ones) and have no Hangul. Heavy weight stands in for Dela Gothic's punch. */
+:root:lang(zh) { --font: 'Noto Sans SC', system-ui, sans-serif; --display: 'Noto Sans SC', sans-serif; }
+:root:lang(ko) { --font: 'Noto Sans KR', system-ui, sans-serif; --display: 'Noto Sans KR', sans-serif; }
+:root:lang(zh) :is(h1, h2, h3, h4, .logo, .tool-name, .section-title, .standings th),
+:root:lang(ko) :is(h1, h2, h3, h4, .logo, .tool-name, .section-title, .standings th) { font-weight: 900; }
 h1, h2, h3, .logo, .tool-name { font-family: var(--display); font-weight: 400; letter-spacing: 0.01em; }
 h1 { font-size: clamp(1.7rem, 3.4vw, 2.4rem); line-height: 1.15; text-wrap: balance; }
 h2 { font-size: 1.2rem; }
