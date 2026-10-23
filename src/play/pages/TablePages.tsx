@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { k, useT } from '../../core/i18n';
+import { k, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
 import { playError } from '../lib/games';
-import { confirmMatch, getTournament, reportMatch, tableMatch, tableTokens, type MatchResult, type TableMatch, type Tournament } from '../lib/tournaments';
+import { confirmMatch, getTournament, reportMatch, roundSchedule, tableMatch, tableTokens, type MatchResult, type RoundSlot, type TableMatch, type Tournament } from '../lib/tournaments';
+import { RoundWhere } from '../components/RoundSchedule';
 
 const tableUrl = (token: string) => `${location.origin}${location.pathname}#/play/table/${token}`;
 
@@ -68,9 +69,12 @@ export function TableQrSheet({ slug }: { slug: string }) {
 /** Page opened by scanning a table: the match played there, report and confirm the score. */
 export function TablePage({ token }: { token: string }) {
   const t = useT();
+  const lang = useLang((s) => s.lang);
   const session = useSession((s) => s.session);
   const me = session?.user.id ?? null;
   const [m, setM] = useState<TableMatch | null | undefined>(undefined);
+  // Multi-week events: date and venue of the round being played here.
+  const [where, setWhere] = useState<{ tour: Tournament; slots: RoundSlot[] } | null>(null);
   const [f, setF] = useState({ ap: 0, as: 0, bp: 0, bs: 0 });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,6 +90,13 @@ export function TablePage({ token }: { token: string }) {
   useEffect(() => {
     if (backendConfigured) load();
   }, [token]);
+  const slug = m?.tournament_slug;
+  useEffect(() => {
+    if (!slug) return;
+    getTournament(slug)
+      .then(async (tour) => (tour ? setWhere({ tour, slots: await roundSchedule(tour.id) }) : undefined))
+      .catch(() => undefined);
+  }, [slug]);
 
   if (!backendConfigured) return <BackendNotice />;
   if (m === undefined) return <div className="narrow"><span className="spinner" /></div>;
@@ -114,6 +125,9 @@ export function TablePage({ token }: { token: string }) {
       ) : (
         <section className="card">
           <p className="muted">{t('tour.roundN', { n: m.round_number ?? '?' })} · {t(k(`tour.match.${m.status}`))}</p>
+          {where && where.slots.find((s) => s.number === m.round_number) && (
+            <RoundWhere slot={where.slots.find((s) => s.number === m.round_number)!} tour={where.tour} lang={lang} />
+          )}
           <div className="table-versus">
             <strong>{m.player_a_name}</strong>
             <span>vs</span>

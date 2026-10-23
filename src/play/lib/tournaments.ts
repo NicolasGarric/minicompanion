@@ -215,9 +215,41 @@ export interface NewTournament {
   game_system: string | null;
   status: 'draft' | 'published';
 }
-export async function createTournament(t: NewTournament): Promise<string> {
-  const row = must(await db().from('tournaments').insert(t).select('slug').single()) as { slug: string };
-  return row.slug;
+export async function createTournament(t: NewTournament): Promise<{ id: string; slug: string }> {
+  return must(await db().from('tournaments').insert(t).select('id, slug').single()) as { id: string; slug: string };
+}
+
+// --- Round schedule (events over several weeks) --------------------------------------------------
+/** Date and venue of one round. No store and no address = the tournament's own venue. */
+export interface RoundSlot {
+  number: number;
+  starts_at: string;
+  store_id: string | null;
+  venue_name: string | null;
+  address: string | null;
+}
+/** Empty for a one-day event (or before the schedule migration is installed). */
+export async function roundSchedule(tournamentId: string): Promise<RoundSlot[]> {
+  const { data, error } = await db().from('round_schedule').select('number, starts_at, store_id, venue_name, address').eq('tournament_id', tournamentId).order('number');
+  return error ? [] : (data as RoundSlot[]);
+}
+/** Scheduled rounds of the events I'm registered in that start within the next 24 hours (reminders). */
+export async function myRoundsSoon(me: string): Promise<(RoundSlot & { tournament: { name: string; slug: string } | null })[]> {
+  const regs = await db().from('registrations').select('tournament_id').eq('user_id', me).eq('status', 'registered');
+  if (regs.error || !regs.data.length) return [];
+  const now = Date.now();
+  const { data, error } = await db()
+    .from('round_schedule')
+    .select('number, starts_at, store_id, venue_name, address, tournament:tournaments(name, slug)')
+    .in('tournament_id', regs.data.map((r) => r.tournament_id))
+    .gte('starts_at', new Date(now).toISOString())
+    .lt('starts_at', new Date(now + 864e5).toISOString())
+    .order('starts_at');
+  return error ? [] : (data as unknown as (RoundSlot & { tournament: { name: string; slug: string } | null })[]);
+}
+/** Replaces the whole schedule ([] = one-day event); registered players are notified of changes. */
+export async function setRoundSchedule(tournamentId: string, slots: RoundSlot[]) {
+  must(await db().rpc('set_round_schedule', { p_tournament: tournamentId, p_rounds: slots }));
 }
 export async function publishTournament(id: string) {
   must(await db().from('tournaments').update({ status: 'published' }).eq('id', id));

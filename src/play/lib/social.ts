@@ -294,7 +294,7 @@ export interface AppNotification {
   id: string;
   kind:
     | 'join_request' | 'join_answer' | 'game_match' | 'report_to_confirm' | 'report_answer' | 'message' | 'game_message' | 'league_game'
-    | 'round_paired' | 'match_to_confirm' | 'match_answer';
+    | 'round_paired' | 'match_to_confirm' | 'match_answer' | 'round_schedule';
   payload: Record<string, string>;
   read_at: string | null;
   created_at: string;

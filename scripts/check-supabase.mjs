@@ -97,6 +97,16 @@ if (orgIn.data.user) {
   if (ins.data) {
     const seenByPlayer = await player.from('tournaments').select('id').eq('id', ins.data.id);
     ok(seenByPlayer.data?.length === 0, 'drafts are invisible to other players');
+    // Multi-week events: one date and venue per round
+    const week = (n) => new Date(Date.now() + (30 + 7 * n) * 864e5).toISOString();
+    const plan = await organiser.rpc('set_round_schedule', {
+      p_tournament: ins.data.id,
+      p_rounds: [1, 2, 3].map((n) => ({ number: n, starts_at: week(n), venue_name: n === 3 ? 'Community hall' : null, address: n === 3 ? 'Kanda, Tokyo' : null })),
+    });
+    const slots = await organiser.from('round_schedule').select('number, venue_name').eq('tournament_id', ins.data.id).order('number');
+    ok(!plan.error && slots.data?.length === 3 && slots.data[2].venue_name === 'Community hall', 'organiser sets a date and venue per round', plan.error?.message);
+    const badPlan = await player.rpc('set_round_schedule', { p_tournament: ins.data.id, p_rounds: [] });
+    ok(!!badPlan.error, 'players cannot change the schedule');
     const del = await organiser.from('tournaments').delete().eq('id', ins.data.id);
     const gone = await organiser.from('tournaments').select('id').eq('id', ins.data.id);
     ok(!del.error && gone.data?.length === 0, 'organiser deletes the draft (cleanup)', del.error?.message);

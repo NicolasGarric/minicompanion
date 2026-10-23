@@ -881,3 +881,12 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .riso-hero .hud { position: absolute; right: 1rem; top: 1rem; font: 500 0.72rem/1.4 ui-monospace, monospace; color: var(--ink2); background: color-mix(in srgb, var(--paper) 85%, transparent); padding: 0.25rem 0.45rem; pointer-events: none; }
 @media (min-width: 48rem) { .riso-hero { margin-inline: calc(50% - 50vw); padding-inline: max(1rem, calc(50vw - 36rem)); } }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Round schedule (events over several weeks) */
+.round-schedule, .round-schedule-editor { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.round-schedule li { display: grid; gap: 0.15rem; padding-left: 0.75rem; border-left: 3px solid var(--ink2); }
+.round-schedule li.on { border-left-color: var(--ink1); }
+.round-schedule-editor li { display: grid; gap: 0.5rem; padding: 0.75rem; border: 2px dashed var(--ink2); }
+.round-where { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.35rem; margin: 0.25rem 0 0.75rem; }
+.round-where a { overflow-wrap: anywhere; }
+.schedule-form { display: grid; gap: 0.75rem; margin-top: 0.5rem; }

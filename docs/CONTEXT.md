@@ -205,8 +205,10 @@ discover → paint → share → play → watch → back to physical stores.
 
 Agreed order: 4. PAINT performance → 5. visual pass. Then:
 
-1. **Multi-week tournaments** (owner request): date and time **per round**, **venue per round**
-   (store or address); shown in pairings, table pages, .ics, reminders per round.
+1. ~~Multi-week tournaments~~ done (migration 000011, table `round_schedule` + `set_round_schedule`):
+   date and venue per round, set at creation ("Rounds on different days") and editable by the
+   organiser (registered players notified); shown on the info tab, pairings, table pages; .ics with
+   one event per round (reminders 1 day and 1 hour before) and in-app "next 24 hours" reminders.
 2. ~~PAINT performance~~ done: low-res preview + full render in bands (commit 360f6fc).
 3. ~~Visual pass~~ done: Riso tactique theme on the whole app, share / result / podium cards in riso
    inks. ~~More languages~~ done (9 languages, migration 000010). Next: tablet fine-tuning.

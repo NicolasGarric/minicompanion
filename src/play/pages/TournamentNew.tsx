@@ -7,12 +7,8 @@ import { requireSignIn, useSession } from '../../core/auth/session';
 import { CITIES } from '../../core/data/cities';
 import { playError } from '../lib/games';
 import { suggestedSwissRounds } from '../lib/pairing';
-import { createTournament, storesWithPlace } from '../lib/tournaments';
-
-const local = (d: Date) => {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
+import { createTournament, setRoundSchedule, storesWithPlace } from '../lib/tournaments';
+import { draftsToSlots, fitDrafts, RoundScheduleEditor, toLocalInput as local, type SlotDraft } from '../components/RoundSchedule';
 const slugify = (s: string) =>
   s.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'event';
 
@@ -29,6 +25,9 @@ export function TournamentNew() {
     starts_at: local(start), hours: '6', format_id: 'clash', type: 'casual', language: lang as string, max_players: '16',
     rounds_planned: String(suggestedSwissRounds(16)), lists_visibility: 'hidden_until_start', twitch_channel: '',
   });
+  // Rounds on different days (events over several weeks): one date and venue per round.
+  const [multiDay, setMultiDay] = useState(false);
+  const [drafts, setDrafts] = useState<SlotDraft[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -40,6 +39,7 @@ export function TournamentNew() {
   if (!backendConfigured) return <BackendNotice />;
   const set = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
   const store = stores.find((s) => s.id === f.store_id);
+  const schedule = multiDay ? fitDrafts(f.starts_at, Math.max(1, Math.min(10, Number(f.rounds_planned) || 1)), drafts) : [];
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ export function TournamentNew() {
       const city = CITIES.find((c) => c.id === f.city);
       // Location: the store's point, or the city centre (only used for distance searches).
       const location = store?.location ?? `SRID=4326;POINT(${city?.lng ?? 139.7671} ${city?.lat ?? 35.6812})`;
-      const slug = await createTournament({
+      const created = await createTournament({
         slug: `${slugify(f.name)}-${Math.random().toString(36).slice(2, 6)}`,
         name: f.name.trim(),
         description: f.description.trim() || null,
@@ -75,7 +75,11 @@ export function TournamentNew() {
         game_system: f.game_system.trim() || null,
         status: 'draft',
       });
-      navigate(`play/t/${slug}`);
+      if (schedule.length) {
+        // The draft exists either way: a schedule error is fixed later from the tournament page.
+        await setRoundSchedule(created.id, draftsToSlots(schedule)).catch(() => undefined);
+      }
+      navigate(`play/t/${created.slug}`);
     } catch (err) {
       setError(playError(err) ?? 'generic');
       setBusy(false);
@@ -144,6 +148,16 @@ export function TournamentNew() {
           </label>
         </div>
         <p className="hint">{t('tour.deadlinesHint')}</p>
+        <label className="check">
+          <input type="checkbox" checked={multiDay} onChange={(e) => setMultiDay(e.target.checked)} />
+          <span>{t('tour.multiDay')}</span>
+        </label>
+        {multiDay && (
+          <>
+            <p className="hint">{t('tour.multiDayHint')}</p>
+            <RoundScheduleEditor drafts={schedule} onChange={setDrafts} stores={stores} />
+          </>
+        )}
 
         <h2>{t('games.sectionWhere')}</h2>
         <label className="field">

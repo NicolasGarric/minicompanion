@@ -11,6 +11,7 @@ import { downloadIcs } from '../lib/ics';
 import { parseArmyList } from '../lib/listParser';
 import type { Pairing } from '../lib/pairing';
 import { ContestSection } from '../components/ContestSection';
+import { draftsToSlots, fitDrafts, RoundScheduleEditor, RoundScheduleList, RoundWhere, slotVenue, slotsToDrafts, toLocalInput, type SlotDraft } from '../components/RoundSchedule';
 import {
   confirmMatch,
   createRound,
@@ -27,7 +28,10 @@ import {
   reportMatch,
   reviewList,
   rounds as loadRounds,
+  roundSchedule,
   setRegistration,
+  setRoundSchedule,
+  storesWithPlace,
   standingsOf,
   startTournament,
   submitList,
@@ -37,6 +41,7 @@ import {
   type MatchResult,
   type Registration,
   type Round,
+  type RoundSlot,
   type Tournament,
 } from '../lib/tournaments';
 
@@ -49,6 +54,8 @@ interface Data {
   matches: Match[];
   tables: Map<string, number>;
   place: { lat: number; lng: number; registered: number } | null;
+  /** Date and venue per round; empty for a one-day event. */
+  schedule: RoundSlot[];
 }
 
 /** One tournament: info, players, pairings with score reports, live standings, organiser tools. */
@@ -65,7 +72,9 @@ export function TournamentDetail({ slug }: { slug: string }) {
     try {
       const tour = await getTournament(slug);
       if (!tour) return setData(null);
-      const [regs, rounds, matches, tables] = await Promise.all([loadRegs(tour.id), loadRounds(tour.id), loadMatches(tour.id), loadTables(tour.id)]);
+      const [regs, rounds, matches, tables, schedule] = await Promise.all([
+        loadRegs(tour.id), loadRounds(tour.id), loadMatches(tour.id), loadTables(tour.id), roundSchedule(tour.id),
+      ]);
       // Coordinates come from the search function (PostGIS point → lat / lng).
       let place: Data['place'] = null;
       if (supabase) {
@@ -73,7 +82,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
         const row = ((s.data ?? []) as { id: string; lat: number; lng: number; registered: number }[]).find((r) => r.id === tour.id);
         if (row) place = { lat: row.lat, lng: row.lng, registered: row.registered };
       }
-      setData({ t: tour, regs, rounds, matches, tables, place });
+      setData({ t: tour, regs, rounds, matches, tables, place, schedule });
     } catch (e) {
       setError(playError(e) ?? 'generic');
       setData(null);
@@ -139,7 +148,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
 
       {current === 'info' && <InfoTab data={data} me={me} mine={mine} onChange={load} lang={lang} />}
       {current === 'players' && <PlayersTab data={data} organiser={organiser} onChange={load} />}
-      {current === 'pairings' && <PairingsTab data={data} me={me} organiser={organiser} onChange={load} />}
+      {current === 'pairings' && <PairingsTab data={data} me={me} organiser={organiser} onChange={load} lang={lang} />}
       {current === 'standings' && <StandingsTab regs={regs} matches={matches} me={me} rounds={rounds} />}
       {current === 'contest' && <ContestSection tour={tour} organiser={organiser} />}
     </div>
@@ -151,7 +160,7 @@ const nameOf = (regs: Registration[], id: string | null) => (id ? regs.find((r) 
 // --- Info: details, map, registration, army list -------------------------------------------------
 function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | null; mine?: Registration; onChange: () => void; lang: string }) {
   const t = useT();
-  const { t: tour, place } = data;
+  const { t: tour, place, schedule } = data;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isIn = mine && (mine.status === 'registered' || mine.status === 'waitlist');
@@ -173,7 +182,12 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
   return (
     <>
       <section className="card game-facts">
-        <p><Icon name="calendar" size={16} /> {formatWhen(tour.starts_at, lang)} → {new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(tour.ends_at))}</p>
+        <p>
+          <Icon name="calendar" size={16} /> {formatWhen(tour.starts_at, lang)} →{' '}
+          {schedule.length > 1
+            ? formatWhen(schedule[schedule.length - 1].starts_at, lang)
+            : new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(tour.ends_at))}
+        </p>
         <p>
           <Icon name="map" size={16} /> {tour.store_id ? <a href={`#/play/store/${tour.store_id}`}>{tour.venue_name}</a> : tour.venue_name} · {tour.address}
         </p>
@@ -189,12 +203,36 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
         <p>
           <button
             className="btn small"
-            onClick={() => downloadIcs({ id: tour.id, title: tour.name, start: tour.starts_at, end: tour.ends_at, location: `${tour.venue_name}, ${tour.address}`, url: location.href })}
+            onClick={() =>
+              schedule.length
+                ? downloadIcs(
+                    schedule.map((s) => {
+                      const v = slotVenue(s, tour);
+                      return {
+                        id: `${tour.id}-r${s.number}`,
+                        title: `${tour.name} · ${t('tour.roundN', { n: s.number })}`,
+                        start: s.starts_at,
+                        end: new Date(Date.parse(s.starts_at) + (tour.format?.round_minutes ?? 120) * 6e4).toISOString(),
+                        location: [v.name, v.address].filter(Boolean).join(', '),
+                        url: location.href,
+                      };
+                    }),
+                    tour.name,
+                  )
+                : downloadIcs({ id: tour.id, title: tour.name, start: tour.starts_at, end: tour.ends_at, location: `${tour.venue_name}, ${tour.address}`, url: location.href })
+            }
           >
-            <Icon name="calendar" size={14} /> {t('games.addToCalendar')}
+            <Icon name="calendar" size={14} /> {schedule.length ? t('tour.addRoundsToCalendar') : t('games.addToCalendar')}
           </button>
         </p>
       </section>
+
+      {schedule.length > 0 && (
+        <section className="card">
+          <h2>{t('tour.schedule')}</h2>
+          <RoundScheduleList slots={schedule} tour={tour} lang={lang} currentRound={data.rounds.find((r) => r.status === 'active')?.number} />
+        </section>
+      )}
 
       {tour.twitch_channel && (
         <section className="card twitch">
@@ -355,9 +393,9 @@ function PlayersTab({ data, organiser, onChange }: { data: Data; organiser: bool
 }
 
 // --- Pairings and score reports ---------------------------------------------------------------------
-function PairingsTab({ data, me, organiser, onChange }: { data: Data; me: string | null; organiser: boolean; onChange: () => void }) {
+function PairingsTab({ data, me, organiser, onChange, lang }: { data: Data; me: string | null; organiser: boolean; onChange: () => void; lang: string }) {
   const t = useT();
-  const { rounds, matches, regs, tables } = data;
+  const { rounds, matches, regs, tables, schedule } = data;
   const active = rounds.find((r) => r.status === 'active') ?? rounds[rounds.length - 1];
   const [shown, setShown] = useState<string | null>(null);
   const round = rounds.find((r) => r.id === shown) ?? active;
@@ -377,6 +415,9 @@ function PairingsTab({ data, me, organiser, onChange }: { data: Data; me: string
           </button>
         ))}
       </div>
+      {schedule.find((s) => s.number === round.number) && (
+        <RoundWhere slot={schedule.find((s) => s.number === round.number)!} tour={data.t} lang={lang} />
+      )}
       {myMatch && round.status === 'active' && (
         <p className="notice">
           {myMatch.player_b_id
@@ -598,7 +639,63 @@ function OrganiserPanel({ data, onChange }: { data: Data; onChange: () => void }
           <button className={`btn ${nextNumber > tour.rounds_planned ? 'primary' : 'ghost'}`} disabled={busy} onClick={() => run(() => finishTournament(tour.id))}>{t('tour.finish')}</button>
         </div>
       )}
+      {tour.status !== 'finished' && tour.status !== 'cancelled' && <ScheduleEditor data={data} onChange={onChange} />}
       {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
     </section>
+  );
+}
+
+/** Organiser: turn the event into a multi-week one, or move rounds (players are notified). */
+function ScheduleEditor({ data, onChange }: { data: Data; onChange: () => void }) {
+  const t = useT();
+  const { t: tour, schedule } = data;
+  const [open, setOpen] = useState(false);
+  const [multiDay, setMultiDay] = useState(schedule.length > 0);
+  const [drafts, setDrafts] = useState<SlotDraft[]>(() => slotsToDrafts(schedule));
+  const [stores, setStores] = useState<{ id: string; name: string; city: string }[]>([]);
+  const [state, setState] = useState<'idle' | 'busy' | 'saved' | string>('idle');
+  useEffect(() => {
+    if (open) storesWithPlace().then(setStores, () => setStores([]));
+  }, [open]);
+
+  const first = schedule[0] ? toLocalInput(new Date(schedule[0].starts_at)) : toLocalInput(new Date(tour.starts_at));
+  const shown = multiDay ? fitDrafts(first, tour.rounds_planned, drafts) : [];
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setState('busy');
+    try {
+      await setRoundSchedule(tour.id, draftsToSlots(shown));
+      setState('saved');
+      setOpen(false);
+      await onChange();
+    } catch (err) {
+      setState(playError(err) ?? 'generic');
+    }
+  };
+
+  if (!open)
+    return (
+      <div className="field-row wrap">
+        <p className="hint grow">{state === 'saved' && tour.status !== 'draft' ? t('tour.scheduleSaved') : schedule.length ? t('tour.scheduleHint') : t('tour.multiDayHint')}</p>
+        <button className="btn small ghost" onClick={() => (setDrafts(slotsToDrafts(schedule)), setMultiDay(schedule.length > 0), setOpen(true))}>
+          <Icon name="calendar" size={14} /> {t('tour.editSchedule')}
+        </button>
+      </div>
+    );
+  return (
+    <form className="schedule-form" onSubmit={save}>
+      <h3>{t('tour.schedule')}</h3>
+      <label className="check">
+        <input type="checkbox" checked={multiDay} onChange={(e) => setMultiDay(e.target.checked)} />
+        <span>{t('tour.multiDay')}</span>
+      </label>
+      {multiDay && <RoundScheduleEditor drafts={shown} onChange={setDrafts} stores={stores} />}
+      {tour.status !== 'draft' && <p className="hint">{t('tour.scheduleHint')}</p>}
+      {state !== 'idle' && state !== 'busy' && state !== 'saved' && <p className="error" role="alert">{t(k(`games.error.${state}`))}</p>}
+      <div className="nav-row">
+        <button type="button" className="btn ghost" onClick={() => setOpen(false)}>{t('common.back')}</button>
+        <button className="btn primary" disabled={state === 'busy'}>{t('common.save')}</button>
+      </div>
+    </form>
   );
 }
