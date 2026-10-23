@@ -182,6 +182,9 @@ discover → paint → share → play → watch → back to physical stores.
   (Supabase also grants `anon` explicitly by default).
 - Every new SQL rule gets a test in `supabase/tests/*.sql` (run with the local harness).
 - Seeded data is fictional; demo accounts use `demo-password-2026` (demo project only).
+- Live database cleanup (2026-10-23): `supabase/cleanup_demo_data.sql` removes every demo account, its content and
+  the 9 fictional stores, keeping only real users' data (tested on local Postgres). Once applied in production,
+  `scripts/check-supabase.mjs` no longer works (it signs in with the demo accounts); seeds stay for local tests.
 
 ## Owner decisions (2026-10-25)
 
