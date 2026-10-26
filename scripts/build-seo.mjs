@@ -81,6 +81,7 @@ const PAGES = [
   ['play', en['play.title'], en['play.lead'], `<h2>Upcoming tournaments</h2>${tourList(upcoming.slice(0, 50))}`],
   ['play/quick', en['quick.title'], en['quick.lead'], ''],
   ['play/leagues', en['league.title'], en['league.lead'], ''],
+  ['play/dice', en['dice.title'], en['dice.lead'], ''],
   ['stores', en['stores.title'], en['stores.lead'], '<p>Real game, miniature and model-kit stores worldwide, from OpenStreetMap (ODbL).</p>'],
   ['legal', en['legal.title'], en['legal.about'], `<p>${esc(en['legal.full'])}</p>`],
 ];

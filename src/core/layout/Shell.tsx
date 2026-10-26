@@ -121,6 +121,7 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
     { href: '/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
     { href: '/play/leagues', key: 'nav.play.leagues', active: (r) => r.name === 'play.leagues' || r.name === 'play.league' },
     { href: '/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
+    { href: '/play/dice', key: 'nav.play.dice', active: (r) => r.name === 'play.dice' },
   ],
 };
 

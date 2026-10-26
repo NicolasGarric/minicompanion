@@ -16,6 +16,7 @@ import { Editor } from './paint/pages/Editor';
 import { Beginner } from './paint/pages/Beginner';
 import { SharedScheme } from './paint/pages/SharedScheme';
 import { PlayHome } from './play/pages/PlayHome';
+import { DiceStats } from './play/pages/DiceStats';
 import { QuickPlay } from './play/pages/QuickPlay';
 import { MyGames } from './play/pages/MyGames';
 import { GameNew } from './play/pages/GameNew';
@@ -80,6 +81,7 @@ function Page({ route }: { route: Route }) {
     case 'play.tournament.tables': return <TableQrSheet slug={route.params.slug ?? ''} />;
     case 'play.table': return <TablePage token={route.params.token ?? ''} />;
     case 'play.leagues': return <Leagues />;
+    case 'play.dice': return <DiceStats />;
     case 'play.league': return <LeagueDetail id={route.params.id ?? ''} />;
     case 'play.store': return <StorePage id={route.params.id ?? ''} />;
     case 'player': return <PlayerProfile handle={route.params.handle ?? ''} />;

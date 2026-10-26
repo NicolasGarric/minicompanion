@@ -932,3 +932,44 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 
 /* Static page content shown before the app loads (and to crawlers without JavaScript) */
 .seo-static { max-width: 46rem; margin: 2rem auto; padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+
+/* PLAY "Stats" tab: dice odds and the halftone dice table */
+.dice-grid { display: grid; gap: 1rem; }
+.dice-count { display: grid; gap: 0.35rem; align-content: start; }
+.dice-count label { font-weight: 700; }
+.dice-count output { font: 400 3rem/1 var(--display); color: var(--ink2); font-variant-numeric: tabular-nums; }
+.dice-count input[type='range'] { flex: 1; min-width: 0; accent-color: var(--ink1); }
+.dice-phases { display: grid; gap: 0.6rem; }
+.dice-phase { display: grid; gap: 0.4rem 0.75rem; align-items: center; padding-bottom: 0.6rem; border-bottom: 1px dashed var(--border); }
+.dice-phase:last-child { border-bottom: 0; padding-bottom: 0; }
+.dice-phase-name small { display: block; color: var(--muted); font-size: 0.8rem; }
+.dice-phase .segmented { width: max-content; max-width: 100%; }
+.dice-phase .segmented button { min-width: 2.4rem; font-variant-numeric: tabular-nums; }
+.dice-phase .select { max-width: 100%; justify-self: start; }
+.dice-stage { margin-bottom: 1.5rem; }
+.dice-stage .page-head { align-items: center; margin-bottom: 0.6rem; }
+.dice-stage canvas { display: block; width: 100%; background: var(--surface); border: 3px solid var(--ink2); box-shadow: 6px 6px 0 var(--ink1); }
+.dice-outcome { margin-top: 0.9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dice-odds { display: grid; gap: 1.25rem; margin-bottom: 1rem; }
+.dice-odds > * { min-width: 0; }
+.dice-table td, .dice-table th { text-align: right; white-space: nowrap; padding: 0.35rem 0.4rem; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.dice-table td:first-child, .dice-table th:first-child { text-align: left; }
+.dice-table td.on { background: var(--ink3); font-weight: 700; }
+.dice-thr { font-family: var(--display); }
+.dice-chain { display: grid; gap: 0.3rem; align-content: start; }
+.dice-chain h3 { margin-top: 0; }
+.dice-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; padding-block: 0.2rem; border-bottom: 1px dashed var(--border); font-variant-numeric: tabular-nums; }
+.dice-line b { font-family: var(--display); font-weight: 400; }
+.dice-line.total { font-size: 1.1rem; }
+.dice-line.total b { background: var(--ink3); padding: 0 0.3rem; }
+.dice-dist { display: block; width: 100%; height: auto; }
+.dice-dist .dist-grid { stroke: var(--border); }
+.dice-dist .axis, .dice-dist .tick { font-size: 11px; fill: var(--muted); }
+.dice-dist .tick { fill: var(--ink2); }
+.dice-dist .dist-bar { fill: var(--ink2); }
+.dice-dist .dist-bar.mean { fill: var(--ink1); }
+@media (min-width: 40rem) { .dice-phase { grid-template-columns: 9rem auto 1fr; } }
+@media (min-width: 52rem) {
+  .dice-grid { grid-template-columns: 14rem 1fr; }
+  .dice-odds { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+}

@@ -15,6 +15,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
   play: ['play.title', 'play.lead'],
   'play.quick': ['quick.title', 'quick.lead'],
   'play.leagues': ['league.title', 'league.lead'],
+  'play.dice': ['dice.title', 'dice.lead'],
   stores: ['stores.title', 'stores.lead'],
   legal: ['legal.title', 'legal.about'],
 };
