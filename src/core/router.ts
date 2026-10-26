@@ -19,7 +19,6 @@ export type RouteName =
   | 'play.game'
   | 'play.tournament'
   | 'play.leagues'
-  | 'play.dice'
   | 'play.tournament.new'
   | 'play.tournament.tables'
   | 'play.table'
@@ -30,6 +29,7 @@ export type RouteName =
   | 'messages.thread'
   | 'notifications'
   | 'stores'
+  | 'dice'
   | 'account'
   | 'signin'
   | 'legal'
@@ -62,7 +62,6 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'play/t/:slug/tables', name: 'play.tournament.tables', section: 'play' },
   { pattern: 'play/table/:token', name: 'play.table', section: 'play' },
   { pattern: 'play/leagues', name: 'play.leagues', section: 'play' },
-  { pattern: 'play/dice', name: 'play.dice', section: 'play' },
   { pattern: 'play/league/:id', name: 'play.league', section: 'play' },
   { pattern: 'play/store/:id', name: 'play.store', section: 'play' },
   { pattern: 'u/:handle', name: 'player', section: 'play' },
@@ -70,6 +69,7 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'messages/:id', name: 'messages.thread', section: 'none' },
   { pattern: 'notifications', name: 'notifications', section: 'none' },
   { pattern: 'stores', name: 'stores', section: 'none' },
+  { pattern: 'dice', name: 'dice', section: 'none' },
   { pattern: 'account', name: 'account', section: 'none' },
   { pattern: 'signin', name: 'signin', section: 'none' },
   { pattern: 'legal', name: 'legal', section: 'none' },

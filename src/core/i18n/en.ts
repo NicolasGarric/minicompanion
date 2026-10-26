@@ -1138,7 +1138,7 @@ export const en = {
   'stages.highlight.hint': 'Finish with edge highlights: this is your final scheme.',
 
   // PLAY: dice odds tab
-  'nav.play.dice': 'Stats',
+  'nav.dice': 'Stats',
   'dice.title': 'Dice odds',
   'dice.lead': 'Choose how many dice you roll and what each step needs: see the odds of every step, then watch a roll play out on the table.',
   'dice.setup': 'Your roll',

@@ -7,7 +7,7 @@ import {
 import { startDiceTable, type DiceTableLabels } from '../visual/diceTable';
 
 /**
- * PLAY, "Stats" tab: odds of a three-phase D6 attack (hit, wound, opponent's save) plus damage per
+ * "Stats" tab (main navigation): odds of a three-phase D6 attack (hit, wound, opponent's save) plus damage per
  * unsaved die, and one roll animated on a halftone tabletop. Works offline, nothing is stored.
  */
 const THRESHOLDS = [2, 3, 4, 5, 6];

@@ -1113,7 +1113,7 @@ export const it: Record<MessageKey, string> = {
   "stages.highlight.hint": "Per finire, le lumeggiature dei bordi: questo è il tuo schema finale.",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "Stats",
+  "nav.dice": "Stats",
   "dice.title": "Probabilità dei dadi",
   "dice.lead": "Scegli quanti dadi tiri e cosa serve a ogni passo: vedi le probabilità di ogni passo, poi guarda un tiro sul tavolo.",
   "dice.setup": "Il tuo tiro",

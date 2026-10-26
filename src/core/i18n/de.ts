@@ -1113,7 +1113,7 @@ export const de: Record<MessageKey, string> = {
   "stages.highlight.hint": "Zum Schluss die Kantenhighlights: Das ist dein fertiges Schema.",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "Stats",
+  "nav.dice": "Stats",
   "dice.title": "Würfelchancen",
   "dice.lead": "Wähle, wie viele Würfel du wirfst und was jeder Schritt braucht: Sieh die Chancen jedes Schritts und dann einen Wurf auf dem Tisch.",
   "dice.setup": "Dein Wurf",

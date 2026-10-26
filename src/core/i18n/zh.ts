@@ -1113,7 +1113,7 @@ export const zh: Record<MessageKey, string> = {
   "stages.highlight.hint": "最后画边缘高光：这就是你的最终方案。",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "统计",
+  "nav.dice": "统计",
   "dice.title": "骰子概率",
   "dice.lead": "选择投掷的骰子数量和每一步需要的点数：查看每一步的成功率，再在桌面上观看一次投掷。",
   "dice.setup": "你的投掷",

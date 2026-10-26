@@ -1113,7 +1113,7 @@ export const es: Record<MessageKey, string> = {
   "stages.highlight.hint": "Termina con los perfilados: este es tu esquema final.",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "Stats",
+  "nav.dice": "Stats",
   "dice.title": "Probabilidades de dados",
   "dice.lead": "Elige cuántos dados tiras y qué necesita cada paso: mira las probabilidades de cada paso y luego cómo se juega una tirada sobre la mesa.",
   "dice.setup": "Tu tirada",

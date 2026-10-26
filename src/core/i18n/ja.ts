@@ -1129,7 +1129,7 @@ export const ja: Record<MessageKey, string> = {
 
   // PLAY: dice odds tab
   // CHECK: 命中／負傷／セーヴ — 日本のプレイヤーが使う用語か確認
-  'nav.play.dice': '確率',
+  'nav.dice': '確率',
   'dice.title': 'ダイス確率',
   'dice.lead': '振るダイスの数と各ステップの目標値を選ぶと、各ステップの成功率がわかり、テーブル上で一回のロールを再生します。',
   'dice.setup': 'ロール設定',

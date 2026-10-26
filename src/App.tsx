@@ -81,7 +81,6 @@ function Page({ route }: { route: Route }) {
     case 'play.tournament.tables': return <TableQrSheet slug={route.params.slug ?? ''} />;
     case 'play.table': return <TablePage token={route.params.token ?? ''} />;
     case 'play.leagues': return <Leagues />;
-    case 'play.dice': return <DiceStats />;
     case 'play.league': return <LeagueDetail id={route.params.id ?? ''} />;
     case 'play.store': return <StorePage id={route.params.id ?? ''} />;
     case 'player': return <PlayerProfile handle={route.params.handle ?? ''} />;
@@ -89,6 +88,7 @@ function Page({ route }: { route: Route }) {
     case 'messages.thread': return <MessageThread userId={route.params.id ?? ''} />;
     case 'notifications': return <Notifications />;
     case 'stores': return <Stores />;
+    case 'dice': return <DiceStats />;
     case 'signin': return <SignInPage />;
     case 'account': return <AccountPage />;
     case 'legal': return <Legal />;

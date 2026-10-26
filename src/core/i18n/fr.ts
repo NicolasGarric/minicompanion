@@ -1113,7 +1113,7 @@ export const fr: Record<MessageKey, string> = {
   "stages.highlight.hint": "Termine par les éclaircissements des arêtes : voici ton schéma final.",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "Stats",
+  "nav.dice": "Stats",
   "dice.title": "Stats de dés",
   "dice.lead": "Choisis combien de dés tu lances et ce qu’il faut à chaque étape : vois les chances de chaque étape, puis regarde un jet se jouer sur la table.",
   "dice.setup": "Ton jet",

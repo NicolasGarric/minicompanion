@@ -1113,7 +1113,7 @@ export const pt: Record<MessageKey, string> = {
   "stages.highlight.hint": "Por último, os realces de bordas: este é o seu esquema final.",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "Stats",
+  "nav.dice": "Stats",
   "dice.title": "Chances dos dados",
   "dice.lead": "Escolha quantos dados você rola e o que cada etapa precisa: veja as chances de cada etapa e depois uma rolagem na mesa.",
   "dice.setup": "Sua rolagem",

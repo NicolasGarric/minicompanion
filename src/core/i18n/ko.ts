@@ -1113,7 +1113,7 @@ export const ko: Record<MessageKey, string> = {
   "stages.highlight.hint": "마지막으로 엣지 하이라이트: 이것이 최종 스킴입니다.",
 
   // PLAY: dice odds tab
-  "nav.play.dice": "통계",
+  "nav.dice": "통계",
   "dice.title": "주사위 확률",
   "dice.lead": "굴릴 주사위 수와 각 단계의 목표값을 고르면 단계별 성공률을 보고, 테이블 위에서 한 번의 굴림을 볼 수 있습니다.",
   "dice.setup": "굴림 설정",

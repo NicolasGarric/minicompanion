@@ -1,7 +1,7 @@
 import type { Roll } from '../lib/dice';
 
 /**
- * PLAY "Stats" tab: a roll animated on a tabletop seen from above, printed like the home page
+ * "Stats" tab: a roll animated on a tabletop seen from above, printed like the home page
  * (halftone paper, riso inks). Dice are thrown into the first zone, failures slide into the pink
  * "failed" tray, the others are thrown into the next phase; unsaved dice roll their damage in the
  * last zone. Colours come from the CSS inks. No dependency; reduced motion shows the end at once.

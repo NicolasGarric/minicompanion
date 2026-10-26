@@ -246,7 +246,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    published tournament, `sitemap.xml`, `robots.txt` (AI crawlers explicitly allowed on public pages)
    and `llms.txt`; Open Graph image `public/og-image.png`. Not done: per-language URLs / hreflang
    (language is a client setting), Search Console sitemap submission (owner).
-7e. **PLAY "Stats" tab (2026-10-26)** at `/play/dice`: generic 3-phase D6 attack (hit, wound with reroll
+7e. **"Stats" tab (2026-10-26)**, top-level nav next to Paint / Play / Hobby stores, at `/dice`: generic 3-phase D6 attack (hit, wound with reroll
    none / 1s / failures, opponent's save 2+–6+ or none) + damage per unsaved die (1–6, D3, D6); dice 1–40.
    Exact odds (threshold table, chain, P(≥1), distribution of total damage), maths in `src/play/lib/dice.ts`
    (tests in `tests/play/dice.test.ts`). One roll animated on a halftone tabletop (`src/play/visual/diceTable.ts`),
