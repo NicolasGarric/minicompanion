@@ -1,4 +1,7 @@
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
+import { AdminDashboard } from './core/admin/AdminDashboard';
+import { trackPageView } from './core/admin/admin';
+import { useLang } from './core/i18n';
 import { useEffect } from 'react';
 import { useRouteMeta } from './core/seo';
 import { useStore } from './paint/store';
@@ -117,6 +120,7 @@ function Page({ route }: { route: Route }) {
     case 'legal': return <Legal />;
     case 'stats': return <Stats />;
     case 'admin.bugs': return <BugReportsAdmin />;
+    case 'admin': return <AdminDashboard />;
     default: return <Home />;
   }
 }
@@ -124,6 +128,9 @@ function Page({ route }: { route: Route }) {
 export default function App() {
   const route = useRoute();
   useRouteMeta(route);
+  const lang = useLang((s) => s.lang);
+  // Anonymous page-type counter for the admin dashboard (not the URL, no identifier)
+  useEffect(() => trackPageView(route, lang), [route.name]); // eslint-disable-line react-hooks/exhaustive-deps
   const projectId = useStore((s) => s.projectId);
 
   useEffect(() => {

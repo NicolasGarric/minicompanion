@@ -1295,3 +1295,48 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
   .unit-card { padding: 0.3rem; box-shadow: 3px 3px 0 var(--ink1); }
   .unit-card-title strong { font-size: 0.82rem; }
 }
+
+/* Admin dashboard */
+.admin { max-width: 76rem; margin: 0 auto; }
+.admin-overview { display: grid; gap: 1.25rem; }
+.kpi-group h2 { margin: 0 0 0.5rem; }
+.kpis { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+.kpi { display: grid; gap: 0.2rem; padding: 0.7rem 0.8rem; background: var(--surface); border: 2px solid var(--ink2); }
+.kpi-value { font: 400 1.7rem/1 var(--display); color: var(--ink2); font-variant-numeric: tabular-nums; }
+.kpi-label { font-size: 0.78rem; color: var(--muted); }
+.kpi-group:first-child .kpi:first-child { background: var(--ink3); }
+.kpi.alert { background: var(--ink1); border-color: var(--ink1); }
+.kpi.alert .kpi-value, .kpi.alert .kpi-label { color: #fff; }
+.admin-chart-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.admin-chart { display: block; width: 100%; height: auto; }
+.chart-grid { stroke: var(--border); }
+.chart-axis { font-size: 11px; fill: var(--muted); }
+.bar-visits { fill: var(--ink2); opacity: 0.85; }
+.dot-active { fill: var(--ink1); stroke: var(--surface); stroke-width: 1.5; }
+.dot-signups { fill: var(--ink3); stroke: var(--ink2); stroke-width: 1.5; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.8rem; color: var(--muted); }
+.chart-legend i { display: inline-block; width: 0.8rem; height: 0.8rem; vertical-align: -0.1rem; margin-right: 0.25rem; border: 1.5px solid var(--ink2); }
+.lg-visits { background: var(--ink2); }
+.lg-active { background: var(--ink1); border-radius: 50%; }
+.lg-signups { background: var(--ink3); }
+.admin-two { display: grid; gap: 1.25rem; }
+.admin-two .card { margin: 0; min-width: 0; }
+@media (min-width: 64rem) { .admin-two { grid-template-columns: 1fr 1fr; } }
+.admin-table { width: 100%; font-size: 0.85rem; }
+.admin-table td, .admin-table th { padding: 0.4rem 0.5rem; vertical-align: top; }
+.admin-table tr.suspended td { background: color-mix(in srgb, var(--ink1) 10%, transparent); }
+.admin-table td.warn { color: var(--danger); font-weight: 700; }
+.admin-table .field-row { flex-wrap: wrap; }
+.admin-users .text-input[type='search'] { flex: 1 1 16rem; }
+.admin-feed { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem; max-height: 28rem; overflow-y: auto; }
+.admin-feed li { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.5rem; align-items: baseline; padding-bottom: 0.35rem; border-bottom: 1px dashed var(--border); }
+.admin-feed small { grid-column: 2; }
+.feed-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag.feed-signup { background: var(--ink3); }
+.tag.feed-report, .tag.feed-bug { background: var(--ink1); color: #fff; }
+.report-list { list-style: none; padding: 0; margin: 0.75rem 0 0; display: grid; gap: 0.75rem; }
+.report-list .card { margin: 0; }
+.report-head { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.report-reason { margin: 0.4rem 0; font-style: italic; }
+.report-dismissed, .report-actioned { opacity: 0.75; box-shadow: none; }
+.admin-table td:first-child, .admin-table th:first-child { text-align: left; }

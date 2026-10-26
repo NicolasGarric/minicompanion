@@ -274,6 +274,14 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    - Me (`src/me/`): **level & titles** as hanko stamps (`/me/level`, XP only from real activity), **player card** meishi with
      QR to the public page (`/me/card`), **year in review** six-screen story (`/me/year`). Linked from the account page.
    - 9 languages (`// CHECK:` on Japanese terms); new tests: deck link codec, table generator symmetry.
+7h. **Admin dashboard (2026-10-26)** at `/admin` (admins only, linked from the account page), migration 000016 (to apply
+   after 000015): KPIs (visits, page views, accounts created / active, activity, open reports, new bugs), day-by-day chart,
+   top page types, languages, activity feed; accounts list (search, sort, last active, games, reports, suspend / lift);
+   moderation queue (reports → hide and close, dismiss, reopen, suspend the author); latest content per type with hide /
+   restore. Traffic = anonymous counters per *route name* and language per day (`track_page_view`, skipped with Do Not
+   Track and on admin pages), plus one `active_days` row per signed-in player per day. Suspended accounts cannot post
+   (insert triggers), their public content is hidden. 25 new RLS tests (`supabase/tests/rls_admin.sql`).
+   Demo cleanup: `supabase/cleanup_demo_data.sql` still covers everything (new tables cascade from the demo accounts).
 8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
 9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
    `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,

@@ -57,7 +57,7 @@ export function AccountPage() {
           <h1>{profile.display_name}</h1>
           <p className="muted">@{profile.handle} · {session?.user.email}</p>
           <a className="small" href={`/u/${profile.handle}`}>{t('profile.viewPublic')} →</a>
-          {profile.is_admin && <> · <a className="small" href="/admin/bugs">{t('bug.adminTitle')} →</a></>}
+          {profile.is_admin && <> · <a className="small" href="/admin">{t('admin.title')} →</a></>}
         </div>
       </div>
 

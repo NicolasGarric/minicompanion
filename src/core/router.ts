@@ -47,6 +47,7 @@ export type RouteName =
   | 'me.card'
   | 'me.year'
   | 'admin.bugs'
+  | 'admin'
   | 'notFound';
 
 export type Section = 'paint' | 'play' | 'none';
@@ -100,6 +101,7 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'me/card', name: 'me.card', section: 'none' },
   { pattern: 'me/year', name: 'me.year', section: 'none' },
   { pattern: 'admin/bugs', name: 'admin.bugs', section: 'none' },
+  { pattern: 'admin', name: 'admin', section: 'none' },
 ];
 
 /** Paths used before the Paint / Play split. */
