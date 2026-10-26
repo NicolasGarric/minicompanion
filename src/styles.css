@@ -938,7 +938,10 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .dice-count { display: grid; gap: 0.35rem; align-content: start; }
 .dice-count label { font-weight: 700; }
 .dice-count output { font: 400 3rem/1 var(--display); color: var(--ink2); font-variant-numeric: tabular-nums; }
-.dice-count input[type='range'] { flex: 1; min-width: 0; accent-color: var(--ink1); }
+.dice-grid > * { min-width: 0; }
+.dice-count .field-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; }
+.dice-count input[type='range'] { width: 100%; min-width: 0; margin: 0; accent-color: var(--ink1); }
+.dice-count .btn { min-width: 2.25rem; padding: 0; }
 .dice-phases { display: grid; gap: 0.6rem; }
 .dice-phase { display: grid; gap: 0.4rem 0.75rem; align-items: center; padding-bottom: 0.6rem; border-bottom: 1px dashed var(--border); }
 .dice-phase:last-child { border-bottom: 0; padding-bottom: 0; }
