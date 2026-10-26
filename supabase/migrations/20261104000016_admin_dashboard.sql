@@ -261,7 +261,7 @@ begin
     select * from (
       select p.created_at, 'signup'::text, p.display_name, p.handle, '/u/' || p.handle from public.profiles p
       union all
-      select g.created_at, 'game', g.game_system || ' · ' || g.city, p.handle, '/play/game/' || g.id from public.games g join public.profiles p on p.id = g.host_id
+      select g.created_at, 'game', g.game_system || ' - ' || g.city, p.handle, '/play/game/' || g.id from public.games g join public.profiles p on p.id = g.host_id
       union all
       select t.created_at, 'tournament', t.name, p.handle, '/play/t/' || t.slug from public.tournaments t join public.profiles p on p.id = t.organiser_id
       union all
@@ -348,7 +348,7 @@ begin
     return query select t.id::text, t.created_at, t.name, p.handle, t.is_hidden, '/play/t/' || t.slug
       from public.tournaments t join public.profiles p on p.id = t.organiser_id order by t.created_at desc limit p_limit;
   elsif p_type = 'game' then
-    return query select g.id::text, g.created_at, g.game_system || ' · ' || g.city, p.handle, g.status = 'cancelled', '/play/game/' || g.id
+    return query select g.id::text, g.created_at, g.game_system || ' - ' || g.city, p.handle, g.status = 'cancelled', '/play/game/' || g.id
       from public.games g join public.profiles p on p.id = g.host_id order by g.created_at desc limit p_limit;
   elsif p_type = 'lfg' then
     return query select l.id::text, l.created_at, l.game_system, p.handle, not l.is_open, '/play/quick?view=lfg'::text

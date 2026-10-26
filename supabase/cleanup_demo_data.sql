@@ -4,7 +4,7 @@
 --
 -- What counts as demo data:
 --   * the 50 demo accounts (`*@demo.example`, ids md5('demo-user-<n>')) and everything they own:
---     profiles, tournaments, games, leagues, contest entries / votes, messages, LFG posts, gallery…
+--     profiles, tournaments, games, leagues, contest entries / votes, messages, LFG posts, gallery...
 --   * the 9 fictional stores (ids md5('store-<n>')) and their slots / staff
 --   * bug reports sent by the live check ("live check")
 --   * the throwaway `demo_seed` schema
