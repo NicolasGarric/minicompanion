@@ -233,6 +233,8 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .tool-options .toggle { white-space: nowrap; }
 .tool-zone { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; color: var(--text-2); white-space: nowrap; }
 .tool-options .slider { min-width: 7rem; }
+.tool-options-body { display: contents; }
+.tool-options-toggle { display: none; }
 
 .canvas-area { position: relative; height: 60vh; min-height: 18rem; }
 .canvas-wrap { position: absolute; inset: 0; overflow: hidden; touch-action: none; background: repeating-conic-gradient(#ece2cc 0% 25%, #e4d8bd 0% 50%) 0 0 / 1.5rem 1.5rem; }
@@ -567,6 +569,7 @@ th:first-child, td:first-child { text-align: left; }
 
 /* Mobile editor: full-height layout, the panel is a bottom sheet over a resizable canvas. */
 .sheet-handle { display: none; }
+.colour-dock { display: none; }
 @media (max-width: 63.99rem) {
   .editor { height: 100dvh; overflow: hidden; }
   .editor .topbar { position: static; }
@@ -587,6 +590,44 @@ th:first-child, td:first-child { text-align: left; }
   .sheet-handle .grip { width: 2.5rem; height: 0.3rem; border-radius: 1rem; background: var(--border); }
   .editor .editor-footer .site-footer { padding: 0.2rem 0.75rem; font-size: 0.625rem; }
   .hold-original span { display: none; }
+  /* Step 2: the image takes the screen, the colour bar sits under it; the sheet only opens on demand */
+  .editor.step-2 .panel-col { height: 0; box-shadow: none; border: 0; }
+  .editor.step-2.sheet-open .panel-col { height: 72dvh; box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.35); }
+  .editor.step-2.sheet-open .colour-dock { display: none; }
+  .colour-dock {
+    display: grid; gap: 0.45rem; flex: none; padding: 0.55rem 0.75rem 0.6rem;
+    background: var(--surface); border-top: 3px solid var(--ink2);
+  }
+  .dock-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.4rem, 1fr)); gap: 0.4rem; }
+  .dock-swatch {
+    aspect-ratio: 1; width: 100%; max-width: 2.8rem; justify-self: center; border-radius: 50%;
+    border: 2px solid var(--ink2); cursor: pointer; padding: 0; display: grid; place-items: center; color: var(--ink2);
+  }
+  .dock-swatch.on { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--ink1); }
+  .dock-swatch.off { opacity: 0.35; }
+  .dock-swatch.add { background: var(--surface); border-style: dashed; }
+  .dock-swatch.add.on { background: var(--ink3); }
+  .dock-current { display: flex; align-items: center; gap: 0.4rem; margin: 0; min-height: 1.5rem; font-size: 0.875rem; overflow: hidden; }
+  .dock-current strong, .dock-current .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dock-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  /* Tool options: a one-line summary that unrolls a vertical list over the canvas */
+  .editor .center { position: relative; }
+  .tool-options { display: block; position: relative; overflow: visible; padding: 0; z-index: 25; }
+  .tool-options-toggle {
+    display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: 2.6rem; padding: 0.35rem 0.75rem;
+    border: 0; background: var(--surface); color: var(--ink2); font: inherit; font-size: 0.875rem; cursor: pointer; text-align: left;
+  }
+  .tool-options-toggle .muted { font-variant-numeric: tabular-nums; }
+  .tool-options-body { display: none; }
+  .tool-options.open .tool-options-body {
+    display: grid; gap: 0.9rem; position: absolute; top: 100%; left: 0; right: 0; padding: 0.75rem 0.9rem 1rem;
+    background: var(--surface); border-bottom: 3px solid var(--ink2); box-shadow: 0 0.6rem 1rem rgba(29, 42, 91, 0.2);
+    max-height: 60dvh; overflow-y: auto; overscroll-behavior: contain;
+  }
+  .tool-options-body .tool-name { display: none; }
+  .tool-options-body .slider { min-width: 0; }
+  .tool-options-body .hint { white-space: normal; }
+  .tool-options-body .hide-sm { display: none; }
 }
 
 /* Primer (first coat) */
@@ -660,6 +701,11 @@ a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--bo
 .header-icon:hover { color: var(--text); background: var(--surface-2); }
 .badge-count { position: absolute; top: -0.1rem; right: -0.2rem; min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem; border-radius: 1rem; background: var(--accent); color: #15171c; font-size: 0.65rem; font-weight: 700; display: grid; place-items: center; }
 .view-switch { margin-bottom: 0.75rem; }
+/* Narrow screens: the tabs wrap into even rows instead of a broken pill */
+@media (max-width: 40rem) {
+  .segmented.view-switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); border-radius: 1.4rem; width: 100%; }
+  .segmented.view-switch button { text-align: center; }
+}
 .field-row.wrap { flex-wrap: wrap; }
 .grow { flex: 1 1 12rem; min-width: 0; }
 .text-input.num { width: 5rem; }
@@ -971,6 +1017,11 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .dice-dist .tick { fill: var(--ink2); }
 .dice-dist .dist-bar { fill: var(--ink2); }
 .dice-dist .dist-bar.mean { fill: var(--ink1); }
+/* Narrow screens: the choices share the width in equal cells, never wider than the card */
+@media (max-width: 39.99rem) {
+  .dice-phase .segmented { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: 100%; }
+  .dice-phase .segmented button { min-width: 0; padding-inline: 0; }
+}
 @media (min-width: 40rem) { .dice-phase { grid-template-columns: 9rem auto 1fr; } }
 @media (min-width: 52rem) {
   .dice-grid { grid-template-columns: 14rem 1fr; }

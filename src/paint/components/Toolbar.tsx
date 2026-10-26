@@ -1,8 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import type { Tool } from '../types';
 import type { CombineMode } from '../engine/maskTools';
 import { k, useT } from '../../core/i18n';
-import { IconButton, Segmented, Slider, Toggle } from '../../core/ui/ui';
+import { Icon, IconButton, Segmented, Slider, Toggle } from '../../core/ui/ui';
 
 export const TOOLS: { id: Tool; icon: string; key: string }[] = [
   { id: 'picker', icon: 'picker', key: 'I' },   // v2: tap the image to select the colour under the finger
@@ -40,9 +41,28 @@ export function ToolOptions() {
   const set = useStore((s) => s.set);
   const modes: { value: CombineMode; label: string }[] = (['add', 'subtract', 'replace'] as CombineMode[]).map((m) => ({ value: m, label: t(k(`mode.${m}`)) }));
   const percent = (v: number) => `${Math.round(v * 100)}%`;
+  // Mobile: the options unroll downwards from a one-line summary, over the top of the canvas.
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [open]);
+  const summary = tool === 'brush' || tool === 'eraser' ? `${brush.size}px · ${percent(brush.hardness)}` : tool === 'wand' ? `${wand.tolerance}` : '';
 
   return (
-    <div className="tool-options">
+    <div className={`tool-options ${open ? 'open' : ''}`} ref={box}>
+      <button type="button" className="tool-options-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <strong>{t(k(`tool.${tool}`))}</strong>
+        {zone && tool !== 'hand' && tool !== 'picker' && <span className="role-dot" style={{ background: zone.base.hex }} />}
+        <span className="muted">{summary}</span>
+        <span className="spacer" />
+        <span className="small">{t('tools.settings')}</span>
+        <Icon name={open ? 'up' : 'down'} size={16} />
+      </button>
+      <div className="tool-options-body">
       <span className="tool-name">{t(k(`tool.${tool}`))}</span>
       {zone && tool !== 'hand' && tool !== 'picker' && (
         <span className="tool-zone">
@@ -95,6 +115,7 @@ export function ToolOptions() {
       )}
       {tool === 'picker' && <span className="hint">{t('picker.hint')}</span>}
       {tool === 'hand' && <span className="hint">{t('hand.hint')}</span>}
+      </div>
     </div>
   );
 }

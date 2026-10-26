@@ -9,6 +9,7 @@ import { StepImage } from '../components/StepImage';
 import { StepColours } from '../components/StepColours';
 import { StepFinish } from '../components/StepFinish';
 import { CompareView } from '../components/CompareView';
+import { ColourDock } from '../components/ColourDock';
 import { ShareDialog } from '../components/ShareDialog';
 import { Footer } from '../../core/layout/Shell';
 import { Modal } from '../../core/ui/ui';
@@ -22,11 +23,14 @@ export function Editor() {
   const shareOpen = useStore((s) => s.shareOpen);
   const activeZoneId = useStore((s) => s.activeZoneId);
   const [help, setHelp] = useState(false);
-  // Mobile: the panel is a bottom sheet; selecting a colour on the image raises it.
+  // Mobile: the panel is a bottom sheet. On step 2 the image takes the screen with a colour bar
+  // under it (the sheet only rises on "Details" and drops as soon as the image is touched);
+  // on the other steps, selecting a colour raises it.
   const [sheetOpen, setSheetOpen] = useState(false);
   useEffect(() => {
-    if (activeZoneId) setSheetOpen(true);
-  }, [activeZoneId]);
+    if (activeZoneId && step !== 2) setSheetOpen(true);
+  }, [activeZoneId, step]);
+  useEffect(() => setSheetOpen(false), [step]);
   useEditorShortcuts(() => setHelp(true));
 
   return (
@@ -34,7 +38,7 @@ export function Editor() {
       <TopBar onShortcuts={() => setHelp(true)} />
       <StepBar />
       {step === 2 && <Toolbar />}
-      <main className="center">
+      <main className="center" onPointerDown={() => step === 2 && setSheetOpen(false)}>
         {step === 2 && <ToolOptions />}
         <CanvasView />
       </main>
@@ -49,6 +53,7 @@ export function Editor() {
           {step === 3 && <StepFinish />}
         </div>
       </aside>
+      {step === 2 && <ColourDock onDetails={() => setSheetOpen(true)} />}
       <div className="editor-footer">
         <Footer compact />
       </div>

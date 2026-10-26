@@ -252,6 +252,10 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    (tests in `tests/play/dice.test.ts`). One roll animated on a halftone tabletop (`src/play/visual/diceTable.ts`),
    chosen by the owner among 5 visual proposals ("Table de jeu tramée"). Game-neutral wording, 9 languages
    (`// CHECK:` on the Japanese terms). `/stats` stays the internal analytics page.
+7f. **Mobile pass (2026-10-26)**: PAINT step 2 on phones = full-screen image + colour bar under it
+   (`ColourDock`: every colour as a swatch, "Paints" opens the catalogue, "Details" raises the panel, which
+   drops as soon as the image is touched); tool options unroll vertically from a one-line summary;
+   wrapped tab bars (tournament page, quick play) form even rows; dice choices share the card width.
 8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
 9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
    `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,
