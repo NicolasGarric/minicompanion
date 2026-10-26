@@ -1,3 +1,4 @@
+import { Predictions } from '../components/Predictions';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { k, langName, useLang, useT } from '../../core/i18n';
 import { setPageMeta, useJsonLd } from '../../core/seo';
@@ -438,6 +439,7 @@ function PairingsTab({ data, me, organiser, onChange, lang }: { data: Data; me: 
           <MatchRow key={m.id} m={m} regs={regs} table={tables.get(m.table_id ?? '')} me={me} organiser={organiser} roundActive={round.status === 'active'} onChange={onChange} />
         ))}
       </ul>
+      <Predictions tournamentId={data.t.id} matches={list} tableOf={(m) => tables.get(m.table_id ?? '')} nameOf={(id) => nameOf(regs, id)} me={me} />
     </>
   );
 }

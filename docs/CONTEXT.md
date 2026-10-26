@@ -256,6 +256,24 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    (`ColourDock`: every colour as a swatch, "Paints" opens the catalogue, "Details" raises the panel, which
    drops as soon as the image is touched); tool options unroll vertically from a one-line summary;
    wrapped tab bars (tournament page, quick play) form even rows; dice choices share the card width.
+7g. **Hobby & community (2026-10-26)**, chosen by the owner from 40 ideas then 3 mockups each (visual picked per feature):
+   - PAINT, on this device (`src/paint/hobby/store.ts`, localStorage + photos in IndexedDB): **My pile** (`/paint/pile`,
+     armies as halftone gauges, unit list with "all painted" tick and painted / total stepper, stages box → based),
+     **army cards** (deck per army, share link `/#/d/…` text-only like scheme links, PNG of the deck with latest photos),
+     **time-lapse story** (unit step photos → 1080×1920 video via MediaRecorder), **sessions** (`/paint/sessions`, timer,
+     streak, 18-week halftone calendar, journal), **paint shelf** (`/paint/shelf`, owned pots + own paints with a reference
+     colour = PAINT library `owned` / `customPaints`; shopping list suggests an owned stand-in under ΔE 8).
+   - With the backend, **migration 000015 (to apply in Supabase)**: seasonal **challenges** (`/paint/challenges`, monthly
+     theme + palette Oct 2026 → Sep 2027, one photo per player, likes, 3 reports hide), tournament **predictions** (pairings tab,
+     points only), **mentoring** (`/play/mentors`, 4 shared steps + stamps, notifications `mentor_*`), league **campaign map**
+     (league page, planet regions or star system, one confirmed league win = one conquest, organiser can fix), **swap board**
+     (`/play/swap`, offer / wanted, contact by message, no payment, 3 reports hide, admin restore), `my_hobby_stats()`.
+     50 new RLS tests (`supabase/tests/rls_hobby.sql`).
+   - PLAY **table & mission generator** (`/play/table-generator`, narrative with scenario themes / casual / competitive
+     point-symmetric with density, seed in the URL, PNG export) — generic missions, no rules of any brand.
+   - Me (`src/me/`): **level & titles** as hanko stamps (`/me/level`, XP only from real activity), **player card** meishi with
+     QR to the public page (`/me/card`), **year in review** six-screen story (`/me/year`). Linked from the account page.
+   - 9 languages (`// CHECK:` on Japanese terms); new tests: deck link codec, table generator symmetry.
 8. **Twitch live status**: needs Twitch developer credentials and an Edge Function (later).
 9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
    `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,

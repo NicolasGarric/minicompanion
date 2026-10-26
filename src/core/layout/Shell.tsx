@@ -116,12 +116,19 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
   paint: [
     { href: '/paint', key: 'nav.paint.projects', active: (r) => r.name === 'paint' },
     { href: '/paint/beginner', key: 'nav.beginner', active: (r) => r.name === 'paint.beginner' },
+    { href: '/paint/pile', key: 'nav.paint.pile', active: (r) => r.name === 'paint.pile' || r.name === 'paint.army' || r.name === 'paint.deck' },
+    { href: '/paint/sessions', key: 'nav.paint.sessions', active: (r) => r.name === 'paint.sessions' },
+    { href: '/paint/shelf', key: 'nav.paint.shelf', active: (r) => r.name === 'paint.shelf' },
+    { href: '/paint/challenges', key: 'nav.paint.challenges', active: (r) => r.name === 'paint.challenges' },
   ],
   play: [
     { href: '/play', key: 'nav.play.tournaments', active: (r) => r.name.startsWith('play.tournament') || r.name === 'play' || r.name === 'play.table' },
     { href: '/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
     { href: '/play/leagues', key: 'nav.play.leagues', active: (r) => r.name === 'play.leagues' || r.name === 'play.league' },
     { href: '/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
+    { href: '/play/table-generator', key: 'nav.play.tablegen', active: (r) => r.name === 'play.tablegen' },
+    { href: '/play/mentors', key: 'nav.play.mentors', active: (r) => r.name === 'play.mentors' },
+    { href: '/play/swap', key: 'nav.play.swap', active: (r) => r.name === 'play.swap' },
   ],
 };
 

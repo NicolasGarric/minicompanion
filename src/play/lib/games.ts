@@ -183,6 +183,8 @@ export function playError(e: unknown): string | null {
     'round_not_finished', 'all_rounds_played', 'bad_pairings', 'no_match', 'not_in_match', 'match_closed',
     'nothing_to_confirm', 'no_active_round', 'matches_pending', 'not_registered', 'list_locked', 'forbidden',
     'contest_closed', 'own_entry', 'email_not_confirmed', 'no_entry', 'rights_required',
+    'challenge_closed', 'own_mentor', 'no_mentor', 'already_mentored', 'bad_step', 'campaign_exists', 'not_member',
+    'no_conquest', 'no_territory', 'already_yours', 'bad_pick', 'own_match', 'prediction_closed', 'no_post',
   ];
   return known.find((k) => m.includes(k)) ?? null;
 }

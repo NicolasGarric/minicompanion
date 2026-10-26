@@ -114,6 +114,15 @@ export function AccountPage() {
         </div>
       </form>
 
+      <section className="card my-hobby">
+        <h2>{t('me.hobby')}</h2>
+        <div className="hobby-links">
+          <a className="btn" href="/me/level">{t('level.title')}</a>
+          <a className="btn" href="/me/card">{t('card.title')}</a>
+          <a className="btn" href="/me/year">{t('year.short')}</a>
+          <a className="btn ghost" href="/paint/pile">{t('nav.paint.pile')}</a>
+        </div>
+      </section>
       <GallerySection />
     </div>
   );

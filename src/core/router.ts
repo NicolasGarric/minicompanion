@@ -12,6 +12,12 @@ export type RouteName =
   | 'paint.editor'
   | 'paint.beginner'
   | 'paint.shared'
+  | 'paint.deck'
+  | 'paint.pile'
+  | 'paint.army'
+  | 'paint.sessions'
+  | 'paint.shelf'
+  | 'paint.challenges'
   | 'play'
   | 'play.quick'
   | 'play.mine'
@@ -19,6 +25,9 @@ export type RouteName =
   | 'play.game'
   | 'play.tournament'
   | 'play.leagues'
+  | 'play.tablegen'
+  | 'play.mentors'
+  | 'play.swap'
   | 'play.tournament.new'
   | 'play.tournament.tables'
   | 'play.table'
@@ -34,6 +43,9 @@ export type RouteName =
   | 'signin'
   | 'legal'
   | 'stats'
+  | 'me.level'
+  | 'me.card'
+  | 'me.year'
   | 'admin.bugs'
   | 'notFound';
 
@@ -52,6 +64,13 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'paint/beginner', name: 'paint.beginner', section: 'paint' },
   // Public scheme links are already shared in the wild: this path must never change.
   { pattern: 's/*data', name: 'paint.shared', section: 'paint' },
+  // Shared army decks: the data stays in the hash, like scheme links
+  { pattern: 'd/*data', name: 'paint.deck', section: 'paint' },
+  { pattern: 'paint/pile', name: 'paint.pile', section: 'paint' },
+  { pattern: 'paint/pile/:id', name: 'paint.army', section: 'paint' },
+  { pattern: 'paint/sessions', name: 'paint.sessions', section: 'paint' },
+  { pattern: 'paint/shelf', name: 'paint.shelf', section: 'paint' },
+  { pattern: 'paint/challenges', name: 'paint.challenges', section: 'paint' },
   { pattern: 'play', name: 'play', section: 'play' },
   { pattern: 'play/quick', name: 'play.quick', section: 'play' },
   { pattern: 'play/mine', name: 'play.mine', section: 'play' },
@@ -62,6 +81,9 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'play/t/:slug/tables', name: 'play.tournament.tables', section: 'play' },
   { pattern: 'play/table/:token', name: 'play.table', section: 'play' },
   { pattern: 'play/leagues', name: 'play.leagues', section: 'play' },
+  { pattern: 'play/table-generator', name: 'play.tablegen', section: 'play' },
+  { pattern: 'play/mentors', name: 'play.mentors', section: 'play' },
+  { pattern: 'play/swap', name: 'play.swap', section: 'play' },
   { pattern: 'play/league/:id', name: 'play.league', section: 'play' },
   { pattern: 'play/store/:id', name: 'play.store', section: 'play' },
   { pattern: 'u/:handle', name: 'player', section: 'play' },
@@ -74,6 +96,9 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'signin', name: 'signin', section: 'none' },
   { pattern: 'legal', name: 'legal', section: 'none' },
   { pattern: 'stats', name: 'stats', section: 'none' },
+  { pattern: 'me/level', name: 'me.level', section: 'none' },
+  { pattern: 'me/card', name: 'me.card', section: 'none' },
+  { pattern: 'me/year', name: 'me.year', section: 'none' },
   { pattern: 'admin/bugs', name: 'admin.bugs', section: 'none' },
 ];
 
@@ -110,7 +135,7 @@ export function parsePath(pathname: string): Route {
 
 /** Current route: the shared-scheme hash wins (its data must stay out of the path). */
 function current(): Route {
-  if (location.hash.startsWith('#/s/')) return parsePath(location.hash.slice(1).split('?')[0]);
+  if (location.hash.startsWith('#/s/') || location.hash.startsWith('#/d/')) return parsePath(location.hash.slice(1).split('?')[0]);
   return parsePath(location.pathname);
 }
 
@@ -129,7 +154,7 @@ export function navigate(path: string, opts: { replace?: boolean } = {}) {
 /** Old hash URLs (`/#/play/t/x`) and legacy paths become clean paths, without a reload. */
 function upgradeUrl() {
   const hash = location.hash;
-  if (hash.startsWith('#/') && !hash.startsWith('#/s/')) {
+  if (hash.startsWith('#/') && !hash.startsWith('#/s/') && !hash.startsWith('#/d/')) {
     history.replaceState(null, '', `/${hash.slice(2)}`);
   }
   const legacy = LEGACY[location.pathname.replace(/^\//, '')];
@@ -143,7 +168,7 @@ function onClick(e: MouseEvent) {
   if (!a || a.target || a.hasAttribute('download')) return;
   const url = new URL(a.href, location.href);
   if (url.origin !== location.origin || /^\/(assets|data|demo)\//.test(url.pathname)) return;
-  if (url.hash.startsWith('#/s/')) return;
+  if (url.hash.startsWith('#/s/') || url.hash.startsWith('#/d/')) return;
   if (url.pathname === location.pathname && url.search === location.search && url.hash) return; // in-page anchor
   e.preventDefault();
   navigate(`${url.pathname}${url.search}`);

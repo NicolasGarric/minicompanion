@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useStore } from '../store';
+import { allPaints, useStore } from '../store';
+import type { Paint } from '../types';
+import { nearestPaints } from '../../core/lib/color';
 import { buildRecipe, paintsUsed } from '../lib/recipe';
 import { useT } from '../../core/i18n';
 import { Icon, Swatch } from '../../core/ui/ui';
@@ -21,6 +23,13 @@ export function StepFinish() {
   const paints = useMemo(() => paintsUsed(zones, library, primer), [zones, library, primer]);
   const owned = new Set(library.owned);
   const missing = paints.filter((p) => !owned.has(p.id)).length;
+  // A paint I already own that can stand in for a missing one (shelf → shopping list)
+  const mine = useMemo(() => allPaints(library).filter((p) => library.owned.includes(p.id) || p.brand === 'Custom'), [library]);
+  const standIn = (p: Paint) => {
+    const close = (a: Paint) => a.type === p.type || (['base', 'layer'].includes(a.type) && ['base', 'layer'].includes(p.type));
+    const best = nearestPaints(p.hex, mine, 1, close)[0];
+    return best && best.dE < 8 ? best.paint : null;
+  };
 
   const toggleOwned = (id: string) =>
     updateLibrary((l) => ({ ...l, owned: l.owned.includes(id) ? l.owned.filter((x) => x !== id) : [...l.owned, id] }));
@@ -64,6 +73,9 @@ export function StepFinish() {
                   <Swatch hex={p.hex} size={20} />
                   <span>{p.name} <small className="muted">{p.brand} · {p.range}</small></span>
                 </label>
+                {!owned.has(p.id) && standIn(p) && (
+                  <small className="stand-in">≈ {t('shelf.youHave', { name: standIn(p)!.name })}</small>
+                )}
                 {!owned.has(p.id) && <PaintSearchLink paint={p} />}
               </li>
             ))}

@@ -83,3 +83,8 @@ export function download(blob: Blob, filename: string) {
 
 export const slug = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'schema';
+
+/** A photo picked by the user, shrunk on the device to `maxSide` and saved as JPEG. */
+export async function shrinkPhoto(file: Blob, maxSide = 1600): Promise<Blob> {
+  return imageDataToBlob(await fileToImageData(file, maxSide), 'image/jpeg');
+}

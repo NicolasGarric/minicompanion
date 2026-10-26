@@ -1,3 +1,4 @@
+import { CampaignSection } from '../components/CampaignMap';
 import { useEffect, useState } from 'react';
 import { useLang, useT } from '../../core/i18n';
 import { setPageMeta } from '../../core/seo';
@@ -250,6 +251,13 @@ export function LeagueDetail({ id }: { id: string }) {
         )}
         <p className="hint">{t('league.scoring')}</p>
       </section>
+
+      <CampaignSection
+        leagueId={league.id}
+        organiser={league.organiser_id === me}
+        me={me}
+        players={[...table].sort((x, y) => x.player_id.localeCompare(y.player_id)).map((r) => ({ id: r.player_id, name: r.display_name }))}
+      />
 
       <h2>{t('league.games')}</h2>
       {games.length === 0 ? <p className="hint">{t('league.noGames')}</p> : <ul className="game-list">{games.map((g) => <GameCard key={g.id} game={g} />)}</ul>}
