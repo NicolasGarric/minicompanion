@@ -1,4 +1,5 @@
 import { supabase } from '../../core/auth/supabase';
+import { uploadPhoto, withThumbs } from '../../core/lib/photo';
 import { playError, type Game, type GameLevel } from './games';
 
 /**
@@ -67,23 +68,20 @@ export async function answerReport(gameId: string, agree: boolean) {
   return must(await db().rpc('answer_game_report', { p_game: gameId, p_agree: agree }));
 }
 
-/** Uploads a report photo into the game folder of the public "reports" bucket. */
-export async function uploadReportPhoto(gameId: string, blob: Blob): Promise<string> {
-  const path = `${gameId}/${crypto.randomUUID()}.jpg`;
-  must(await db().storage.from('reports').upload(path, blob, { contentType: 'image/jpeg' }));
-  return path;
-}
-/** Report photos are private files: signed URLs work when the uploader's profile is public or for the players. */
+/** Uploads a report photo (shrunk, with its thumbnail) into the game folder of the "reports" bucket. */
+export const uploadReportPhoto = (gameId: string, photo: Blob): Promise<string> => uploadPhoto('reports', gameId, photo);
+/** Report photos are private files: signed URLs work when the uploader's profile is public or for the players.
+ * Thumbnails are signed too: read them with `thumbOf(path)`, falling back to the path for older photos. */
 export async function reportPhotoUrls(paths: string[]): Promise<Map<string, string>> {
   if (!paths.length) return new Map();
-  const { data } = await db().storage.from('reports').createSignedUrls(paths, 3600);
+  const { data } = await db().storage.from('reports').createSignedUrls(withThumbs(paths), 3600);
   return new Map((data ?? []).flatMap((u) => (u.signedUrl ? [[u.path ?? '', u.signedUrl] as [string, string]] : [])));
 }
 
 /** Gallery images are private files: signed URLs work for the owner and for public items. */
 export async function galleryUrls(paths: string[]): Promise<Map<string, string>> {
   if (!paths.length) return new Map();
-  const { data } = await db().storage.from('gallery').createSignedUrls(paths, 3600);
+  const { data } = await db().storage.from('gallery').createSignedUrls(withThumbs(paths), 3600);
   return new Map((data ?? []).flatMap((u) => (u.signedUrl ? [[u.path ?? '', u.signedUrl] as [string, string]] : [])));
 }
 

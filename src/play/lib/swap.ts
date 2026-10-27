@@ -1,3 +1,4 @@
+import { thumbOf, uploadPhoto } from '../../core/lib/photo';
 import { supabase } from '../../core/auth/supabase';
 
 /** Swap board (supabase/migrations/*_hobby_community.sql). No payment in the app. */
@@ -36,13 +37,11 @@ export async function listSwaps(f: { kind: SwapKind; city?: string; mine?: strin
   return must(await q) as SwapPost[];
 }
 export const swapPhotoUrl = (path: string) => db().storage.from('swap').getPublicUrl(path).data.publicUrl;
+export const swapThumbUrl = (path: string) => swapPhotoUrl(thumbOf(path));
 
 export async function createSwap(me: string, p: NewSwap, photo: Blob | null) {
   let photo_path: string | null = null;
-  if (photo) {
-    photo_path = `${me}/${crypto.randomUUID()}.jpg`;
-    must(await db().storage.from('swap').upload(photo_path, photo, { contentType: 'image/jpeg' }));
-  }
+  if (photo) photo_path = await uploadPhoto('swap', me, photo);
   must(await db().from('swap_posts').insert({ user_id: me, ...p, photo_path }));
 }
 export async function closeSwap(id: string) {

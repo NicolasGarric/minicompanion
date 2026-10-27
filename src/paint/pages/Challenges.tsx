@@ -6,7 +6,7 @@ import { requireSignIn, useSession } from '../../core/auth/session';
 import { shrinkPhoto } from '../../core/lib/image';
 import { Icon, Modal } from '../../core/ui/ui';
 import { playError } from '../../play/lib/social';
-import { challenges, entriesOf, isOpen, photoUrl, report, submit, toggleLike, withdraw, type Challenge, type ChallengeEntry } from '../lib/challenges';
+import { challenges, entriesOf, isOpen, photoUrl, thumbUrl, report, submit, toggleLike, withdraw, type Challenge, type ChallengeEntry } from '../lib/challenges';
 
 /**
  * Seasonal challenges: one theme and palette a month. The page opens on the wall of entries of
@@ -98,7 +98,7 @@ export function Challenges() {
           {entries.map((e) => (
             <figure key={e.id} className={`wall-item ${e.is_hidden ? 'hidden' : ''}`}>
               <button className="wall-photo" onClick={() => setZoom(e)} aria-label={e.title}>
-                <img src={photoUrl(e.photo_path)} alt="" loading="lazy" />
+                <img src={thumbUrl(e.photo_path)} alt="" loading="lazy" />
               </button>
               <figcaption>
                 <span className="wall-title"><strong>{e.title}</strong><small className="muted">@{e.author_handle}</small></span>

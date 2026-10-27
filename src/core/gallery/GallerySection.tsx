@@ -40,7 +40,7 @@ export function GallerySection() {
           {items.map((item) => (
             <li key={item.id} className="gallery-item">
               <a href={item.url} target="_blank" rel="noreferrer" className="gallery-img">
-                {item.url ? <img src={item.url} alt={item.title} loading="lazy" /> : <Icon name="palette" size={24} />}
+                {item.url ? <img src={item.thumb ?? item.url} alt={item.title} loading="lazy" /> : <Icon name="palette" size={24} />}
               </a>
               <div className="gallery-meta">
                 <strong>{item.title}</strong>

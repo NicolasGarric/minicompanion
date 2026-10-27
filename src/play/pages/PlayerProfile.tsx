@@ -8,6 +8,7 @@ import { Avatar } from '../../core/ui/Avatar';
 import { Icon } from '../../core/ui/ui';
 import { formatWhen } from '../components/GameCard';
 import type { Game } from '../lib/games';
+import { thumbOf } from '../../core/lib/photo';
 import {
   badgesFrom,
   galleryUrls,
@@ -51,7 +52,7 @@ export function PlayerProfile({ handle }: { handle: string }) {
         setHistory(await historyOf(prof.id));
         const items = await publicGallery(prof.id);
         const urls = await galleryUrls(items.map((i) => i.image_path));
-        setGallery(items.map((i) => ({ id: i.id, title: i.title, url: urls.get(i.image_path) })));
+        setGallery(items.map((i) => ({ id: i.id, title: i.title, url: urls.get(thumbOf(i.image_path)) ?? urls.get(i.image_path) })));
       } catch (e) {
         playError(e);
         setP(null);

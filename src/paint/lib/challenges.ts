@@ -1,3 +1,4 @@
+import { thumbOf, uploadPhoto } from '../../core/lib/photo';
 import { supabase } from '../../core/auth/supabase';
 
 /** Seasonal painting challenges (supabase/migrations/*_hobby_community.sql). */
@@ -40,10 +41,10 @@ export async function entriesOf(id: string): Promise<ChallengeEntry[]> {
   return must(await db().rpc('challenge_entries_of', { p_challenge: id })) as ChallengeEntry[];
 }
 export const photoUrl = (path: string) => db().storage.from('challenges').getPublicUrl(path).data.publicUrl;
+export const thumbUrl = (path: string) => photoUrl(thumbOf(path));
 
 export async function submit(id: string, title: string, photo: Blob) {
-  const path = `${id}/${crypto.randomUUID()}.jpg`;
-  must(await db().storage.from('challenges').upload(path, photo, { contentType: 'image/jpeg' }));
+  const path = await uploadPhoto('challenges', id, photo);
   must(await db().rpc('submit_challenge_entry', { p_challenge: id, p_title: title, p_photo: path, p_rights: true }));
 }
 export async function withdraw(id: string) {

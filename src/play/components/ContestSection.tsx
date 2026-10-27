@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { Icon, Toggle } from '../../core/ui/ui';
-import { download, fileToImageData, imageDataToBlob, slug } from '../../core/lib/image';
+import { download, slug } from '../../core/lib/image';
 import { formatWhen } from './GameCard';
 import { playError } from '../lib/games';
 import { galleryUrls, myGalleryItems } from '../lib/social';
@@ -23,6 +23,7 @@ import {
   saveScore,
   setHidden,
   submitEntry,
+  thumbUrl,
   vote,
   withdrawEntry,
   type Category,
@@ -112,7 +113,7 @@ export function ContestSection({ tour, organiser }: { tour: Tournament; organise
             {entries.map((e) => (
               <li key={e.id} className={`entry ${e.is_hidden ? 'hidden' : ''} ${e.my_vote ? 'voted' : ''}`}>
                 <a href={photoUrl(e.photo_paths[0])} target="_blank" rel="noreferrer" className="entry-photo">
-                  <img src={photoUrl(e.photo_paths[0])} alt={e.title} loading="lazy" />
+                  <img src={thumbUrl(e.photo_paths[0])} alt={e.title} loading="lazy" />
                   {e.photo_paths.length > 1 && <span className="tag">+{e.photo_paths.length - 1}</span>}
                 </a>
                 <strong>{e.title}</strong>
@@ -162,7 +163,7 @@ function Podium({ tour, cat, rows }: { tour: Tournament; cat: Category; rows: Re
       <ol className="podium">
         {top.map((r) => (
           <li key={r.entry_id} className={`place-${r.public_rank}`}>
-            <img src={photoUrl(r.photo_paths[0])} alt={r.title} loading="lazy" />
+            <img src={thumbUrl(r.photo_paths[0])} alt={r.title} loading="lazy" />
             <span className="podium-rank">{r.public_rank}</span>
             <strong>{r.title}</strong>
             <small className="muted"><a href={`/u/${r.author_handle}`}>{r.author_name}</a> · {t('contest.votes', { count: r.votes })}</small>
@@ -228,13 +229,12 @@ function MyEntry({ cat, entry, me, onChange }: { cat: Category; entry?: Entry; m
     setBusy(true);
     setError(null);
     try {
-      // Every photo is resized (1600 px, JPEG) before upload; gallery images are fetched first.
+      // Photos are shrunk with a thumbnail on upload (submitEntry); gallery images are fetched first.
       const blobs: Blob[] = [];
       for (const url of fromGallery) blobs.push(await (await fetch(url)).blob());
       blobs.push(...device.filter((d) => fromDevice.includes(d.id)).map((d) => d.blob));
       blobs.push(...files);
-      const resized = await Promise.all(blobs.map(async (b) => imageDataToBlob(await fileToImageData(b, 1600), 'image/jpeg')));
-      await submitEntry(cat.id, title, resized, resized.length ? [] : entry?.photo_paths ?? []);
+      await submitEntry(cat.id, title, blobs, blobs.length ? [] : entry?.photo_paths ?? []);
       setOpen(false);
       onChange();
     } catch (err) {
@@ -325,7 +325,7 @@ function JuryPanel({ entries, me }: { entries: Entry[]; me: string }) {
           const s = scores.get(e.id);
           return (
             <li key={e.id}>
-              <img src={photoUrl(e.photo_paths[0])} alt={e.title} />
+              <img src={thumbUrl(e.photo_paths[0])} alt={e.title} loading="lazy" />
               <strong>{e.title}</strong>
               {(['technique', 'composition', 'originality'] as const).map((c) => (
                 <label key={c} className="field">

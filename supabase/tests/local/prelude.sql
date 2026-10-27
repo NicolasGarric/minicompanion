@@ -35,7 +35,8 @@ create table storage.buckets (
   id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]
 );
 create table storage.objects (
-  id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets, name text, owner uuid
+  id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets, name text, owner uuid,
+  metadata jsonb, created_at timestamptz not null default now()
 );
 alter table storage.objects enable row level security;
 create function storage.foldername(name text) returns text[] language sql immutable as $$

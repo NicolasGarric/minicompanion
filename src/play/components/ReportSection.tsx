@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
 import { Icon } from '../../core/ui/ui';
-import { download, fileToImageData, imageDataToBlob, slug } from '../../core/lib/image';
+import { download, slug } from '../../core/lib/image';
+import { thumbOf } from '../../core/lib/photo';
 import { countryName } from '../lib/countries';
 import { formatWhen } from './GameCard';
 import type { Game, GamePlayer } from '../lib/games';
@@ -123,7 +124,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
           <ol className="results">
             {report.results.map((r) => (
               <li key={r.player_id} className={r.placement === report.results[0].placement ? 'winner' : ''}>
-                {r.item && images.get(r.item.image_path) && <img src={images.get(r.item.image_path)} alt={r.item.title} loading="lazy" />}
+                {r.item && images.get(r.item.image_path) && <img src={images.get(thumbOf(r.item.image_path)) ?? images.get(r.item.image_path)} alt={r.item.title} loading="lazy" />}
                 <span className="result-text">
                   <strong>{r.profile?.display_name ?? '?'}</strong>
                   <small className="muted">
@@ -142,7 +143,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
             <div className="report-photos">
               {report.photos.filter((p) => photos.has(p)).map((p) => (
                 <a key={p} href={photos.get(p)} target="_blank" rel="noreferrer">
-                  <img src={photos.get(p)} alt="" loading="lazy" />
+                  <img src={photos.get(thumbOf(p)) ?? photos.get(p)} alt="" loading="lazy" />
                 </a>
               ))}
             </div>
@@ -218,12 +219,9 @@ function ReportForm({
     setBusy(true);
     setError(null);
     try {
-      // Photos are resized (1600 px) and uploaded first; the report keeps their paths.
+      // Photos are shrunk (with a thumbnail) and uploaded first; the report keeps their paths.
       const photos = [...(initial?.photos ?? [])];
-      for (const f of files.slice(0, 4 - photos.length)) {
-        const img = await fileToImageData(f, 1600);
-        photos.push(await uploadReportPhoto(game.id, await imageDataToBlob(img, 'image/jpeg')));
-      }
+      for (const f of files.slice(0, 4 - photos.length)) photos.push(await uploadReportPhoto(game.id, f));
       await submitReport(
         game.id,
         rows.map((r) => ({

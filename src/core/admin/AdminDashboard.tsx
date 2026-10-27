@@ -4,7 +4,8 @@ import { useSession } from '../auth/session';
 import { backendConfigured } from '../auth/supabase';
 import { BackendNotice } from '../auth/BackendNotice';
 import {
-  content, daily, langs, moderate, overview, recent, reports, setReport, suspend, topPages, users,
+  cleanUp, cleanupCandidates, content, daily, langs, moderate, overview, recent, reports, setReport, storageUse, suspend, topPages, users,
+  STORAGE_ALERT, STORAGE_LIMIT, type BucketUse, type CleanupFile,
   type AdminReport, type AdminUser, type ContentRow, type ContentType, type Day, type Overview, type Recent, type TopPage,
 } from './admin';
 
@@ -12,8 +13,8 @@ import {
  * Admin dashboard (/admin): traffic and accounts straight from the database, the moderation queue
  * (reports → hide / restore content, suspend the author) and the latest content of each kind.
  */
-type Tab = 'overview' | 'users' | 'moderation' | 'content';
-const TABS: Tab[] = ['overview', 'users', 'moderation', 'content'];
+type Tab = 'overview' | 'users' | 'moderation' | 'content' | 'storage';
+const TABS: Tab[] = ['overview', 'users', 'moderation', 'content', 'storage'];
 
 export function AdminDashboard() {
   const t = useT();
@@ -44,6 +45,7 @@ export function AdminDashboard() {
       {tab === 'users' && <UsersTab />}
       {tab === 'moderation' && <ModerationTab />}
       {tab === 'content' && <ContentTab />}
+      {tab === 'storage' && <StorageTab />}
     </div>
   );
 }
@@ -385,6 +387,97 @@ function ContentTab() {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- Photo storage ---------- */
+
+const mb = (bytes: number) => bytes / 1024 ** 2;
+
+/** Gauge of the photo storage (alert from 70 % of the plan) and the cleanup of expired files. */
+function StorageTab() {
+  const t = useT();
+  const f = useFmt();
+  const [use, setUse] = useState<BucketUse[] | null>(null);
+  const [files, setFiles] = useState<CleanupFile[] | null>(null);
+  const [step, setStep] = useState<'idle' | 'confirm' | 'running' | 'done'>('idle');
+  const [done, setDone] = useState(0);
+  const [error, setError] = useState(false);
+  const load = () => Promise.all([storageUse(), cleanupCandidates()]).then(([u, c]) => { setUse(u); setFiles(c); }, () => setError(true));
+  useEffect(() => { load(); }, []);
+
+  if (error) return <ErrorLine error />;
+  if (!use || !files) return <span className="spinner" />;
+  const total = use.reduce((a, b) => a + b.bytes, 0);
+  const share = total / STORAGE_LIMIT;
+  const biggest = Math.max(1, ...use.map((b) => b.bytes));
+  const reasons = [...new Set(files.map((x) => x.reason))].map((r) => {
+    const of = files.filter((x) => x.reason === r);
+    return { reason: r, count: of.length, bytes: of.reduce((a, b) => a + b.bytes, 0) };
+  });
+  const run = async () => {
+    setStep('running');
+    try {
+      await cleanUp(files, setDone);
+      setStep('done');
+    } catch {
+      setError(true);
+    }
+    load();
+  };
+
+  return (
+    <div className="admin-storage">
+      <section className={`card storage-gauge ${share >= STORAGE_ALERT ? 'alert' : ''}`}>
+        <div className="card-head admin-chart-head">
+          <h2>{t('admin.storage.title')}</h2>
+          <strong className="tab">{t('admin.storage.used', { used: f.n(Math.round(mb(total))), limit: f.n(Math.round(mb(STORAGE_LIMIT))), pct: Math.round(share * 100) })}</strong>
+        </div>
+        <div className="gauge-bar" role="progressbar" aria-valuenow={Math.round(share * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={t('admin.storage.title')}>
+          <span style={{ width: `${Math.min(100, share * 100)}%` }} />
+          <i className="gauge-mark" style={{ left: `${STORAGE_ALERT * 100}%` }} />
+        </div>
+        <p className={share >= STORAGE_ALERT ? 'notice' : 'hint'}>{t(share >= STORAGE_ALERT ? 'admin.storage.alert' : 'admin.storage.ok')}</p>
+        <table className="standings admin-table">
+          <thead><tr><th>{t('admin.storage.bucket')}</th><th>{t('admin.storage.files')}</th><th>{t('admin.storage.size')}</th><th aria-hidden /></tr></thead>
+          <tbody>
+            {use.map((b) => (
+              <tr key={b.bucket}>
+                <td>{t(k(`admin.storage.b.${b.bucket}`))}</td>
+                <td className="tab">{f.n(b.files)}</td>
+                <td className="tab">{mb(b.bytes).toFixed(1)} MB</td>
+                <td className="bucket-bar"><span style={{ width: `${(b.bytes / biggest) * 100}%` }} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>{t('admin.storage.cleanTitle')}</h2>
+        <p className="hint">{t('admin.storage.cleanLead')}</p>
+        {files.length === 0 ? (
+          <p>{step === 'done' ? t('admin.storage.cleaned', { n: done }) : t('admin.storage.nothing')}</p>
+        ) : (
+          <>
+            <ul className="plain-list">
+              {reasons.map((r) => (
+                <li key={r.reason}>{t(k(`admin.storage.r.${r.reason}`))} · <strong className="tab">{f.n(r.count)}</strong> · {mb(r.bytes).toFixed(1)} MB</li>
+              ))}
+            </ul>
+            {step === 'idle' && <button className="btn" onClick={() => setStep('confirm')}>{t('admin.storage.clean', { n: files.length })}</button>}
+            {step === 'confirm' && (
+              <div className="field-row wrap">
+                <p className="notice grow">{t('admin.storage.confirm', { n: files.length })}</p>
+                <button className="btn ghost" onClick={() => setStep('idle')}>{t('common.cancel')}</button>
+                <button className="btn danger-ghost" onClick={run}>{t('admin.storage.confirmBtn')}</button>
+              </div>
+            )}
+            {step === 'running' && <p><span className="spinner small" /> {t('admin.storage.running', { done, n: files.length })}</p>}
+          </>
+        )}
+      </section>
     </div>
   );
 }

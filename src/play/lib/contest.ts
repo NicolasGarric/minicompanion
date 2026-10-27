@@ -1,4 +1,5 @@
 import { supabase } from '../../core/auth/supabase';
+import { thumbOf, uploadPhoto } from '../../core/lib/photo';
 
 /** Painting contest (supabase/migrations/*_painting_contest.sql). */
 const db = () => {
@@ -47,6 +48,8 @@ export interface ResultRow {
 /** Demo photos ("demo/…") are served by the app itself; entries live in the public "contest" bucket. */
 export const photoUrl = (path: string) =>
   path.startsWith('demo/') ? `${import.meta.env.BASE_URL}${path}` : db().storage.from('contest').getPublicUrl(path).data.publicUrl;
+/** The 400 px thumbnail for grids (older photos have none: the photo itself). */
+export const thumbUrl = (path: string) => photoUrl(thumbOf(path));
 
 export const isClosed = (c: Category) => Date.parse(c.voting_closes_at) <= Date.now();
 
@@ -63,14 +66,10 @@ export async function vote(entryId: string) {
   must(await db().rpc('cast_contest_vote', { p_entry: entryId }));
 }
 
-/** Uploads the photos into the category folder, then records the entry. */
+/** Uploads the photos (shrunk, with thumbnails) into the category folder, then records the entry. */
 export async function submitEntry(categoryId: string, title: string, photos: Blob[], keep: string[]): Promise<void> {
   const paths = [...keep];
-  for (const blob of photos.slice(0, 5 - keep.length)) {
-    const path = `${categoryId}/${crypto.randomUUID()}.jpg`;
-    must(await db().storage.from('contest').upload(path, blob, { contentType: 'image/jpeg' }));
-    paths.push(path);
-  }
+  for (const blob of photos.slice(0, 5 - keep.length)) paths.push(await uploadPhoto('contest', categoryId, blob));
   must(await db().rpc('submit_contest_entry', { p_category: categoryId, p_title: title, p_photos: paths, p_rights: true }));
 }
 export async function withdrawEntry(categoryId: string) {

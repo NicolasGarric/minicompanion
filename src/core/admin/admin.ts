@@ -62,3 +62,33 @@ export function trackPageView(route: Route, lang: string) {
   }
   void supabase.rpc('track_page_view', { p_page: route.name, p_lang: lang, p_new_visit: first }).then(() => undefined, () => undefined);
 }
+
+// --- Photo storage (supabase/migrations/*_photo_storage.sql) ---------------------------------------
+/** Space of the Supabase free plan; the gauge warns from 70 %. */
+export const STORAGE_LIMIT = 1024 ** 3;
+export const STORAGE_ALERT = 0.7;
+export interface BucketUse { bucket: string; files: number; bytes: number }
+export interface CleanupFile { bucket: string; name: string; reason: string; bytes: number }
+export const storageUse = async () => must(await db().rpc('admin_storage')) as BucketUse[];
+export const cleanupCandidates = async () => must(await db().rpc('admin_storage_cleanup')) as CleanupFile[];
+
+/**
+ * Deletes the files the retention rules allow, bucket by bucket: the rows that show them are
+ * updated first (so nothing points to a missing file), then the files go through the Storage API
+ * (Supabase refuses deleting storage rows in SQL). Returns how many files were removed.
+ */
+export async function cleanUp(files: CleanupFile[], onProgress?: (done: number) => void): Promise<number> {
+  let done = 0;
+  const byBucket = new Map<string, string[]>();
+  for (const f of files) byBucket.set(f.bucket, [...(byBucket.get(f.bucket) ?? []), f.name]);
+  for (const [bucket, names] of byBucket) {
+    for (let i = 0; i < names.length; i += 100) {
+      const batch = names.slice(i, i + 100);
+      must(await db().rpc('admin_storage_forget', { p_bucket: bucket, p_names: batch }));
+      must(await db().storage.from(bucket).remove(batch));
+      done += batch.length;
+      onProgress?.(done);
+    }
+  }
+  return done;
+}

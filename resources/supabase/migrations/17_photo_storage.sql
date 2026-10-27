@@ -1,0 +1,249 @@
+-- =============================================================================================
+-- Photo storage plan (owner decisions 2026-10-27): lighter photos, a quota per player, a storage
+-- gauge and a cleanup for admins.
+--
+--   * The app now sends "<id>.w.webp" (1280 px) plus a thumbnail "<id>.t.webp" (400 px); Safari
+--     sends JPEG (or PNG for transparent images). Buckets accept WebP.
+--   * Quota: 100 photos per player across contest, challenges, reports, gallery and swap.
+--     Thumbnails and bug screenshots do not count. Checked by a restrictive storage policy; the
+--     app asks my_photo_usage() first to show a clear message.
+--   * Retention (applied by the admin "Clean up" button, which deletes through the Storage API:
+--     Supabase does not allow deleting storage rows in SQL):
+--       bug screenshots   90 days after the report is fixed / won't fix
+--       swap photos       30 days after the post is closed
+--       challenge photos  12 months after the month ends, except the 10 most liked
+--       contest photos    12 months after voting closes, except the podium (public or jury top 3)
+--       orphan files      7 days after upload (interrupted uploads, deleted content)
+-- =============================================================================================
+
+-- ---------------------------------------------------------------------------------------------
+-- Formats and names
+-- ---------------------------------------------------------------------------------------------
+update storage.buckets
+   set allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']
+ where id in ('contest', 'challenges', 'reports', 'gallery', 'swap', 'bug-reports');
+
+alter table public.gallery_items drop constraint if exists gallery_items_image_path_check;
+alter table public.gallery_items add constraint gallery_items_image_path_check
+  check (image_path ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}(\.w)?\.(jpg|png|webp)$');
+
+-- "<id>.w.webp" -> "<id>.t.webp"; older names have no thumbnail and stay as they are.
+create or replace function public.photo_thumb(p_path text)
+returns text
+language sql
+immutable
+as $$ select regexp_replace(p_path, '\.w\.(webp|jpg|png)$', '.t.\1') $$;
+
+-- Thumbnails of shared gallery images are readable like the images themselves.
+drop policy if exists "gallery files: shared items are readable" on storage.objects;
+create policy "gallery files: shared items are readable" on storage.objects
+  for select
+  using (bucket_id = 'gallery'
+         and exists (select 1 from public.gallery_items g
+                      where (g.image_path = name or public.photo_thumb(g.image_path) = name)
+                        and public.gallery_item_visible(g.id)));
+
+-- ---------------------------------------------------------------------------------------------
+-- Quota
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.photo_quota()
+returns int
+language sql
+immutable
+as $$ select 100 $$;
+
+-- My photos that count: full images in the five shared buckets (not thumbnails).
+create or replace function public.photo_count()
+returns int
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  select count(*)::int from storage.objects o
+   where o.owner = auth.uid()
+     and o.bucket_id in ('contest', 'challenges', 'reports', 'gallery', 'swap')
+     and o.name !~ '\.t\.(webp|jpg|png)$'
+$$;
+
+create or replace function public.my_photo_usage()
+returns table (used int, quota int)
+language sql
+stable
+security definer
+set search_path = public
+as $$ select public.photo_count(), public.photo_quota() $$;
+
+-- Restrictive: applies on top of each bucket's own upload policy.
+drop policy if exists "photos: quota per player" on storage.objects;
+create policy "photos: quota per player" on storage.objects
+  as restrictive
+  for insert to authenticated
+  with check (bucket_id not in ('contest', 'challenges', 'reports', 'gallery', 'swap')
+              or name ~ '\.t\.(webp|jpg|png)$'
+              or public.photo_count() < public.photo_quota());
+
+-- ---------------------------------------------------------------------------------------------
+-- When things were closed (retention starts then)
+-- ---------------------------------------------------------------------------------------------
+alter table public.swap_posts add column if not exists closed_at timestamptz;
+alter table public.bug_reports add column if not exists closed_at timestamptz;
+update public.swap_posts set closed_at = now() where status = 'closed' and closed_at is null;
+update public.bug_reports set closed_at = now() where status in ('fixed', 'wontfix') and closed_at is null;
+
+create or replace function public.stamp_closed_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_table_name = 'swap_posts' then
+    new.closed_at := case when new.status = 'closed' then coalesce(old.closed_at, now()) end;
+  else
+    new.closed_at := case when new.status in ('fixed', 'wontfix') then coalesce(old.closed_at, now()) end;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists swap_posts_closed_at on public.swap_posts;
+create trigger swap_posts_closed_at before update of status on public.swap_posts
+  for each row execute function public.stamp_closed_at();
+drop trigger if exists bug_reports_closed_at on public.bug_reports;
+create trigger bug_reports_closed_at before update of status on public.bug_reports
+  for each row execute function public.stamp_closed_at();
+
+-- ---------------------------------------------------------------------------------------------
+-- Admin: gauge and cleanup
+-- ---------------------------------------------------------------------------------------------
+-- Space used per bucket. The plan limit (1 GB on the free plan) is shown by the app.
+create or replace function public.admin_storage()
+returns table (bucket text, files bigint, bytes bigint)
+language plpgsql
+stable
+security definer
+set search_path = public, storage
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'forbidden';
+  end if;
+  return query
+    select o.bucket_id, count(*), coalesce(sum((o.metadata ->> 'size')::bigint), 0)::bigint
+      from storage.objects o
+     where o.bucket_id in ('contest', 'challenges', 'reports', 'gallery', 'swap', 'bug-reports')
+     group by o.bucket_id
+     order by 3 desc;
+end;
+$$;
+
+-- Every file the retention rules allow to delete now, with the reason.
+create or replace function public.admin_storage_cleanup()
+returns table (bucket text, name text, reason text, bytes bigint)
+language plpgsql
+stable
+security definer
+set search_path = public, storage
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'forbidden';
+  end if;
+  return query
+  with refs as (
+    -- Every path still referenced by the app, and its thumbnail
+    select r.bucket, p.path from (
+      select 'contest'::text as bucket, unnest(e.photo_paths) as path from public.contest_entries e
+      union all select 'challenges', c.photo_path from public.challenge_entries c
+      union all select 'reports', unnest(g.photos) from public.game_reports g
+      union all select 'gallery', i.image_path from public.gallery_items i
+      union all select 'swap', s.photo_path from public.swap_posts s where s.photo_path is not null
+      union all select 'bug-reports', unnest(b.photos) from public.bug_reports b
+    ) r
+    cross join lateral (values (r.path), (public.photo_thumb(r.path))) p(path)
+  ),
+  expired as (
+    select 'bug-reports'::text as bucket, unnest(b.photos) as path, 'bug_closed_90d'::text as reason
+      from public.bug_reports b where b.closed_at < now() - interval '90 days'
+    union all
+    select 'swap', s.photo_path, 'swap_closed_30d'
+      from public.swap_posts s where s.closed_at < now() - interval '30 days' and s.photo_path is not null
+    union all
+    select 'challenges', c.photo_path, 'challenge_12m'
+      from public.challenge_entries c
+      join public.season_challenges sc on sc.id = c.challenge_id
+     where sc.ends_on < current_date - interval '12 months'
+       and c.id not in (select l.id from public.challenge_entries l
+                         where l.challenge_id = c.challenge_id
+                         order by (select count(*) from public.challenge_likes k where k.entry_id = l.id) desc, l.created_at
+                         limit 10)
+    union all
+    select 'contest', unnest(e.photo_paths), 'contest_12m'
+      from public.contest_entries e
+      join public.contest_categories cc on cc.id = e.category_id
+     where cc.voting_closes_at < now() - interval '12 months'
+       and not exists (select 1 from public.contest_results(cc.id) cr
+                        where cr.entry_id = e.id and (cr.public_rank <= 3 or cr.jury_rank <= 3))
+  ),
+  expired_files as (
+    select x.bucket, p.path, x.reason
+      from expired x cross join lateral (values (x.path), (public.photo_thumb(x.path))) p(path)
+  )
+  select o.bucket_id, o.name, f.reason, coalesce((o.metadata ->> 'size')::bigint, 0)
+    from storage.objects o join expired_files f on f.bucket = o.bucket_id and f.path = o.name
+  union
+  select o.bucket_id, o.name, 'orphan', coalesce((o.metadata ->> 'size')::bigint, 0)
+    from storage.objects o
+   where o.bucket_id in ('contest', 'challenges', 'reports', 'gallery', 'swap', 'bug-reports')
+     and o.created_at < now() - interval '7 days'
+     and not exists (select 1 from refs r where r.bucket = o.bucket_id and r.path = o.name);
+end;
+$$;
+
+-- Before deleting expired files, the rows that show them are updated so nothing points to a
+-- missing file: closed swap posts and fixed bugs lose their photos, old challenge and contest
+-- entries outside the kept ones are removed. Returns the number of rows changed.
+create or replace function public.admin_storage_forget(p_bucket text, p_names text[])
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n int := 0;
+  m int;
+begin
+  if not public.is_admin() then
+    raise exception 'forbidden';
+  end if;
+  if p_bucket = 'swap' then
+    update public.swap_posts set photo_path = null where photo_path = any (p_names) and status = 'closed';
+    get diagnostics n = row_count;
+  elsif p_bucket = 'bug-reports' then
+    update public.bug_reports set photos = '{}' where photos && p_names and closed_at is not null;
+    get diagnostics n = row_count;
+  elsif p_bucket = 'challenges' then
+    delete from public.challenge_entries where photo_path = any (p_names);
+    get diagnostics n = row_count;
+  elsif p_bucket = 'contest' then
+    delete from public.contest_entries where photo_paths && p_names;
+    get diagnostics n = row_count;
+  end if;
+  return n;
+end;
+$$;
+
+-- Admins delete files through the Storage API (the cleanup button).
+drop policy if exists "photos: admins delete" on storage.objects;
+create policy "photos: admins delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id in ('contest', 'challenges', 'reports', 'gallery', 'swap', 'bug-reports') and public.is_admin());
+drop policy if exists "photos: admins read" on storage.objects;
+create policy "photos: admins read" on storage.objects
+  for select to authenticated
+  using (bucket_id in ('contest', 'challenges', 'reports', 'gallery', 'swap', 'bug-reports') and public.is_admin());
+
+revoke execute on function public.photo_count(), public.my_photo_usage(), public.admin_storage(),
+  public.admin_storage_cleanup(), public.admin_storage_forget(text, text[]) from public, anon;
+grant execute on function public.my_photo_usage(), public.admin_storage(), public.admin_storage_cleanup(),
+  public.admin_storage_forget(text, text[]) to authenticated;
+-- photo_count runs inside the storage policy for the uploading player.
+grant execute on function public.photo_count() to authenticated;

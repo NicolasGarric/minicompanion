@@ -6,7 +6,7 @@ import { requireSignIn, useSession } from '../../core/auth/session';
 import { shrinkPhoto } from '../../core/lib/image';
 import { Icon, Modal } from '../../core/ui/ui';
 import { playError } from '../lib/games';
-import { adminHideSwap, closeSwap, createSwap, deleteSwap, listSwaps, reportSwap, swapPhotoUrl, type NewSwap, type SwapKind, type SwapPost } from '../lib/swap';
+import { adminHideSwap, closeSwap, createSwap, deleteSwap, listSwaps, reportSwap, swapPhotoUrl, swapThumbUrl, type NewSwap, type SwapKind, type SwapPost } from '../lib/swap';
 
 /**
  * Swap board: "I offer" / "I look for" posts for spare parts and miniatures, by city. Contact by
@@ -75,7 +75,7 @@ export function Swap() {
         <ul className="swap-list">
           {posts.map((p) => (
             <li key={p.id} className={`swap-item ${p.is_hidden ? 'hidden' : ''} ${p.status === 'closed' ? 'closed' : ''}`}>
-              {p.photo_path ? <img src={swapPhotoUrl(p.photo_path)} alt="" loading="lazy" /> : <span className="swap-ph" aria-hidden><Icon name="image" size={22} /></span>}
+              {p.photo_path ? <a href={swapPhotoUrl(p.photo_path)} target="_blank" rel="noreferrer"><img src={swapThumbUrl(p.photo_path)} alt="" loading="lazy" /></a> : <span className="swap-ph" aria-hidden><Icon name="image" size={22} /></span>}
               <div className="swap-body">
                 <div className="swap-title">
                   <span className={`tag ${p.kind === 'want' ? 'pk' : ''}`}>{t(k(`swap.kind.${p.kind}`))}</span>

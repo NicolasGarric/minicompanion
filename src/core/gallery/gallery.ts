@@ -1,4 +1,5 @@
 import { supabase } from '../auth/supabase';
+import { removePhotos, thumbOf, uploadPhoto, withThumbs } from '../lib/photo';
 
 /**
  * Player gallery: painted renders saved from PAINT to the profile. Files live in the private
@@ -20,6 +21,8 @@ export interface GalleryItem {
   is_public?: boolean;
   /** Signed URL, valid one hour */
   url?: string;
+  /** 400 px thumbnail (the image itself for older items) */
+  thumb?: string;
 }
 
 const BUCKET = 'gallery';
@@ -38,25 +41,23 @@ export async function listGallery(): Promise<GalleryItem[]> {
   if (error) throw error;
   const items = (data ?? []) as GalleryItem[];
   if (!items.length) return items;
-  const { data: urls } = await supabase.storage.from(BUCKET).createSignedUrls(items.map((i) => i.image_path), 3600);
+  const { data: urls } = await supabase.storage.from(BUCKET).createSignedUrls(withThumbs(items.map((i) => i.image_path)), 3600);
   const byPath = new Map((urls ?? []).map((u) => [u.path, u.signedUrl]));
-  return items.map((i) => ({ ...i, url: byPath.get(i.image_path) ?? undefined }));
+  return items.map((i) => ({ ...i, url: byPath.get(i.image_path) ?? undefined, thumb: byPath.get(thumbOf(i.image_path)) ?? byPath.get(i.image_path) ?? undefined }));
 }
 
-/** Uploads the image, then records it; the file is removed again if the record fails. */
-export async function addToGallery(image: Blob, title: string, paints: GalleryPaint[]): Promise<void> {
+/** Uploads the render (with its thumbnail), then records it; the files are removed again if the record fails. */
+export async function addToGallery(image: ImageData, keepAlpha: boolean, title: string, paints: GalleryPaint[]): Promise<void> {
   if (!supabase) throw new Error('backend');
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth.user?.id;
   if (!uid) throw new Error('signin');
-  const path = `${uid}/${crypto.randomUUID()}.${image.type === 'image/png' ? 'png' : 'jpg'}`;
-  const up = await supabase.storage.from(BUCKET).upload(path, image, { contentType: image.type });
-  if (up.error) throw up.error;
+  const path = await uploadPhoto(BUCKET, uid, image, { keepAlpha });
   const { error } = await supabase
     .from('gallery_items')
     .insert({ owner_id: uid, title: title.trim().slice(0, 80) || 'Untitled', image_path: path, paints: paints.slice(0, 40) });
   if (error) {
-    await supabase.storage.from(BUCKET).remove([path]);
+    await removePhotos(BUCKET, [path]);
     throw error;
   }
 }
@@ -65,5 +66,5 @@ export async function removeFromGallery(item: GalleryItem): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from('gallery_items').delete().eq('id', item.id);
   if (error) throw error;
-  await supabase.storage.from(BUCKET).remove([item.image_path]);
+  await removePhotos(BUCKET, [item.image_path]);
 }

@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { paintsUsed } from '../lib/recipe';
 import { renderOffscreen } from '../lib/render';
 import { engine } from '../engine/engine';
-import { fitImageData, imageDataToBlob } from '../../core/lib/image';
+import { fitImageData } from '../../core/lib/image';
 import { addToGallery } from '../../core/gallery/gallery';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { backendConfigured } from '../../core/auth/supabase';
@@ -26,16 +26,15 @@ export function SaveToGallery() {
     setState('saving');
     try {
       const image = fitImageData(renderOffscreen(s.zones, s.primer), GALLERY_SIDE);
-      // The model alone keeps its transparency (PNG); a full photo is lighter as JPEG.
-      const blob = await imageDataToBlob(image, engine.cutout ? 'image/png' : 'image/jpeg');
       const paints = paintsUsed(s.zones, s.library, s.primer).map((p) => ({ name: p.name, brand: p.brand, hex: p.hex }));
-      await addToGallery(blob, s.projectName, paints);
+      // The model alone keeps its transparency (WebP, or PNG where WebP cannot be encoded).
+      await addToGallery(image, engine.cutout, s.projectName, paints);
       setState('saved');
       s.toast(t('gallery.saved'), 'success');
     } catch (e) {
       setState('idle');
       const message = (e as { message?: string }).message ?? '';
-      s.toast(t(message.includes('gallery_full') ? 'gallery.full' : 'gallery.error'), 'error');
+      s.toast(t(message.includes('photo_quota') ? 'games.error.photo_quota' : message.includes('gallery_full') ? 'gallery.full' : 'gallery.error'), 'error');
     }
   };
 

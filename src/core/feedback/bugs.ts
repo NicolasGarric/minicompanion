@@ -1,6 +1,7 @@
 import { supabase } from '../auth/supabase';
 import { useLang } from '../i18n';
 import { fileToImageData, imageDataToBlob } from '../lib/image';
+import { uploadPhoto } from '../lib/photo';
 
 /** Screenshots are shrunk on the device before upload (enough to read a bug, a few hundred kB). */
 export async function prepareScreenshot(file: Blob): Promise<Blob> {
@@ -27,12 +28,8 @@ export async function submitBugReport(r: { message: string; contact: string; sho
   const uid = auth.session?.user.id;
   const paths: string[] = [];
   if (uid) {
-    for (const shot of r.shots.slice(0, 3)) {
-      const path = `${uid}/${crypto.randomUUID()}.jpg`;
-      const up = await supabase.storage.from('bug-reports').upload(path, shot, { contentType: 'image/jpeg' });
-      if (up.error) throw up.error;
-      paths.push(path);
-    }
+    // WebP like other photos; no thumbnail (only admins look at them) and outside the player's quota.
+    for (const shot of r.shots.slice(0, 3)) paths.push(await uploadPhoto('bug-reports', uid, shot, { thumb: false, quota: false }));
   }
   const ctx = bugContext();
   const { error } = await supabase.rpc('submit_bug_report', {

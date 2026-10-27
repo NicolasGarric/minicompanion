@@ -15,4 +15,5 @@ union all select 13 as n, '20261101000013_security_hardening.sql' as migration, 
 union all select 14 as n, '20261102000014_organiser_archive.sql' as migration, case when not coalesce((select has_column_privilege('authenticated', a.attrelid, a.attnum, 'UPDATE') from pg_attribute a where a.attrelid = to_regclass('public.tournaments') and a.attname = 'is_hidden' and not a.attisdropped), false) then 'TO APPLY' else 'applied' end as state
 union all select 15 as n, '20261103000015_hobby_community.sql' as migration, case when to_regclass('public.season_challenges') is null then 'TO APPLY' else 'applied' end as state
 union all select 16 as n, '20261104000016_admin_dashboard.sql' as migration, case when to_regclass('public.page_views_daily') is null then 'TO APPLY' else 'applied' end as state
+union all select 17 as n, '20261105000017_photo_storage.sql' as migration, case when to_regprocedure('public.my_photo_usage()') is null then 'TO APPLY' else 'applied' end as state
 order by n;

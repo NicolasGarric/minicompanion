@@ -39,9 +39,9 @@ export function canvasOf(img: ImageData) {
 }
 
 /** Images are stored as JPEG q=0.92 (detail matters here): a 2048 px photo is typically 0.5–1 MB. */
-export function imageDataToBlob(img: ImageData, type = 'image/jpeg'): Promise<Blob> {
+export function imageDataToBlob(img: ImageData, type = 'image/jpeg', quality = 0.92): Promise<Blob> {
   return new Promise((resolve, reject) =>
-    canvasOf(img).toBlob((b) => (b ? resolve(b) : reject(new Error('Image encoding failed'))), type, 0.92),
+    canvasOf(img).toBlob((b) => (b ? resolve(b) : reject(new Error('Image encoding failed'))), type, quality),
   );
 }
 

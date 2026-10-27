@@ -40,6 +40,7 @@ declare -A GUARD=(
   [20261102000014_organiser_archive.sql]="not coalesce((select has_column_privilege('authenticated', a.attrelid, a.attnum, 'UPDATE') from pg_attribute a where a.attrelid = to_regclass('public.tournaments') and a.attname = 'is_hidden' and not a.attisdropped), false)"
   [20261103000015_hobby_community.sql]="to_regclass('public.season_challenges') is null"
   [20261104000016_admin_dashboard.sql]="to_regclass('public.page_views_daily') is null"
+  [20261105000017_photo_storage.sql]="to_regprocedure('public.my_photo_usage()') is null"
 )
 seq_of() { local n="${1%%_*}"; echo $((10#${n: -6})); } # 20261104000016_x.sql -> 16
 
