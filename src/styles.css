@@ -259,8 +259,8 @@ kbd { background: var(--surface-2); border: 1px solid var(--border); border-radi
 .tab-body { padding: 0.75rem; }
 .editor-footer { margin-top: auto; }
 
-/* Desktop: toolbar | canvas | reference | panels */
-@media (min-width: 64rem) {
+/* Desktop, and tablets held sideways (owner choice 2026-10-27): toolbar | canvas | reference | panels */
+@media (min-width: 64rem), (min-width: 48rem) and (min-height: 34rem) and (orientation: landscape) {
   .editor {
     height: 100dvh;
     overflow: hidden;
@@ -551,7 +551,7 @@ th:first-child, td:first-child { text-align: left; }
 
 /* Editor v2 layout: the step bar sits under the top bar; tools only on step 2. */
 .editor .stepbar { position: sticky; top: 3.1rem; z-index: 15; }
-@media (min-width: 64rem) {
+@media (min-width: 64rem), (min-width: 48rem) and (min-height: 34rem) and (orientation: landscape) {
   .editor {
     grid-template-columns: 3.5rem minmax(0, 1fr) 26rem;
     grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -559,6 +559,12 @@ th:first-child, td:first-child { text-align: left; }
   }
   .editor:not(.step-2) { grid-template-columns: 0 minmax(0, 1fr) 26rem; }
   .editor .stepbar { grid-area: steps; position: static; }
+}
+/* Tablet sideways (48-64rem wide): same layout with a narrower panel, so the image keeps most of the width */
+@media (min-width: 48rem) and (max-width: 63.99rem) and (min-height: 34rem) and (orientation: landscape) {
+  .editor { grid-template-columns: 3.5rem minmax(0, 1fr) 20rem; }
+  .editor:not(.step-2) { grid-template-columns: 0 minmax(0, 1fr) 20rem; }
+  .tool-options { flex-wrap: wrap; row-gap: 0.4rem; overflow-x: visible; }
 }
 
 /* See the original photo: long press or hold button */
@@ -570,7 +576,8 @@ th:first-child, td:first-child { text-align: left; }
 /* Mobile editor: full-height layout, the panel is a bottom sheet over a resizable canvas. */
 .sheet-handle { display: none; }
 .colour-dock { display: none; }
-@media (max-width: 63.99rem) {
+/* Phones, tablets held upright and short landscape screens (phones sideways) */
+@media (max-width: 47.99rem), (max-width: 63.99rem) and (orientation: portrait), (max-width: 63.99rem) and (max-height: 33.99rem) {
   .editor { height: 100dvh; overflow: hidden; }
   .editor .topbar { position: static; }
   .editor .stepbar { position: static; }
