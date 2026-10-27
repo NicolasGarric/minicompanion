@@ -205,9 +205,19 @@ discover → paint → share → play → watch → back to physical stores.
 | Next priorities | Full tournament flow, painting contest, visual pass, PAINT performance |
 | Visual identity (2026-10-23) | **Riso tactique**: risograph print on paper, inks pink `#ff4f7b` + navy `#1d2a5b` + yellow marker `#ffd23f`, Dela Gothic One (titles) + Zen Maru Gothic (text); home = tabletop seen from above in halftone (terrain, deployment zones, objectives, units, measuring tape) with the app name airbrushed by particles (`src/core/visual/risoTable.ts`) |
 | Languages (2026-10-23) | **One language at a time + a selector** in the header (language names in their own script), first visit follows the browser language; signed in, the choice is saved on the profile |
+| Decisions page (2026-10-27) | Owner answered on a decisions page (claude.ai artifact). Photos: steps 1-4 of the storage plan, quota **100 photos** per player, retention as proposed; R2 or Supabase Pro only if the gauge passes 70 %. Expected audience in 6 months: unknown |
+| Tablets (2026-10-27) | PAINT side panel when the tablet is held sideways, colour bar when upright |
+| Language URLs (2026-10-27) | Prefixed addresses for **public pages only** (`/ja/play`), all 9 languages |
+| Single elimination (2026-10-27) | Still **Swiss rounds only** |
+| Quick games privacy (2026-10-27) | Visible to everyone, exact address for accepted players only (already the case) |
+| Demo data (2026-10-27) | **Remove it** from production (`cleanup_demo_data.sql`, PREVIEW first) |
+| DB password (2026-10-27) | **Rotate it now** (replaces the 2026-10-25 "not rotated" choice) |
+| Twitch (2026-10-27) | Later; embedded player only |
+| Translations review (2026-10-27) | **In-app "Suggest a translation"**, reviewed in `/admin` |
+| Vite 8 (2026-10-27) | Approved and done |
 | Languages added (2026-10-23) | French, Spanish, German, Italian, Brazilian Portuguese, **Simplified** Chinese, Korean (Noto Sans SC / KR for those two); events can be in any of them or "Japanese and English" (migration 000010) |
 
-## Open points / next steps (updated 2026-10-27)
+## Open points / next steps (updated 2026-10-27, evening)
 
 Agreed order: 4. PAINT performance → 5. visual pass. Then:
 
@@ -296,7 +306,8 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 9. **Native review** of the translations by hobbyists: Japanese (`// CHECK:` markers in
    `src/core/i18n/ja.ts` and all PLAY texts added since) and the 7 new languages (written by Claude,
    hobby terms to check first: wash, drybrush, edge highlight, contrast paints, Swiss pairing terms).
-10. **Security**: the database password leaked once and is not rotated yet (owner's choice).
+10. **Security**: the database password leaked once; the owner decided on 2026-10-27 to rotate it (nothing in
+    the app or the scripts uses it: only the anon key). Also delete the old password from the comment in the local `.env`.
 11. Demo data: in the live database the "Friday Live Clash" table 3 shows 14–14 marked as a win
     (fixed in `seed_tournament.sql` for new installs; `supabase/fixes/fix_demo_friday_table3.sql` for the live one).
 12. ~~Zone names not re-translated~~ done (2026-10-27): names made by the app keep how they were made
@@ -306,9 +317,29 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 13. **SQL pack** (2026-10-27): `resources/supabase/` (built by `scripts/build-sql-resources.sh`): status query,
     all migrations as one re-runnable script, the latest migration alone, numbered copies, demo seeds,
     `fix_demo_friday_table3.sql` (item 11) and the demo cleanup, all ASCII. Live database checked the same day:
-    migrations 01–15 applied, **16 (admin dashboard) to apply**, demo data still there.
-14. Still open: tablet fine-tuning, per-language URLs / hreflang, vite 8 (dev-server advisory), privacy of
-    signed-in events (owner decision), single elimination (owner chose Swiss only).
+    migrations 01–15 applied, 16 applied by the owner the same day, demo data still there.
+14. **Photo storage plan** (2026-10-27, migration 17 **to apply**): uploads go through `uploadPhoto` (`src/core/lib/photo.ts`):
+    1280 px WebP q0.8 + 400 px thumbnail (`<id>.w.webp` / `<id>.t.webp`; JPEG, or PNG for transparency, where WebP
+    cannot be encoded), one-year cache headers; lists and grids show thumbnails (`thumbOf`, older files have none).
+    Quota of 100 photos per player (restrictive storage policy + `my_photo_usage()` checked first, thumbnails and bug
+    screenshots excluded). `/admin` → Storage: gauge per bucket against the 1 GB free plan (alert at 70 %) and a
+    cleanup button (retention: bugs 90 d after closing, swap 30 d after closing, challenges / contests 12 months except
+    top 10 / podium, orphans after 7 d); it updates the rows first, then deletes through the Storage API (Supabase
+    forbids SQL deletes of storage rows). Not automatic (nightly run would need an Edge Function + cron). 21 SQL tests.
+    Measured 2026-10-27: 1 file, 133 kB.
+15. ~~Tablets~~ done: landscape tablets (48–64rem wide, ≥34rem high) use the desktop layout with a 20rem panel;
+    upright tablets and phones keep the colour bar. Checked in a headless browser at 1000×700 and 768×1024.
+16. ~~Vite 8~~ done: vite 8.3.4 + @vitejs/plugin-react 6.1.2 (separate commit), npm audit clean, build ~0.4 s.
+17. ~~Language URLs~~ done: `/fr/…`, `/ja/…` etc. for public pages (`PUBLIC_ROUTES` in `src/core/router.ts`,
+    helpers in `src/core/i18n/langs.ts`). A prefix in the URL switches the app to that language; on public pages
+    the address follows the current language; private pages have no prefix. `hreflang` alternates (x-default =
+    English), static pages and sitemap (with xhtml:link) in 9 languages. The English home static HTML has no
+    alternates (it is the SPA fallback); the app adds them.
+18. ~~Translations review~~: "Suggest a translation" in the footer (selected text pre-fills it; matching dictionary
+    keys are sent), `/admin` → Translations with ready-to-paste lines. Migration 18 **to apply**. 9 SQL tests.
+19. Quick games privacy: nothing to change (already public with the address for accepted players only).
+20. Still open: Twitch live status (later), nightly automatic photo cleanup (optional), demo cleanup and password
+    rotation (owner actions).
 
 ## Dev environment notes
 

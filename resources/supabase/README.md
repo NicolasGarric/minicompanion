@@ -41,7 +41,7 @@ password `demo-password-2026`.
 ## Notes
 
 - Nothing in this folder contains a password or a secret key. The database password stays in your
-  password manager. It leaked once and has not been changed yet (your choice for now).
+  password manager. It leaked once: the owner decided on 2026-10-27 to change it.
 - Tested 2026-10-27 on a fresh local Postgres 16 (PostGIS emulated): apply all, re-run (everything
   skipped), apply the latest migration alone on a database at 15, demo fix (1 row then 0), and the 257 RLS
   checks in `supabase/tests/` (287 with migrations 17 and 18).
