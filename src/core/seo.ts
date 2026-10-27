@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { APP_NAME } from './brand';
-import { translate, useLang, type MessageKey } from './i18n';
-import type { Route, RouteName } from './router';
+import { HREFLANG, LANGS, localizedPath, splitLangPath, translate, useLang, type MessageKey } from './i18n';
+import { parsePath, PUBLIC_ROUTES, type Route, type RouteName } from './router';
 
 /**
  * Page metadata for search engines and link previews: title, description, canonical URL, robots.
@@ -60,6 +60,23 @@ export function setPageMeta({ title, description, noindex = false }: { title: st
     document.head.append(link);
   }
   link.href = url;
+  setAlternates(noindex);
+}
+
+/** `<link rel="alternate" hreflang>` for each language of a public page (x-default = English). */
+function setAlternates(noindex: boolean) {
+  document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((l) => l.remove());
+  const { rest } = splitLangPath(location.pathname);
+  if (noindex || !PUBLIC_ROUTES.has(parsePath(rest).name)) return;
+  const add = (hreflang: string, path: string) => {
+    const l = document.createElement('link');
+    l.rel = 'alternate';
+    l.hreflang = hreflang;
+    l.href = `${location.origin}${path}`;
+    document.head.append(l);
+  };
+  for (const { code } of LANGS) add(HREFLANG[code], localizedPath(rest, code));
+  add('x-default', rest);
 }
 
 /** Route-level metadata; pages about one thing (tournament, player…) refine it themselves. */

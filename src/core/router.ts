@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { localizedPath, splitLangPath, useLang } from './i18n';
 
 /**
  * Path router (History API): every page has a real URL that search engines can index.
@@ -127,7 +128,7 @@ function match(pattern: string, path: string): Record<string, string> | null {
 }
 
 export function parsePath(pathname: string): Route {
-  const path = pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+  const path = splitLangPath(pathname).rest.replace(/^\/+/, '').replace(/\/+$/, '');
   for (const r of ROUTES) {
     const params = match(r.pattern, path);
     if (params) return { name: r.name, params, section: r.section };
@@ -139,6 +140,28 @@ export function parsePath(pathname: string): Route {
 function current(): Route {
   if (location.hash.startsWith('#/s/') || location.hash.startsWith('#/d/')) return parsePath(location.hash.slice(1).split('?')[0]);
   return parsePath(location.pathname);
+}
+
+/** Pages that exist in every language under a prefix ("/fr/play"): the indexable ones. */
+export const PUBLIC_ROUTES: ReadonlySet<RouteName> = new Set<RouteName>([
+  'home', 'paint', 'paint.beginner', 'paint.challenges', 'play', 'play.quick', 'play.leagues', 'play.tablegen', 'play.mentors',
+  'play.swap', 'play.tournament', 'dice', 'stores', 'legal',
+]);
+
+/**
+ * Keeps the address in the current language: a language prefix in the URL (a link from a search
+ * result) switches the app to it; otherwise public pages get the prefix of the current language
+ * and other pages lose it. Only `replaceState`: no new history entry.
+ */
+function syncLangPath(fromUrl: boolean) {
+  const { lang: urlLang, rest } = splitLangPath(location.pathname);
+  const lang = useLang.getState().lang;
+  if (fromUrl && urlLang && urlLang !== lang) {
+    void useLang.getState().setLang(urlLang);
+    return;
+  }
+  const want = PUBLIC_ROUTES.has(parsePath(rest).name) ? localizedPath(rest, lang) : rest;
+  if (want !== location.pathname) history.replaceState(null, '', `${want}${location.search}${location.hash}`);
 }
 
 /** Path of the current page without the leading slash, query included (to come back after sign-in). */
@@ -177,13 +200,20 @@ function onClick(e: MouseEvent) {
 }
 
 export function useRoute(): Route {
-  const [route, setRoute] = useState(() => (upgradeUrl(), current()));
+  const [route, setRoute] = useState(() => (upgradeUrl(), syncLangPath(true), current()));
   useEffect(() => {
     const on = () => {
       upgradeUrl();
+      syncLangPath(true);
       setRoute(current());
       window.scrollTo(0, 0);
     };
+    // Picking a language rewrites the address of a public page (and its canonical / hreflang tags).
+    const offLang = useLang.subscribe((s, prev) => {
+      if (s.lang === prev.lang) return;
+      syncLangPath(false);
+      setRoute(current());
+    });
     window.addEventListener(CHANGE, on);
     window.addEventListener('popstate', on);
     window.addEventListener('hashchange', on);
@@ -193,6 +223,7 @@ export function useRoute(): Route {
       window.removeEventListener('popstate', on);
       window.removeEventListener('hashchange', on);
       document.removeEventListener('click', onClick);
+      offLang();
     };
   }, []);
   return route;

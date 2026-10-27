@@ -1,24 +1,8 @@
 import { create } from 'zustand';
 import { en, type MessageKey } from './en';
 
-/**
- * Languages of the app. One language at a time, chosen in the header (owner decision 2026-10-23);
- * the first visit follows the browser languages. `locale` is used for dates and numbers.
- * Chinese is Simplified, Portuguese is Brazilian.
- */
-export const LANGS = [
-  { code: 'en', name: 'English', locale: 'en-GB' },
-  { code: 'fr', name: 'Français', locale: 'fr-FR' },
-  { code: 'es', name: 'Español', locale: 'es-ES' },
-  { code: 'de', name: 'Deutsch', locale: 'de-DE' },
-  { code: 'it', name: 'Italiano', locale: 'it-IT' },
-  { code: 'pt', name: 'Português (Brasil)', locale: 'pt-BR' },
-  { code: 'ja', name: '日本語', locale: 'ja-JP' },
-  { code: 'zh', name: '简体中文', locale: 'zh-CN' },
-  { code: 'ko', name: '한국어', locale: 'ko-KR' },
-] as const;
-
-export type Lang = (typeof LANGS)[number]['code'];
+export { HREFLANG, LANGS, localizedPath, splitLangPath, URL_LANGS, type Lang } from './langs';
+import { LANGS, splitLangPath, type Lang } from './langs';
 export type { MessageKey };
 
 type Dictionary = Record<MessageKey, string>;
@@ -55,6 +39,9 @@ export const localeOf = (lang: Lang) => LANGS.find((l) => l.code === lang)?.loca
 export const langName = (code: string) => LANGS.find((l) => l.code === code)?.name ?? code;
 
 function initialLang(): Lang {
+  // A language address ("/ja/…") wins: it is the page the visitor asked for.
+  const fromUrl = splitLangPath(location.pathname).lang;
+  if (fromUrl) return fromUrl;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (isLang(saved)) return saved;
