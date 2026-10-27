@@ -41,7 +41,8 @@ union all select 'BLOCKING: demo players in real matches', count(*)
  where t.organiser_id not in (select id from demo)
    and (m.player_a_id in (select id from demo) or m.player_b_id in (select id from demo)
         or m.reported_by in (select id from demo) or m.confirmed_by in (select id from demo))
--- Files cannot be deleted from SQL: remove them in Storage > gallery if this is not 0.
+-- Files cannot be deleted from SQL. Once the accounts are gone these files are orphans: /admin > Storage >
+-- Clean up removes them (migration 17), or delete them by hand in Supabase > Storage.
 union all select 'storage files of demo accounts (delete by hand)', count(*)
   from storage.objects where owner in (select id from demo);
 
