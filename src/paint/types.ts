@@ -1,3 +1,4 @@
+import type { AutoName } from './lib/colourName';
 export type Brand = 'Citadel' | 'Vallejo' | 'Army Painter' | 'Custom';
 
 export type PaintType =
@@ -54,6 +55,8 @@ export interface Zone {
   isBackground?: boolean;
   /** Painted over every other colour and drawn area wherever it overlaps them. */
   priority?: boolean;
+  /** Name made by the app (see lib/colourName.ts): rewritten when the language changes. */
+  autoName?: AutoName;
 }
 
 export type SlotId = 'base' | 'wash' | 'highlight' | 'drybrush';

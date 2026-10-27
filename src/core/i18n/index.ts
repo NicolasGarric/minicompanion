@@ -1,13 +1,5 @@
 import { create } from 'zustand';
 import { en, type MessageKey } from './en';
-import { ja } from './ja';
-import { fr } from './fr';
-import { es } from './es';
-import { zh } from './zh';
-import { de } from './de';
-import { pt } from './pt';
-import { ko } from './ko';
-import { it } from './it';
 
 /**
  * Languages of the app. One language at a time, chosen in the header (owner decision 2026-10-23);
@@ -29,7 +21,33 @@ export const LANGS = [
 export type Lang = (typeof LANGS)[number]['code'];
 export type { MessageKey };
 
-const dictionaries: Record<Lang, Record<MessageKey, string>> = { en, ja, fr, es, zh, de, pt, ko, it };
+type Dictionary = Record<MessageKey, string>;
+/**
+ * English is bundled (reference and fallback); the other dictionaries are separate chunks loaded
+ * when their language is picked, so the main bundle carries one language instead of nine.
+ */
+const dictionaries: Partial<Record<Lang, Dictionary>> = { en };
+const loaders: Record<Exclude<Lang, 'en'>, () => Promise<Dictionary>> = {
+  fr: () => import('./fr').then((m) => m.fr),
+  es: () => import('./es').then((m) => m.es),
+  de: () => import('./de').then((m) => m.de),
+  it: () => import('./it').then((m) => m.it),
+  pt: () => import('./pt').then((m) => m.pt),
+  ja: () => import('./ja').then((m) => m.ja),
+  zh: () => import('./zh').then((m) => m.zh),
+  ko: () => import('./ko').then((m) => m.ko),
+};
+
+/** Loads a dictionary once; on a network error the app keeps showing English for that language. */
+export async function loadLang(lang: Lang): Promise<void> {
+  if (dictionaries[lang]) return;
+  try {
+    dictionaries[lang] = await loaders[lang as Exclude<Lang, 'en'>]();
+  } catch {
+    /* offline or chunk missing: English fallback */
+  }
+}
+export const isLoaded = (lang: Lang) => !!dictionaries[lang];
 const STORAGE_KEY = 'cf.lang';
 const isLang = (v: unknown): v is Lang => LANGS.some((l) => l.code === v);
 export const localeOf = (lang: Lang) => LANGS.find((l) => l.code === lang)?.locale ?? 'en-GB';
@@ -50,9 +68,10 @@ function initialLang(): Lang {
   return 'en';
 }
 
-export const useLang = create<{ lang: Lang; setLang: (l: Lang) => void }>((set) => ({
+export const useLang = create<{ lang: Lang; setLang: (l: Lang) => Promise<void> }>((set) => ({
   lang: initialLang(),
-  setLang: (lang) => {
+  setLang: async (lang) => {
+    await loadLang(lang);
     try {
       localStorage.setItem(STORAGE_KEY, lang);
     } catch {
@@ -69,7 +88,7 @@ export type Vars = Record<string, string | number>;
 
 /** Translation outside React (store, canvas). */
 export function translate(key: MessageKey, vars?: Vars, lang: Lang = useLang.getState().lang): string {
-  let s = dictionaries[lang][key] ?? en[key] ?? key;
+  let s = dictionaries[lang]?.[key] ?? en[key] ?? key;
   if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
   return s;
 }

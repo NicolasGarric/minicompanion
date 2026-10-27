@@ -35,7 +35,7 @@ export function LangSwitch() {
   const signedIn = useSession((s) => !!s.profile);
   // Each language in its own name; the first visit follows the browser language.
   const choose = (next: Lang) => {
-    setLang(next);
+    void setLang(next);
     // Signed in: the profile remembers it too, so other devices open in the same language.
     if (signedIn) void useSession.getState().updateProfile({ preferred_lang: next });
   };

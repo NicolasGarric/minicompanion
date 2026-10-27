@@ -7,6 +7,7 @@ import { formatWhen } from './GameCard';
 import { playError } from '../lib/games';
 import { galleryUrls, myGalleryItems } from '../lib/social';
 import { podiumCard } from '../lib/podiumCard';
+import { devicePhotos, type DevicePhoto } from '../lib/devicePhotos';
 import {
   addCategory,
   addJuror,
@@ -193,6 +194,8 @@ function MyEntry({ cat, entry, me, onChange }: { cat: Category; entry?: Entry; m
   const [files, setFiles] = useState<File[]>([]);
   const [fromGallery, setFromGallery] = useState<string[]>([]);
   const [gallery, setGallery] = useState<{ id: string; title: string; image_path: string; url?: string }[]>([]);
+  const [device, setDevice] = useState<DevicePhoto[]>([]);
+  const [fromDevice, setFromDevice] = useState<string[]>([]);
   const [rights, setRights] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,8 +207,22 @@ function MyEntry({ cat, entry, me, onChange }: { cat: Category; entry?: Entry; m
       setGallery(items.map((i) => ({ ...i, url: urls.get(i.image_path) })));
     }, () => setGallery([]));
   }, [open, me]);
+  // PAINT projects and My pile photos on this device
+  useEffect(() => {
+    if (!open) return;
+    let release = () => undefined as void;
+    let alive = true;
+    devicePhotos().then((r) => {
+      if (alive) (release = r.release), setDevice(r.photos);
+      else r.release();
+    }, () => setDevice([]));
+    return () => {
+      alive = false;
+      release();
+    };
+  }, [open]);
 
-  const count = files.length + fromGallery.length;
+  const count = files.length + fromGallery.length + fromDevice.length;
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -214,6 +231,7 @@ function MyEntry({ cat, entry, me, onChange }: { cat: Category; entry?: Entry; m
       // Every photo is resized (1600 px, JPEG) before upload; gallery images are fetched first.
       const blobs: Blob[] = [];
       for (const url of fromGallery) blobs.push(await (await fetch(url)).blob());
+      blobs.push(...device.filter((d) => fromDevice.includes(d.id)).map((d) => d.blob));
       blobs.push(...files);
       const resized = await Promise.all(blobs.map(async (b) => imageDataToBlob(await fileToImageData(b, 1600), 'image/jpeg')));
       await submitEntry(cat.id, title, resized, resized.length ? [] : entry?.photo_paths ?? []);
@@ -256,6 +274,23 @@ function MyEntry({ cat, entry, me, onChange }: { cat: Category; entry?: Entry; m
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {device.length > 0 && (
+            <div className="field">
+              <span>{t('bridge.fromDevice')}</span>
+              <ul className="pick-grid">
+                {device.map((d) => (
+                  <li key={d.id}>
+                    <label className={fromDevice.includes(d.id) ? 'on' : ''} title={d.label}>
+                      <input type="checkbox" checked={fromDevice.includes(d.id)} onChange={(e) => setFromDevice((l) => (e.target.checked ? [...l, d.id] : l.filter((x) => x !== d.id)))} />
+                      <img src={d.url} alt={d.label} />
+                      <small className="pick-tag">{t(d.source === 'project' ? 'bridge.tagPaint' : 'bridge.tagPile')}</small>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <small className="hint">{t('bridge.fromDeviceHint')}</small>
             </div>
           )}
           <label className="check">

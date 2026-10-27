@@ -11,7 +11,10 @@ secret key: the app only uses the **public** anon key, and data is protected by 
 
 ## 2. Create the database
 
-Fastest: run `scripts/copy-setup-sql.sh` (WSL) — it copies every migration and the seed, in order,
+Ready-made files: `resources/supabase/` (see its README): a status query, every migration as one
+re-runnable script, the latest migration alone, and the demo data.
+
+Or run `scripts/copy-setup-sql.sh` (WSL) — it copies every migration and the seed, in order,
 to the Windows clipboard (already-applied parts are skipped automatically). Paste into **SQL Editor** → **New query** and click **Run**.
 
 Or paste and run each file manually, **in this order**:

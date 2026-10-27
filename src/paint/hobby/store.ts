@@ -67,11 +67,16 @@ function load(): Stored {
   }
 }
 
+/** Inks given to new armies in turn (gauges and cards). */
+export const ARMY_INKS = ['#1d2a5b', '#ff4f7b', '#3b8f6b', '#c8693a', '#5b2a6e', '#2b2b2b', '#3d6b8f', '#a47552'];
+
 export const hid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const DAY = 86400000;
 
 interface HobbyState extends Stored {
   addArmy: (name: string, colour: string) => string;
+  /** New army with its units at once (from a tournament list), all still in the box. */
+  addArmyWithUnits: (name: string, units: { name: string; count: number; points: number | null }[]) => string;
   updateArmy: (id: string, patch: Partial<Pick<Army, 'name' | 'colour'>>) => void;
   removeArmy: (id: string) => void;
   addUnit: (armyId: string, u: Partial<Unit> & { name: string }) => string;
@@ -106,6 +111,24 @@ export const useHobby = create<HobbyState>((set, get) => {
     addArmy: (name, colour) => {
       const id = hid();
       save({ armies: [...get().armies, { id, name, colour, units: [], createdAt: Date.now() }] });
+      return id;
+    },
+    addArmyWithUnits: (name, list) => {
+      const id = hid();
+      const now = Date.now();
+      const units: Unit[] = list.map((u) => ({
+        id: hid(),
+        name: u.name,
+        role: 'troop',
+        count: u.count,
+        painted: 0,
+        stage: 'box',
+        ...(u.points ? { points: u.points } : null),
+        photos: [],
+        createdAt: now,
+      }));
+      const armies = get().armies;
+      save({ armies: [...armies, { id, name, colour: ARMY_INKS[armies.length % ARMY_INKS.length], units, createdAt: now }] });
       return id;
     },
     updateArmy: (id, patch) => mapArmy(id, (a) => ({ ...a, ...patch })),

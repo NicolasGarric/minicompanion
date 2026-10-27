@@ -11,9 +11,12 @@ import { osmEmbedUrl, osmLink } from '../../core/stores/stores';
 import { formatWhen } from '../components/GameCard';
 import { playError } from '../lib/games';
 import { downloadIcs } from '../lib/ics';
-import { parseArmyList } from '../lib/listParser';
+import { listUnits, parseArmyList } from '../lib/listParser';
 import type { Pairing } from '../lib/pairing';
 import { ContestSection } from '../components/ContestSection';
+import { OrganiserDashboard } from '../components/OrganiserDashboard';
+import { navigate } from '../../core/router';
+import { useHobby } from '../../paint/hobby/store';
 import { draftsToSlots, fitDrafts, RoundScheduleEditor, RoundScheduleList, RoundWhere, slotVenue, slotsToDrafts, toLocalInput, type SlotDraft } from '../components/RoundSchedule';
 import {
   confirmMatch,
@@ -48,7 +51,7 @@ import {
   type Tournament,
 } from '../lib/tournaments';
 
-type Tab = 'info' | 'players' | 'pairings' | 'standings' | 'contest';
+type Tab = 'info' | 'players' | 'pairings' | 'standings' | 'contest' | 'dashboard';
 
 interface Data {
   t: Tournament;
@@ -121,7 +124,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
   const running = tour.status === 'in_progress' || tour.status === 'finished';
   const contest = tour.type === 'painting_contest';
   const current = tab ?? (contest ? 'contest' : running ? 'pairings' : 'info');
-  const tabs: Tab[] = contest ? ['contest', 'info', 'players'] : ['info', 'players', 'pairings', 'standings', 'contest'];
+  const tabs: Tab[] = [...(contest ? ['contest', 'info', 'players'] as Tab[] : ['info', 'players', 'pairings', 'standings', 'contest'] as Tab[]), ...(organiser ? ['dashboard' as Tab] : [])];
   const registered = regs.filter((r) => r.status === 'registered');
 
   return (
@@ -160,6 +163,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
       {current === 'pairings' && <PairingsTab data={data} me={me} organiser={organiser} onChange={load} lang={lang} />}
       {current === 'standings' && <StandingsTab regs={regs} matches={matches} me={me} rounds={rounds} />}
       {current === 'contest' && <ContestSection tour={tour} organiser={organiser} />}
+      {current === 'dashboard' && organiser && <OrganiserDashboard tour={tour} regs={regs} rounds={rounds} matches={matches} />}
     </div>
   );
 }
@@ -312,6 +316,7 @@ function ListSection({ tour, reg, onChange }: { tour: Tournament; reg: Registrat
         {list && <span className={`tag list-${list.status}`}>{t(k(`tour.listStatus.${list.status}`))}</span>}
       </div>
       {list?.organiser_comment && <p className="notice">{list.organiser_comment}</p>}
+      {list && <PaintThisArmy text={list.raw_text} name={list.parsed_faction ?? tour.name} />}
       {locked ? (
         <pre className="list-text">{list?.raw_text ?? t('tour.noList')}</pre>
       ) : (
@@ -330,6 +335,19 @@ function ListSection({ tour, reg, onChange }: { tour: Tournament; reg: Registrat
         </form>
       )}
     </section>
+  );
+}
+
+/** PAINT bridge: the submitted list becomes an army in My pile (this device), units still in the box. */
+function PaintThisArmy({ text, name }: { text: string; name: string }) {
+  const t = useT();
+  const units = useMemo(() => listUnits(text), [text]);
+  const add = () => navigate(`paint/pile/${useHobby.getState().addArmyWithUnits(name.slice(0, 60), units)}`);
+  return (
+    <div className="field-row wrap">
+      <p className="hint grow">{units.length ? t('bridge.paintArmyHint', { n: units.length }) : t('bridge.paintArmyEmpty')}</p>
+      <button type="button" className="btn small" onClick={add}><Icon name="brush" size={14} /> {t('bridge.paintArmy')}</button>
+    </div>
   );
 }
 

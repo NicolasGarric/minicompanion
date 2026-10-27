@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isOverLimit, parseArmyList } from '../../src/play/lib/listParser.ts';
+import { isOverLimit, listUnits, parseArmyList } from '../../src/play/lib/listParser.ts';
 
 test('explicit total line wins, with thousands separator', () => {
   const p = parseArmyList(`Faction: Space knights
@@ -56,4 +56,42 @@ test('over-limit warning', () => {
   assert.equal(isOverLimit(parseArmyList('Total 1010 pts'), 1000), true);
   assert.equal(isOverLimit(parseArmyList('Total 1000 pts'), 1000), false);
   assert.equal(isOverLimit(parseArmyList('no points'), 1000), false);
+});
+
+test('units: names, counts and points of each line', () => {
+  const u = listUnits(`Faction: Space knights
+Captain ........ 95 pts
+10x Battle brothers .... 180 pts
+  • 1x Plasma gun
+Skeleton warriors x20 (200 points)
+- Heavy walker [5 models] 150pts
+TOTAL: 1,995 pts`);
+  assert.deepEqual(u, [
+    { name: 'Captain', count: 1, points: 95 },
+    { name: 'Battle brothers', count: 10, points: 180 },
+    { name: 'Skeleton warriors', count: 20, points: 200 },
+    { name: 'Heavy walker', count: 5, points: 150 },
+  ]);
+});
+
+test('units: a header with the army total is not a unit', () => {
+  const u = listUnits(`Undead legion (995 points)
+Lord on foot (120 points)
+Boss - 80pts`);
+  assert.deepEqual(u.map((x) => x.name), ['Lord on foot', 'Boss']);
+});
+
+test('units: Japanese lines', () => {
+  const u = listUnits(`陣営：機械教団
+司令官　90ポイント
+歩兵分隊 10体　100ポイント
+合計：990ポイント`);
+  assert.deepEqual(u, [
+    { name: '司令官', count: 1, points: 90 },
+    { name: '歩兵分隊', count: 10, points: 100 },
+  ]);
+});
+
+test('units: nothing to read', () => {
+  assert.deepEqual(listUnits('Just some notes'), []);
 });

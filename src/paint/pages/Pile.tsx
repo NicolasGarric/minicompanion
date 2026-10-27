@@ -3,7 +3,7 @@ import { k, localeOf, useLang, useT } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { Icon, IconButton, Modal } from '../../core/ui/ui';
 import { download, shrinkPhoto } from '../../core/lib/image';
-import { ROLES, STAGES, armyStats, photoBlob, useHobby, type Army, type Role, type Stage, type Unit } from '../hobby/store';
+import { ARMY_INKS, ROLES, STAGES, armyStats, photoBlob, useHobby, type Army, type Role, type Stage, type Unit } from '../hobby/store';
 import { deckImage, deckLink, deckOf, type Deck } from '../hobby/deck';
 import { DeckView } from '../components/DeckCards';
 import { TimelapseDialog } from '../components/TimelapseDialog';
@@ -12,7 +12,6 @@ import { TimelapseDialog } from '../components/TimelapseDialog';
  * "My pile": every army as a big halftone gauge (painted miniatures / all miniatures), then the
  * army page with its unit list (tick what is painted), unit photos and the army deck.
  */
-const INKS = ['#1d2a5b', '#ff4f7b', '#3b8f6b', '#c8693a', '#5b2a6e', '#2b2b2b', '#3d6b8f', '#a47552'];
 
 export function Pile() {
   const t = useT();
@@ -27,7 +26,7 @@ export function Pile() {
   const create = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const id = addArmy(name.trim().slice(0, 60), INKS[armies.length % INKS.length]);
+    const id = addArmy(name.trim().slice(0, 60), ARMY_INKS[armies.length % ARMY_INKS.length]);
     setName('');
     navigate(`paint/pile/${id}`);
   };
@@ -124,7 +123,7 @@ export function ArmyPage({ id }: { id: string }) {
           <input className="army-name" value={army.name} aria-label={t('pile.armyName')} maxLength={60}
             onChange={(e) => updateArmy(army.id, { name: e.target.value })} />
           <div className="ink-row" role="radiogroup" aria-label={t('pile.colour')}>
-            {INKS.map((c) => (
+            {ARMY_INKS.map((c) => (
               <button key={c} type="button" role="radio" aria-checked={army.colour === c} className={`ink ${army.colour === c ? 'on' : ''}`}
                 style={{ background: c }} aria-label={c} onClick={() => updateArmy(army.id, { colour: c })} />
             ))}

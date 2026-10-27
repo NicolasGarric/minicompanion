@@ -828,6 +828,7 @@ a.game-card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--bo
 .pick-grid label.on { border-color: var(--accent); }
 .pick-grid input { position: absolute; top: 0.25rem; left: 0.25rem; }
 .pick-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.pick-tag { position: absolute; right: 0; bottom: 0; padding: 0.05rem 0.35rem; font-size: 0.68rem; background: var(--ink3); color: var(--ink2); }
 .jury-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
 .jury-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
 .jury-list img { width: 3.5rem; height: 3.5rem; object-fit: cover; border-radius: 0.4rem; }
@@ -1340,3 +1341,9 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .report-reason { margin: 0.4rem 0; font-style: italic; }
 .report-dismissed, .report-actioned { opacity: 0.75; box-shadow: none; }
 .admin-table td:first-child, .admin-table th:first-child { text-align: left; }
+
+/* Organiser dashboard (tournament page) */
+.organiser-dash { display: grid; gap: 1rem; }
+.organiser-dash .card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.chart-limit { stroke: var(--ink1); stroke-dasharray: 4 4; }
+.line-signups { fill: none; stroke: var(--ink2); stroke-width: 2.5; }

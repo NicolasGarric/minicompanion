@@ -86,7 +86,7 @@ export const useSession = create<SessionState>((set, get) => ({
       : ((own.data as Profile[] | null)?.[0] ?? null);
     if (!data) return;
     set({ profile: data as Profile });
-    useLang.getState().setLang((data as Profile).preferred_lang);
+    void useLang.getState().setLang((data as Profile).preferred_lang);
   },
 
   signUp: async (email, password, displayName) => {

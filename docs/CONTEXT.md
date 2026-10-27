@@ -134,8 +134,9 @@ discover → paint → share → play → watch → back to physical stores.
 - [x] Step 2 — verified on the live Supabase project (2026-10-22): `node scripts/check-supabase.mjs`
       20/20 (auth, profile trigger, RLS, PostGIS search, registration, organiser drafts). Migration
       `20261022000003` applied (fix for INSERT … RETURNING on tournaments).
-- [ ] Step 3 — tournament list, filters, map (Leaflet), tournament page
-- [ ] Steps 4–9 — see `docs/PLAY_PLAN.md`
+- [x] Step 3 — tournament list, filters, map (Leaflet), tournament page
+- [x] Steps 4–8 — tournament flow, painting contest, social layer (see `docs/PLAY_PLAN.md`)
+- [ ] Step 9 — Twitch live status (needs Twitch developer credentials; embedded player only for now)
 
 ### PAINT v2 (2026-10-22) — simpler editor, see `docs/PAINT_V2.md`
 
@@ -206,7 +207,7 @@ discover → paint → share → play → watch → back to physical stores.
 | Languages (2026-10-23) | **One language at a time + a selector** in the header (language names in their own script), first visit follows the browser language; signed in, the choice is saved on the profile |
 | Languages added (2026-10-23) | French, Spanish, German, Italian, Brazilian Portuguese, **Simplified** Chinese, Korean (Noto Sans SC / KR for those two); events can be in any of them or "Japanese and English" (migration 000010) |
 
-## Open points / next steps (updated 2026-10-23)
+## Open points / next steps (updated 2026-10-27)
 
 Agreed order: 4. PAINT performance → 5. visual pass. Then:
 
@@ -220,10 +221,19 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 4. ~~Tournaments list: map and filters~~ done: Leaflet map (OSM tiles tinted in riso inks, loaded
    only on that page), filters city / distance / game size / type, starts on the profile's city,
    "Around me" asks for the position on click only and filters in the browser (never stored or sent).
-   Possible follow-up: the main bundle is ~1 MB since the 9 dictionaries are bundled (lazy-load them).
-5. **Organiser dashboard** (registrations over time, check-ins, list status, contest entries) and
-   **bridges** PAINT ↔ PLAY (e.g. "paint this army" from a list, contest entry from a PAINT project).
-6. **Moderation**: report button (table `reports` exists) and an admin review page.
+   ~~Lazy-load the dictionaries~~ done (2026-10-27): English stays bundled, the 8 others are chunks loaded
+   when picked (`loadLang` in `src/core/i18n/index.ts`; the first screen waits for its dictionary). Main
+   bundle 1,528 kB → 972 kB (gzip 510 → 291 kB).
+5. ~~Organiser dashboard and PAINT ↔ PLAY bridges~~ done (2026-10-27), no migration:
+   - **Dashboard** tab on the tournament page (organiser only, `OrganiserDashboard.tsx`, numbers in
+     `src/play/lib/organiserStats.ts` with tests): seats / waiting list / check-ins, sign-ups over time (step line
+     with seat limit and deadline), list status with the names to chase, active round (to play / to confirm /
+     disputed), contest entries and votes per category, player list as CSV (formula-safe, UTF-8 BOM).
+   - **Paint this army**: on my tournament list, creates an army in My pile with one unit per list line that has
+     points (`listUnits` in `listParser.ts`, counts from "10x", "x20", "5 models", "10体"), all in the box.
+   - **Contest entry from this device**: the entry form also offers the photos of PAINT projects and the latest
+     photo of each unit in My pile (`src/play/lib/devicePhotos.ts`); only ticked photos are uploaded.
+6. ~~Moderation~~ done: report button (`src/play/lib/social.ts`) and moderation queue in `/admin` (7h).
 7. ~~Stores page~~ done: **5,588 real shops worldwide** from OpenStreetMap (games & miniatures,
    model kits, hobby shops; anime / cards-only / crafts filtered out) in `public/data/shops.json`,
    rebuilt with `node scripts/fetch-osm-shops.mjs` (ODbL credit shown). Leaflet map drives the list,
@@ -288,8 +298,17 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
    hobby terms to check first: wash, drybrush, edge highlight, contrast paints, Swiss pairing terms).
 10. **Security**: the database password leaked once and is not rotated yet (owner's choice).
 11. Demo data: in the live database the "Friday Live Clash" table 3 shows 14–14 marked as a win
-    (fixed in `seed_tournament.sql` for new installs).
-12. Zone names are created in the UI language and not re-translated.
+    (fixed in `seed_tournament.sql` for new installs; `supabase/fixes/fix_demo_friday_table3.sql` for the live one).
+12. ~~Zone names not re-translated~~ done (2026-10-27): names made by the app keep how they were made
+    (`Zone.autoName`: colour, or a message key + number) and are rewritten when the language changes, on open
+    and on loading a variant; a name typed by the user drops it. Older projects: recognised when the name matches
+    a generated one in a loaded language.
+13. **SQL pack** (2026-10-27): `resources/supabase/` (built by `scripts/build-sql-resources.sh`): status query,
+    all migrations as one re-runnable script, the latest migration alone, numbered copies, demo seeds,
+    `fix_demo_friday_table3.sql` (item 11) and the demo cleanup, all ASCII. Live database checked the same day:
+    migrations 01–15 applied, **16 (admin dashboard) to apply**, demo data still there.
+14. Still open: tablet fine-tuning, per-language URLs / hreflang, vite 8 (dev-server advisory), privacy of
+    signed-in events (owner decision), single elimination (owner chose Swiss only).
 
 ## Dev environment notes
 
