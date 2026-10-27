@@ -92,3 +92,17 @@ export async function cleanUp(files: CleanupFile[], onProgress?: (done: number) 
   }
   return done;
 }
+
+// --- Translation suggestions (supabase/migrations/*_translation_suggestions.sql) -------------------
+export type SuggestionStatus = 'new' | 'accepted' | 'rejected' | 'done';
+export interface Suggestion {
+  id: string; created_at: string; lang: string; shown: string; keys: string[]; suggestion: string; note: string | null;
+  page: string | null; status: SuggestionStatus; author_handle: string | null;
+}
+export const suggestions = async (status: SuggestionStatus | '') =>
+  must(await db().rpc('admin_translation_suggestions', { p_status: status })) as Suggestion[];
+export async function setSuggestion(id: string, status: SuggestionStatus) {
+  must(await db().rpc('admin_set_translation_suggestion', { p_id: id, p_status: status }));
+}
+/** The dictionary line to paste into src/core/i18n/<lang>.ts for one key. */
+export const dictionaryLine = (key: string, text: string) => `  ${JSON.stringify(key)}: ${JSON.stringify(text)},`;

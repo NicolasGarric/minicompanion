@@ -3,6 +3,7 @@ import { LANGS, useLang, useT, type Lang, type MessageKey } from '../i18n';
 import type { Route } from '../router';
 import { APP_NAME } from '../brand';
 import { BugReportButton } from '../feedback/BugReport';
+import { TranslationSuggestButton } from '../feedback/TranslationSuggest';
 import { useSession } from '../auth/session';
 import { backendConfigured } from '../auth/supabase';
 import { Avatar } from '../ui/Avatar';
@@ -91,8 +92,9 @@ export function Footer({ compact }: { compact?: boolean }) {
       <p>
         {t('legal.short')} <a href="/legal">{t('nav.legal')}</a>
       </p>
-      <p>
+      <p className="footer-actions">
         <BugReportButton />
+        <TranslationSuggestButton />
       </p>
     </footer>
   );

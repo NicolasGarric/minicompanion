@@ -1363,3 +1363,9 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .bucket-bar { width: 40%; }
 .bucket-bar span { display: block; height: 0.6rem; background: var(--ink2); min-width: 2px; }
 .plain-list { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.25rem; }
+
+.footer-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 1.2rem; }
+.suggestions { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.suggestions li { display: grid; gap: 0.4rem; padding: 0.6rem 0.7rem; border: 1px solid var(--border); background: var(--surface); }
+.suggestions del { color: var(--muted); }
+.site-footer .modal { text-align: left; font-size: 0.9375rem; }

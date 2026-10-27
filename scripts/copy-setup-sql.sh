@@ -41,6 +41,7 @@ declare -A GUARD=(
   [20261103000015_hobby_community.sql]="to_regclass('public.season_challenges') is null"
   [20261104000016_admin_dashboard.sql]="to_regclass('public.page_views_daily') is null"
   [20261105000017_photo_storage.sql]="to_regprocedure('public.my_photo_usage()') is null"
+  [20261106000018_translation_suggestions.sql]="to_regclass('public.translation_suggestions') is null"
 )
 seq_of() { local n="${1%%_*}"; echo $((10#${n: -6})); } # 20261104000016_x.sql -> 16
 

@@ -6,6 +6,7 @@ import { BackendNotice } from '../auth/BackendNotice';
 import {
   cleanUp, cleanupCandidates, content, daily, langs, moderate, overview, recent, reports, setReport, storageUse, suspend, topPages, users,
   STORAGE_ALERT, STORAGE_LIMIT, type BucketUse, type CleanupFile,
+  dictionaryLine, setSuggestion, suggestions, type Suggestion, type SuggestionStatus,
   type AdminReport, type AdminUser, type ContentRow, type ContentType, type Day, type Overview, type Recent, type TopPage,
 } from './admin';
 
@@ -13,8 +14,8 @@ import {
  * Admin dashboard (/admin): traffic and accounts straight from the database, the moderation queue
  * (reports → hide / restore content, suspend the author) and the latest content of each kind.
  */
-type Tab = 'overview' | 'users' | 'moderation' | 'content' | 'storage';
-const TABS: Tab[] = ['overview', 'users', 'moderation', 'content', 'storage'];
+type Tab = 'overview' | 'users' | 'moderation' | 'content' | 'storage' | 'translations';
+const TABS: Tab[] = ['overview', 'users', 'moderation', 'content', 'storage', 'translations'];
 
 export function AdminDashboard() {
   const t = useT();
@@ -46,6 +47,7 @@ export function AdminDashboard() {
       {tab === 'moderation' && <ModerationTab />}
       {tab === 'content' && <ContentTab />}
       {tab === 'storage' && <StorageTab />}
+      {tab === 'translations' && <TranslationsTab />}
     </div>
   );
 }
@@ -479,5 +481,73 @@ function StorageTab() {
         )}
       </section>
     </div>
+  );
+}
+
+/* ---------- Translation suggestions ---------- */
+
+/** Players' wording suggestions: review, then copy the dictionary line(s) to change. */
+function TranslationsTab() {
+  const t = useT();
+  const f = useFmt();
+  const [status, setStatus] = useState<SuggestionStatus | ''>('new');
+  const [rows, setRows] = useState<Suggestion[] | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const load = () => suggestions(status).then(setRows, () => setError(true));
+  useEffect(() => { setRows(null); load(); }, [status]);
+  const mark = async (id: string, next: SuggestionStatus) => {
+    try {
+      await setSuggestion(id, next);
+      load();
+    } catch {
+      setError(true);
+    }
+  };
+  const copy = async (id: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+    } catch {
+      setCopied(null);
+    }
+  };
+
+  if (error) return <ErrorLine error />;
+  return (
+    <section className="card">
+      <div className="card-head admin-chart-head">
+        <h2>{t('admin.tab.translations')}</h2>
+        <select className="select" value={status} onChange={(e) => setStatus(e.target.value as SuggestionStatus | '')} aria-label={t('admin.tr.filter')}>
+          {(['new', 'accepted', 'done', 'rejected', ''] as const).map((s) => <option key={s} value={s}>{t(k(`admin.tr.status.${s || 'all'}`))}</option>)}
+        </select>
+      </div>
+      {!rows ? <span className="spinner" /> : rows.length === 0 ? <p className="hint">{t('admin.tr.empty')}</p> : (
+        <ul className="suggestions">
+          {rows.map((r) => {
+            const lines = r.keys.map((key) => dictionaryLine(key, r.suggestion)).join('\n');
+            return (
+              <li key={r.id}>
+                <div className="field-row wrap">
+                  <span className="tag">{r.lang.toUpperCase()}</span>
+                  <span className={`tag status-${r.status}`}>{t(k(`admin.tr.status.${r.status}`))}</span>
+                  <small className="muted grow">{r.author_handle ? `@${r.author_handle} · ` : ''}{f.when(r.created_at)}{r.page ? ` · ${r.page}` : ''}</small>
+                </div>
+                <p><del>{r.shown}</del> → <strong>{r.suggestion}</strong></p>
+                {r.note && <p className="hint">“{r.note}”</p>}
+                {r.keys.length ? <pre className="list-text">{lines}</pre> : <p className="hint">{t('admin.tr.noKey')}</p>}
+                <div className="field-row wrap">
+                  {r.keys.length > 0 && <button className="btn small ghost" onClick={() => copy(r.id, lines)}>{t(copied === r.id ? 'admin.tr.copied' : 'admin.tr.copy')}</button>}
+                  {r.status !== 'accepted' && <button className="btn small" onClick={() => mark(r.id, 'accepted')}>{t('admin.tr.accept')}</button>}
+                  {r.status !== 'done' && <button className="btn small" onClick={() => mark(r.id, 'done')}>{t('admin.tr.done')}</button>}
+                  {r.status !== 'rejected' && <button className="btn small danger-ghost" onClick={() => mark(r.id, 'rejected')}>{t('admin.tr.reject')}</button>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="hint">{t('admin.tr.howto')}</p>
+    </section>
   );
 }

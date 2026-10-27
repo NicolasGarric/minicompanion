@@ -80,6 +80,20 @@ export function translate(key: MessageKey, vars?: Vars, lang: Lang = useLang.get
   return s;
 }
 
+/**
+ * Keys whose text in `lang` is what the player saw (exact, then containing it), for translation
+ * suggestions: an admin then knows which line to change. Placeholders are compared as typed.
+ */
+export function keysWithText(text: string, lang: Lang, max = 20): MessageKey[] {
+  const dict = dictionaries[lang] ?? en;
+  const want = text.trim().toLowerCase();
+  if (!want) return [];
+  const entries = Object.entries(dict) as [MessageKey, string][];
+  const exact = entries.filter(([, v]) => v.trim().toLowerCase() === want).map(([key]) => key);
+  if (exact.length || want.length < 4) return exact.slice(0, max);
+  return entries.filter(([, v]) => v.toLowerCase().includes(want)).map(([key]) => key).slice(0, max);
+}
+
 /** Hook: re-renders the component when the language changes. */
 export function useT() {
   const lang = useLang((s) => s.lang);

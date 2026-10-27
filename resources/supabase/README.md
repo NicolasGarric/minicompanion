@@ -10,19 +10,20 @@ run it again after adding a migration, never edit these copies by hand.
 |---|---|
 | Migrations 01 – 16 | applied (confirmed by the owner) |
 | **Migration 17 – photo storage** | **to apply**: WebP photos with thumbnails, 100-photo quota, storage gauge and cleanup in `/admin` |
+| **Migration 18 – translation suggestions** | **to apply**: "Suggest a translation" in the footer, review in `/admin` |
 | Demo data | owner decided to remove it: run `demo/cleanup_demo_data.sql` (PREVIEW first) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: only the latest migration (17). **This is the one needed now.**
+   - `2_apply_latest_migration.sql`: only the latest migration (18). Use `1_apply_all_migrations.sql` now: it applies 17 and 18 and skips the rest.
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
 3. Run `0_check_status.sql` again: every line should say `applied`.
 
-The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `17_photo_storage.sql`),
+The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `18_translation_suggestions.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip
 themselves: running one twice stops with "already exists".
 
@@ -43,6 +44,6 @@ password `demo-password-2026`.
   password manager. It leaked once and has not been changed yet (your choice for now).
 - Tested 2026-10-27 on a fresh local Postgres 16 (PostGIS emulated): apply all, re-run (everything
   skipped), apply the latest migration alone on a database at 15, demo fix (1 row then 0), and the 257 RLS
-  checks in `supabase/tests/` (278 with migration 17).
+  checks in `supabase/tests/` (287 with migrations 17 and 18).
 - To copy the full setup straight to the Windows clipboard instead: `scripts/copy-setup-sql.sh`
   (`--no-seed`, `--from 17`, `--status`, `--print`).
