@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { k, langName, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
+import { ShareSheet } from '../../core/ui/ShareSheet';
 import { countryName } from '../lib/countries';
-import { cancelGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, type Game, type GamePlayer } from '../lib/games';
+import { cancelGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameMap, type Game, type GamePlayer } from '../lib/games';
+import { decodeTable } from '../lib/tableCodec';
+import type { Table } from '../lib/tableGen';
+import { drawTable } from '../visual/tableMap';
 import { formatWhen } from '../components/GameCard';
 import { ReportSection } from '../components/ReportSection';
 import { GameChat } from '../components/GameChat';
@@ -16,7 +20,11 @@ export function GameDetail({ id }: { id: string }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
   const session = useSession((s) => s.session);
+  const profile = useSession((s) => s.profile);
   const me = session?.user.id ?? null;
+  // Arrived from an invitation link (?from=<handle> of the player who shared it)
+  const from = /^[a-z0-9_]{3,24}$/.test(new URLSearchParams(location.search).get('from') ?? '') ? new URLSearchParams(location.search).get('from') : null;
+  const [inviting, setInviting] = useState(false);
   const [data, setData] = useState<{ game: Game; players: GamePlayer[]; address: string | null } | null | undefined>(undefined);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -57,9 +65,32 @@ export function GameDetail({ id }: { id: string }) {
     setBusy(false);
   };
 
+  const open = !past && game.status !== 'cancelled';
+  const place = [game.area, game.city].filter(Boolean).join(', ');
+  const seatsLeft = Math.max(0, game.max_players - game.players_count);
+  const inviteUrl = `${location.origin}${location.pathname}${profile?.handle ? `?from=${profile.handle}` : ''}`;
+  const inviteText = t('games.invite.text', {
+    game: [game.game_system, game.format, game.points ? t('games.points', { points: game.points }) : null].filter(Boolean).join(' · '),
+    when: formatWhen(game.starts_at, lang),
+    place,
+    seats: seatsLeft,
+  });
+  const showInvited = from && open && !isHost && !(mine && (mine.status === 'pending' || mine.status === 'accepted'));
+
   return (
     <div className="narrow game-detail">
       <a href="/play/quick" className="small">← {t('nav.play.quick')}</a>
+      {showInvited && (
+        <section className="invite-banner" role="note">
+          <strong>{from === game.host?.handle ? t('games.invite.byHost', { name: game.host.display_name }) : t('games.invite.byPlayer', { handle: from })}</strong>
+          <span>{game.status === 'open' ? t('games.invite.seats', { n: seatsLeft }) : t('games.full')}</span>
+          {game.status === 'open' && (
+            !session
+              ? <button className="btn primary" onClick={() => requireSignIn()}>{t('games.signinToJoin')}</button>
+              : <a className="btn primary" href="#join">{t('games.askToJoin')}</a>
+          )}
+        </section>
+      )}
       <div className="page-head">
         <div>
           <h1>{game.game_system}</h1>
@@ -88,6 +119,11 @@ export function GameDetail({ id }: { id: string }) {
         {game.league_id && <p><Icon name="star" size={16} /> <a href={`/play/league/${game.league_id}`}>{t('games.leagueGame')}</a></p>}
         {game.store_id && game.store && <p><Icon name="home" size={16} /> <a href={`/play/store/${game.store_id}`}>{game.store.name}</a></p>}
         <div className="field-row wrap">
+          {open && (
+            <button className="btn small primary" onClick={() => setInviting(true)}>
+              <Icon name="share" size={14} /> {t('games.invite.cta')}
+            </button>
+          )}
           {game.status !== 'cancelled' && !past && (
             <button
               className="btn small"
@@ -141,8 +177,10 @@ export function GameDetail({ id }: { id: string }) {
         )}
       </section>
 
+      <GameMap game={game} isHost={isHost} onChanged={load} />
+
       {!past && game.status !== 'cancelled' && (
-        <section className="card game-actions">
+        <section className="card game-actions" id="join">
           {isHost ? (
             <button className="btn danger-ghost" disabled={busy} onClick={() => act(() => cancelGame(game.id))}>{t('games.cancel')}</button>
           ) : !session ? (
@@ -171,6 +209,74 @@ export function GameDetail({ id }: { id: string }) {
 
       {past && game.status !== 'cancelled' && <ReportSection game={game} players={players} me={me} />}
       {me && (isHost || mine?.status === 'accepted') && game.status !== 'cancelled' && <GameChat gameId={game.id} me={me} />}
+      {inviting && <ShareSheet title={t('games.invite.title')} text={inviteText} url={inviteUrl} onClose={() => setInviting(false)} />}
     </div>
+  );
+}
+
+/** The table map the host attached (drawn from its code), with the host's buttons to set or remove it. */
+function GameMap({ game, isHost, onChanged }: { game: Game; isHost: boolean; onChanged: () => void }) {
+  const t = useT();
+  const [table, setTable] = useState<Table | null>(null);
+  const [busy, setBusy] = useState(false);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const box = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (!game.table_map) return setTable(null);
+    decodeTable(game.table_map).then(setTable, () => setTable(null));
+  }, [game.table_map]);
+
+  useEffect(() => {
+    if (!table) return;
+    const draw = () => {
+      if (!canvas.current || !box.current) return;
+      const w = box.current.clientWidth, dpr = Math.min(2, devicePixelRatio || 1);
+      const h = (w * table.height) / table.width;
+      canvas.current.width = w * dpr;
+      canvas.current.height = h * dpr;
+      canvas.current.style.height = `${h}px`;
+      const ctx = canvas.current.getContext('2d')!;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawTable(ctx, table, w, { marks: true });
+    };
+    draw();
+    const ro = new ResizeObserver(draw);
+    if (box.current) ro.observe(box.current);
+    return () => ro.disconnect();
+  }, [table]);
+
+  if (!game.table_map && !isHost) return null;
+  const editor = `/play/table-generator?game=${game.id}${game.table_map ? `&tab=build&map=${game.table_map}` : ''}`;
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await setGameMap(game.id, null);
+      onChanged();
+    } catch (e) {
+      playError(e);
+    }
+    setBusy(false);
+  };
+
+  return (
+    <section className="card game-map">
+      <h2><Icon name="map" size={18} /> {table?.name || t('games.map.title')}</h2>
+      {table ? (
+        <>
+          <a href={`/play/table-generator?tab=build&map=${game.table_map}`} className="game-map-canvas" ref={box} aria-label={t('games.map.open')}>
+            <canvas ref={canvas} role="img" aria-label={t('table.aria', { w: table.width, h: table.height, n: table.pieces.length })} />
+          </a>
+          <p className="hint">{t('games.map.facts', { w: table.width, h: table.height, n: table.pieces.length, o: table.objectives.length })}</p>
+        </>
+      ) : (
+        <p className="hint">{t('games.map.none')}</p>
+      )}
+      <div className="field-row wrap">
+        {table && <a className="btn small" href={`/play/table-generator?tab=build&map=${game.table_map}`}><Icon name="eye" size={14} /> {t('games.map.open')}</a>}
+        {isHost && <a className="btn small primary" href={editor}><Icon name="hand" size={14} /> {t(table ? 'games.map.change' : 'games.map.choose')}</a>}
+        {isHost && table && <button className="btn small danger-ghost" disabled={busy} onClick={remove}><Icon name="trash" size={14} /> {t('games.map.remove')}</button>}
+      </div>
+    </section>
   );
 }

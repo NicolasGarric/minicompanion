@@ -27,6 +27,8 @@ export interface Game {
   note: string | null;
   status: GameStatus;
   league_id: string | null;
+  /** Table map code (see tableCodec.ts), set by the host */
+  table_map?: string | null;
   host?: { display_name: string; handle: string } | null;
   store?: { name: string } | null;
 }
@@ -152,6 +154,8 @@ export const requestJoin = (id: string, message: string) => call('request_join_g
 export const respondJoin = (id: string, player: string, accept: boolean) => call('respond_join_game', { p_game: id, p_player: player, p_accept: accept });
 export const leaveGame = (id: string) => call('leave_game', { p_game: id });
 export const cancelGame = (id: string) => call('cancel_game', { p_game: id });
+/** Host only: attach a table map to the game, or remove it with null. */
+export const setGameMap = (id: string, map: string | null) => call('set_game_map', { p_game: id, p_map: map });
 
 /** What players typed most (games, or formats of one game), for the form suggestions. */
 export async function popularTexts(game?: string): Promise<{ game_system: string; format: string | null; games: number }[]> {

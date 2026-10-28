@@ -43,6 +43,7 @@ declare -A GUARD=(
   [20261105000017_photo_storage.sql]="to_regprocedure('public.my_photo_usage()') is null"
   [20261106000018_translation_suggestions.sql]="to_regclass('public.translation_suggestions') is null"
   [20261107000019_security_fixes.sql]="to_regproc('public.thumb_has_main') is null"
+  [20261108000020_game_maps.sql]="to_regproc('public.set_game_map') is null"
 )
 seq_of() { local n="${1%%_*}"; echo $((10#${n: -6})); } # 20261104000016_x.sql -> 16
 

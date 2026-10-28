@@ -9,13 +9,14 @@ run it again after adding a migration, never edit these copies by hand.
 | | |
 |---|---|
 | Migrations 01 – 19 | applied (checked by the owner on 2026-10-28) |
+| **Migration 20 – game maps** | **to apply**: a host attaches a table map (built or rolled in the Tables page) to a game |
 | Demo data | removed from the live database (checked 2026-10-28) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: only the latest migration (19).
+   - `2_apply_latest_migration.sql`: only the latest migration (20).
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
@@ -23,7 +24,7 @@ run it again after adding a migration, never edit these copies by hand.
 4. `3_security_check.sql`: security check of the live database. It changes nothing (it always ends
    with an error whose message is the report). Every line should start with `OK`.
 
-The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `19_security_fixes.sql`),
+The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `20_game_maps.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip
 themselves: running one twice stops with "already exists".
 

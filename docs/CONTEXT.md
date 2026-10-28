@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-10-28 (security audit, migration 19)
+> Last update: 2026-10-28 (tables rework: editor, cover, game maps, invitations; migration 20)
 
 ## What it is
 
@@ -357,6 +357,29 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     - Not fixed (minor): the anonymous rate limits of bug reports / translation suggestions are shared by all visitors
       (a spammer can use up the 30 / hour). Owner to check in the Supabase dashboard: email confirmation, leaked
       password protection, MFA on the admin account, redirect URL allow-list, CAPTCHA on sign-up.
+22. **Tables rework (2026-10-28)**, migration 20 **to apply** (+9 SQL tests `supabase/tests/rls_game_maps.sql`, +6 unit tests
+    `tests/play/tableCodec.test.ts`). Page `/play/table-generator` now titled "Tables & missions", two tabs:
+    - **Roll a table** (as before) + number of pieces (Auto, 0-24) + "Edit this table". New sizes 30x22, 30x30, 36x36, 60x44
+      (appended to `SIZES`, old `size=` links unchanged). Fixed: a competitive piece whose mirror had no room was kept alone.
+    - **Build my table** (`src/play/components/TableEditor.tsx`): any size 12-96", deployment (or none), add 12 kinds, 6 shapes
+      (rect, L, oval, triangle, hex, free form), width / depth, free rotation (round handle on the map, slider, ±15°), drag
+      pieces and objectives (touch and mouse, snap ½" / 15° optional), duplicate, mirror copy, re-roll N pieces, undo / redo,
+      arrow keys. Max 40 pieces, 12 objectives.
+    - **Cover and traits** (`src/play/lib/terrain.ts`): generic families, not one game's rules: cover none / light / heavy /
+      blocks line of sight; traits difficult, high ground, dangerous, impassable. Signs on the map + legend (toggle).
+      **Table check**: coverage %, pieces per cover, share of sight lines between the zones cut by blocking pieces, tips
+      (open < 20 %, crowded > 45 %, few blockers, gaps < 1", pieces off the table, objectives inside blocking terrain).
+    - The whole layout is a code (`src/play/lib/tableCodec.ts`, deflate + base64url via `src/core/lib/packed.ts`) in the URL
+      `?tab=build&map=...` and as a draft in localStorage (`mc.tableDraft`). Image export with the signs.
+    - **Link to a game**: `games.table_map` (code, checked `^[jz][A-Za-z0-9_-]+$`, ≤ 6,000 chars) set only through
+      `set_game_map(game, code|null)` (host, not cancelled). The game page shows the map (opens in the editor), the host
+      has Choose / Change / Remove (`?game=<id>` preselects the game in the Tables page).
+    - **Sharing** (`src/core/ui/ShareSheet.tsx`): phone share menu, copy link, copy message, LINE / WhatsApp / X / e-mail (plain
+      links), QR code. Game page: "Invite players" (any visitor, text with game, date, place, seats); the link carries
+      `?from=<handle>` and the invited player sees a banner with the join button. The handle is not verified (anyone can
+      write any handle in a link): it only changes the banner wording.
+    - Checked in headless Chromium (desktop 1280 and mobile 390): roll, edit, add, drag, rotate, mirror, re-roll, undo /
+      redo, reload from the link, share sheet; game page with a mocked game (banner, map, invite). No error, no overflow.
 
 ## Dev environment notes
 

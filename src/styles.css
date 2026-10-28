@@ -1181,6 +1181,46 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .mission-body { padding: 0.9rem 1rem; display: grid; gap: 0.5rem; }
 .mission-body h2 { margin: 0; font-size: 1.5rem; }
 .mission-body p { margin: 0; }
+.tabs-wide { display: flex; width: 100%; margin-bottom: 1rem; }
+.tabs-wide button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.55rem 0.7rem; font-size: 0.9375rem; }
+.table-canvas.editing canvas { touch-action: none; cursor: grab; user-select: none; }
+.table-canvas.editing canvas:active { cursor: grabbing; }
+.table-editor { display: grid; gap: 0; }
+.table-editor .table-canvas { margin: 1rem 0; }
+.narrow-num { width: 5rem; }
+.field.inline { display: inline-flex; flex-direction: row; align-items: center; gap: 0.5rem; }
+.piece-panel { display: grid; gap: 0.75rem; margin-bottom: 1rem; }
+.piece-panel h2 { margin: 0; font-size: 1.1rem; }
+.piece-panel input[type='range'] { flex: 1; min-width: 6rem; }
+.trait-list { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.trait-list legend { padding: 0; margin-bottom: 0.3rem; font-size: 0.875rem; color: var(--text-2); }
+.table-check { margin-bottom: 1rem; }
+.table-check h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+.check-stats { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.9375rem; }
+.check-tips { margin: 0.75rem 0 0.5rem; padding-left: 1.2rem; display: grid; gap: 0.3rem; }
+.check-tips li::marker { color: var(--ink1); }
+.check-tips li.good::marker { color: #3b8f6b; }
+.table-actions { margin: 0.5rem 0 0.75rem; }
+.terrain-legend { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: 0.875rem; }
+.terrain-legend .sign { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; border: 1.5px solid var(--ink2); border-radius: 1rem; background: var(--surface); font-weight: 700; }
+.link-game { margin-bottom: 1.5rem; display: grid; gap: 0.6rem; }
+.link-game h2 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.4rem; }
+.link-game .select { max-width: 100%; }
+
+/* Share sheet and invitations */
+.share-sheet { display: grid; gap: 0.75rem; }
+.share-text { margin: 0; padding: 0.6rem 0.75rem; background: var(--paper); border-left: 4px solid var(--ink1); white-space: pre-line; }
+.share-apps { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.share-qr { margin: 0; display: grid; justify-items: center; gap: 0.3rem; }
+.share-qr img { width: min(14rem, 100%); border: 2px solid var(--ink2); }
+.invite-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin: 0.75rem 0; padding: 0.8rem 1rem;
+  background: var(--ink3); border: 3px solid var(--ink2); box-shadow: 5px 5px 0 var(--ink1); }
+.invite-banner strong { flex: 1 1 100%; font-size: 1.05rem; }
+.game-map { display: grid; gap: 0.6rem; }
+.game-map h2 { margin: 0; display: flex; align-items: center; gap: 0.4rem; }
+.game-map-canvas { display: block; width: 100%; max-width: 24rem; border: 2px solid var(--ink2); background: var(--paper); }
+.game-map-canvas canvas { display: block; width: 100%; }
+.game-map .hint { margin: 0; }
 
 /* Campaign map */
 .campaign-layout { display: grid; gap: 1rem; }
@@ -1369,3 +1409,4 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .suggestions li { display: grid; gap: 0.4rem; padding: 0.6rem 0.7rem; border: 1px solid var(--border); background: var(--surface); }
 .suggestions del { color: var(--muted); }
 .site-footer .modal { text-align: left; font-size: 0.9375rem; }
+.table-editor > .card { margin-bottom: 1rem; }
