@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-10-28 (tables rework: editor, cover, game maps, invitations; migration 20)
+> Last update: 2026-10-28 (narrative campaigns step 1; migration 21)
 
 ## What it is
 
@@ -381,6 +381,28 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       write any handle in a link): it only changes the banner wording.
     - Checked in headless Chromium (desktop 1280 and mobile 390): roll, edit, add, drag, rotate, mirror, re-roll, undo /
       redo, reload from the link, share sheet; game page with a mocked game (banner, map, invite). No error, no overflow.
+23. **Narrative campaigns, step 1 (2026-10-28)**, migration 21 **to apply** (+49 SQL tests `supabase/tests/rls_narrative.sql`,
+    +5 unit tests `tests/play/narrative.test.ts`). Tab "Campagnes" in PLAY: `/play/campaigns` (mine + new from a template or a
+    blank map) and `/play/campaign/<id>` (noindex).
+    - Data: `campaigns.state` is the whole board (JSON checked by `campaign_state_ok`: ≤ 80 places, 200 routes, 40 zones, 2-4
+      camps A-D, place map codes like game maps). No SELECT on `state`: read through `campaign_view()`, which drops secret
+      routes for other camps and visitors. Master saves the board whole (`save_campaign_state`, version check, autosave 0.8 s
+      after the last change; conflict → reload). Players change it only through `record_campaign_action` (take / fort / cut /
+      res / xp / fall / event, applied in SQL by `cn_apply`, 60 per hour) and `record_campaign_battle`. Each turn stores an
+      inverse (undo on contest) and a snapshot (replay); secret routes are left out of journal details and snapshots.
+      Contest: another camp within 48 h, master keeps or undoes. Invitations: `?join=<code>` link (code readable by members).
+      Public campaigns: anyone with the link reads them. Realtime on `campaign_log` / `campaign_battles`, version poll 30 s.
+    - Client: `src/play/lib/narrativeBoard.ts` (types, isolation, replay, victory; pure), `narrative.ts` (server),
+      `src/play/visual/networkMap.ts` (drawing, emblems, hit tests), `components/campaign/NetworkBoard.tsx` (tools, selection,
+      place notes and table map: roll by place type, paste an editor link, open in the editor), `CampaignPanels.tsx`
+      (camps, actions with custom ones, battles, victory, journal with contests, players), pages `Campaigns.tsx`,
+      `CampaignPage.tsx`. Template `src/play/data/campaignTemplates.ts` ("Le Voile d’Ambre", texts EN/FR/JA, others get EN);
+      places with a scenario get a rolled table map at creation. ~250 new keys in 9 languages (`nc.*`).
+    - Checked in headless Chromium with a simulated backend (desktop and mobile): create from template, master edits and
+      autosave, add place and route, notes, map thumbnail, plan a battle, record an action, journal, replay, invite link;
+      player of camp B: read-only board, only their camp in the action form. Not checked against the real database
+      (migration not applied yet).
+    - Next: step 2 = the 10 campaigns (50 scenarios + 12 standalone), step 3 = chosen improvements.
 
 ## Dev environment notes
 

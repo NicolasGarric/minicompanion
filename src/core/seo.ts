@@ -18,6 +18,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
   dice: ['dice.title', 'dice.lead'],
   'paint.challenges': ['challenge.pageTitle', 'challenge.pageLead'],
   'play.tablegen': ['table.title', 'table.lead'],
+  'play.campaigns': ['nc.title', 'nc.lead'],
   'play.mentors': ['mentor.title', 'mentor.lead'],
   'play.swap': ['swap.title', 'swap.lead'],
   stores: ['stores.title', 'stores.lead'],
@@ -26,7 +27,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
 
 /** Personal or tool pages: useful to people, not to search results. */
 const PRIVATE: RouteName[] = [
-  'paint.editor', 'paint.shared', 'play.game', 'play.mine', 'play.new', 'play.tournament.new', 'play.tournament.tables', 'play.table',
+  'paint.editor', 'paint.shared', 'play.game', 'play.campaign', 'play.mine', 'play.new', 'play.tournament.new', 'play.tournament.tables', 'play.table',
   'messages', 'messages.thread', 'notifications', 'account', 'signin', 'stats', 'admin.bugs', 'admin', 'notFound',
   'paint.deck', 'paint.pile', 'paint.army', 'paint.sessions', 'paint.shelf', 'me.level', 'me.card', 'me.year',
 ];

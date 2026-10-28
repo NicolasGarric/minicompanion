@@ -26,6 +26,8 @@ import { Shelf } from './paint/pages/Shelf';
 import { Challenges } from './paint/pages/Challenges';
 import { SharedDeck } from './paint/components/DeckCards';
 import { TableGen } from './play/pages/TableGen';
+import { Campaigns } from './play/pages/Campaigns';
+import { CampaignPage } from './play/pages/CampaignPage';
 import { Mentors } from './play/pages/Mentors';
 import { Swap } from './play/pages/Swap';
 import { LevelPage } from './me/LevelPage';
@@ -92,6 +94,8 @@ function Page({ route }: { route: Route }) {
     case 'paint.shelf': return <Shelf />;
     case 'paint.challenges': return <Challenges />;
     case 'play.tablegen': return <TableGen />;
+    case 'play.campaigns': return <Campaigns />;
+    case 'play.campaign': return <CampaignPage id={route.params.id ?? ''} />;
     case 'play.mentors': return <Mentors />;
     case 'play.swap': return <Swap />;
     case 'me.level': return <LevelPage />;

@@ -105,6 +105,7 @@ const PAGES = [
   ['play/leagues', 'league.title', 'league.lead', () => ''],
   ['paint/challenges', 'challenge.pageTitle', 'challenge.pageLead', () => ''],
   ['play/table-generator', 'table.title', 'table.lead', () => ''],
+  ['play/campaigns', 'nc.title', 'nc.lead', () => ''],
   ['play/mentors', 'mentor.title', 'mentor.lead', () => ''],
   ['play/swap', 'swap.title', 'swap.lead', () => ''],
   ['dice', 'dice.title', 'dice.lead', () => ''],

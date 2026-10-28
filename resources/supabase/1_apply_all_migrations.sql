@@ -4730,3 +4730,755 @@ $setup_20261108000020_game_maps$;
     raise notice 'already there, skipped: 20261108000020_game_maps.sql';
   end if;
 end $guard$;
+
+-- >>> 20261109000021_narrative_campaigns.sql (skipped automatically if already applied)
+do $guard$ begin
+  if to_regclass('public.campaigns') is null then
+    execute $setup_20261109000021_narrative_campaigns$
+-- Narrative campaigns (owner decisions of 2026-10-28): a network of places and routes the campaign
+-- master draws freely, 2 to 4 camps, actions recorded by the players that change the board, battles
+-- to come, contested actions, and a replay of the board turn by turn.
+--
+-- The board is one JSON document (campaigns.state) checked by campaign_state_ok():
+--   places [{id, name, type, x, y, owner, capital, fort, value, scenario, notes, map}]
+--   routes [{a, b, type, owner, cut}]   zones [{x, y, r, type}]
+--   camps  [{id 'A'..'D', name, color, shape, sign, motto, res, heroes [{name, xp, fallen}]}]
+--   custom [{name, effect, amount}]     victory {rule, n}     bg
+-- Only the master saves the whole board (save_campaign_state, with a version check). Players change
+-- it only through record_campaign_action / record_campaign_battle, which apply a fixed set of effects.
+-- Secret routes are removed by campaign_view() for anyone who should not see them, so the board is
+-- never readable directly (no SELECT grant on the state column).
+
+create table public.campaigns (
+  id           uuid primary key default gen_random_uuid(),
+  master_id    uuid not null references public.profiles (id) on delete cascade,
+  title        text not null check (char_length(btrim(title)) between 2 and 80),
+  sector       text check (char_length(sector) <= 80),
+  description  text check (char_length(description) <= 1000),
+  template_key text check (template_key ~ '^[a-z0-9_]{1,40}$'),
+  state        jsonb not null,
+  turn         int not null default 0,
+  version      int not null default 1,
+  status       text not null default 'active' check (status in ('active', 'finished')),
+  is_public    boolean not null default false,
+  invite_code  text not null default substr(replace(gen_random_uuid()::text, '-', ''), 1, 12),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index campaigns_master_idx on public.campaigns (master_id);
+
+create table public.campaign_members (
+  campaign_id uuid not null references public.campaigns (id) on delete cascade,
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  camp        text check (camp in ('A', 'B', 'C', 'D')),
+  joined_at   timestamptz not null default now(),
+  primary key (campaign_id, user_id)
+);
+create index campaign_members_user_idx on public.campaign_members (user_id);
+
+create table public.campaign_log (
+  id           uuid primary key default gen_random_uuid(),
+  campaign_id  uuid not null references public.campaigns (id) on delete cascade,
+  turn         int not null,
+  camp         text check (camp in ('A', 'B', 'C', 'D')),
+  author_id    uuid references public.profiles (id) on delete set null,
+  -- take, fort, cut, res, xp, fall, event, battle
+  effect       text not null check (effect in ('take', 'fort', 'cut', 'res', 'xp', 'fall', 'event', 'battle')),
+  -- Name of a custom action, or the battle title
+  label        text check (char_length(label) <= 60),
+  -- What happened, in data: rendered in the reader's language by the app
+  detail       jsonb not null default '{}'::jsonb,
+  -- How to undo it if a contest is upheld
+  inverse      jsonb,
+  -- Board after this turn (owners, capitals, fortifications, cut routes), for the replay
+  snapshot     jsonb not null,
+  contested_by uuid references public.profiles (id) on delete set null,
+  contested_at timestamptz,
+  resolution   text check (resolution in ('kept', 'undone')),
+  created_at   timestamptz not null default now()
+);
+create index campaign_log_campaign_idx on public.campaign_log (campaign_id, turn desc);
+
+create table public.campaign_battles (
+  id          uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references public.campaigns (id) on delete cascade,
+  place_id    int not null,
+  title       text check (char_length(title) <= 60),
+  starts_on   date not null,
+  camps       text[] not null check (cardinality(camps) = 2 and camps <@ array['A', 'B', 'C', 'D'] and camps[1] <> camps[2]),
+  note        text check (char_length(note) <= 600),
+  status      text not null default 'planned' check (status in ('planned', 'played', 'cancelled')),
+  winner      text check (winner in ('A', 'B', 'C', 'D')),
+  created_by  uuid references public.profiles (id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create index campaign_battles_campaign_idx on public.campaign_battles (campaign_id, starts_on);
+
+alter table public.campaigns enable row level security;
+alter table public.campaign_members enable row level security;
+alter table public.campaign_log enable row level security;
+alter table public.campaign_battles enable row level security;
+
+-- Everything is written through the functions below.
+revoke all on public.campaigns, public.campaign_members, public.campaign_log, public.campaign_battles from anon, authenticated;
+grant select (id, master_id, title, sector, description, template_key, turn, version, status, is_public, created_at, updated_at)
+  on public.campaigns to anon, authenticated;
+grant select on public.campaign_members, public.campaign_log, public.campaign_battles to anon, authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- Who is who
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.is_campaign_member(p_campaign uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.campaign_members where campaign_id = p_campaign and user_id = auth.uid());
+$$;
+
+create or replace function public.is_campaign_master(p_campaign uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.campaigns where id = p_campaign and master_id = auth.uid());
+$$;
+
+create or replace function public.my_campaign_camp(p_campaign uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select camp from public.campaign_members where campaign_id = p_campaign and user_id = auth.uid();
+$$;
+
+create or replace function public.campaign_readable(p_campaign uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.campaigns where id = p_campaign and is_public) or public.is_campaign_member(p_campaign);
+$$;
+
+create policy "campaigns: members and public" on public.campaigns
+  for select using (is_public or public.is_campaign_member(id));
+create policy "campaign members: readable with the campaign" on public.campaign_members
+  for select using (public.campaign_readable(campaign_id));
+create policy "campaign log: readable with the campaign" on public.campaign_log
+  for select using (public.campaign_readable(campaign_id));
+create policy "campaign battles: readable with the campaign" on public.campaign_battles
+  for select using (public.campaign_readable(campaign_id));
+
+-- ---------------------------------------------------------------------------------------------
+-- The board
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.campaign_state_ok(s jsonb)
+returns boolean
+language sql
+immutable
+as $$
+  select jsonb_typeof(s) = 'object'
+     and pg_column_size(s) <= 256000
+     and jsonb_typeof(s -> 'places') = 'array' and jsonb_array_length(s -> 'places') <= 80
+     and jsonb_typeof(s -> 'routes') = 'array' and jsonb_array_length(s -> 'routes') <= 200
+     and jsonb_typeof(coalesce(s -> 'zones', '[]')) = 'array' and jsonb_array_length(coalesce(s -> 'zones', '[]')) <= 40
+     and jsonb_typeof(coalesce(s -> 'custom', '[]')) = 'array' and jsonb_array_length(coalesce(s -> 'custom', '[]')) <= 30
+     and jsonb_typeof(s -> 'camps') = 'array' and jsonb_array_length(s -> 'camps') between 2 and 4
+     -- Camps: A to D, each once, a colour, short texts
+     and not exists (select 1 from jsonb_array_elements(s -> 'camps') c
+                      where coalesce(c ->> 'id', '') not in ('A', 'B', 'C', 'D')
+                         or coalesce(c ->> 'color', '') !~ '^#[0-9a-fA-F]{6}$'
+                         or char_length(coalesce(c ->> 'name', '')) not between 1 and 40
+                         or char_length(coalesce(c ->> 'motto', '')) > 80
+                         or jsonb_typeof(coalesce(c -> 'heroes', '[]')) <> 'array'
+                         or jsonb_array_length(coalesce(c -> 'heroes', '[]')) > 12)
+     and (select count(distinct c ->> 'id') from jsonb_array_elements(s -> 'camps') c) = jsonb_array_length(s -> 'camps')
+     -- Places: numeric id once each, owner among the camps, a table map code or nothing
+     and not exists (select 1 from jsonb_array_elements(s -> 'places') p
+                      where jsonb_typeof(p -> 'id') <> 'number'
+                         or char_length(coalesce(p ->> 'name', '')) not between 1 and 40
+                         or char_length(coalesce(p ->> 'notes', '')) > 1000
+                         or char_length(coalesce(p ->> 'scenario', '')) > 80
+                         or (p ->> 'owner' is not null and p ->> 'owner' not in (select c ->> 'id' from jsonb_array_elements(s -> 'camps') c))
+                         or (p ->> 'map' is not null and (char_length(p ->> 'map') > 6000 or p ->> 'map' !~ '^[jz][A-Za-z0-9_-]+$')))
+     and (select count(distinct p ->> 'id') from jsonb_array_elements(s -> 'places') p) = jsonb_array_length(s -> 'places')
+     -- Routes join two existing places
+     and not exists (select 1 from jsonb_array_elements(s -> 'routes') r
+                      where not exists (select 1 from jsonb_array_elements(s -> 'places') p where p ->> 'id' = r ->> 'a')
+                         or not exists (select 1 from jsonb_array_elements(s -> 'places') p where p ->> 'id' = r ->> 'b'));
+$$;
+
+-- Replace the fields of the array item whose `key` equals `val`.
+create or replace function public.cn_patch(arr jsonb, key text, val text, patch jsonb)
+returns jsonb
+language sql
+immutable
+as $$
+  select coalesce(jsonb_agg(case when e ->> key = val then e || patch else e end order by ord), '[]'::jsonb)
+    from jsonb_array_elements(arr) with ordinality t(e, ord);
+$$;
+
+create or replace function public.cn_route_key(r jsonb)
+returns text
+language sql
+immutable
+as $$ select least((r ->> 'a')::int, (r ->> 'b')::int) || '-' || greatest((r ->> 'a')::int, (r ->> 'b')::int) $$;
+
+-- Board positions kept for the replay
+create or replace function public.cn_snapshot(s jsonb)
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'places', coalesce((select jsonb_object_agg(p ->> 'id', jsonb_build_object('owner', p -> 'owner', 'capital', coalesce(p -> 'capital', 'false'), 'fort', coalesce(p -> 'fort', '0')))
+                          from jsonb_array_elements(s -> 'places') p), '{}'::jsonb),
+    -- Secret routes are left out: the journal is readable by every camp
+    'cut', coalesce((select jsonb_agg(public.cn_route_key(r)) from jsonb_array_elements(s -> 'routes') r
+                      where (r ->> 'cut')::boolean and coalesce(r ->> 'type', 'normal') <> 'secret'), '[]'::jsonb),
+    'res', coalesce((select jsonb_object_agg(c ->> 'id', coalesce(c -> 'res', '0')) from jsonb_array_elements(s -> 'camps') c), '{}'::jsonb));
+$$;
+
+-- The board as the caller may see it: secret routes only for their camp (and the master).
+create or replace function public.campaign_view(p_campaign uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  s jsonb;
+  mine text := public.my_campaign_camp(p_campaign);
+begin
+  if not public.campaign_readable(p_campaign) then
+    raise exception 'forbidden';
+  end if;
+  select state into s from public.campaigns where id = p_campaign;
+  if public.is_campaign_master(p_campaign) then
+    return s;
+  end if;
+  return jsonb_set(s, '{routes}', coalesce((
+    select jsonb_agg(r order by ord) from jsonb_array_elements(s -> 'routes') with ordinality t(r, ord)
+     where coalesce(r ->> 'type', 'normal') <> 'secret' or (mine is not null and r ->> 'owner' = mine)), '[]'::jsonb));
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------
+-- Creating, joining, saving
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.create_campaign(p_title text, p_sector text, p_description text, p_template text, p_state jsonb, p_camp text default 'A')
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  if public.is_suspended(auth.uid()) then
+    raise exception 'suspended';
+  end if;
+  if (select count(*) from public.campaigns where master_id = auth.uid() and status = 'active') >= 20 then
+    raise exception 'too_many_campaigns';
+  end if;
+  if not public.campaign_state_ok(p_state) then
+    raise exception 'bad_state';
+  end if;
+  insert into public.campaigns (master_id, title, sector, description, template_key, state)
+  values (auth.uid(), btrim(p_title), nullif(btrim(p_sector), ''), nullif(btrim(p_description), ''), p_template, p_state)
+  returning id into new_id;
+  insert into public.campaign_log (campaign_id, turn, camp, author_id, effect, detail, snapshot)
+  values (new_id, 0, null, auth.uid(), 'event', '{"start": true}', public.cn_snapshot(p_state));
+  insert into public.campaign_members (campaign_id, user_id, camp)
+  values (new_id, auth.uid(), case when p_camp in ('A', 'B', 'C', 'D') then p_camp end);
+  return new_id;
+end;
+$$;
+
+-- Members (and the master) can see and share the invitation code.
+create or replace function public.campaign_invite_code(p_campaign uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select invite_code from public.campaigns where id = p_campaign and public.is_campaign_member(p_campaign);
+$$;
+
+create or replace function public.join_campaign(p_campaign uuid, p_code text, p_camp text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c public.campaigns;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  if public.is_suspended(auth.uid()) then
+    raise exception 'suspended';
+  end if;
+  select * into c from public.campaigns where id = p_campaign;
+  if not found or c.invite_code <> coalesce(p_code, '') then
+    raise exception 'bad_invite';
+  end if;
+  if p_camp is not null and not exists (select 1 from jsonb_array_elements(c.state -> 'camps') k where k ->> 'id' = p_camp) then
+    raise exception 'bad_camp';
+  end if;
+  if (select count(*) from public.campaign_members where campaign_id = p_campaign) >= 16 then
+    raise exception 'campaign_full';
+  end if;
+  insert into public.campaign_members (campaign_id, user_id, camp) values (p_campaign, auth.uid(), p_camp)
+  on conflict (campaign_id, user_id) do update set camp = excluded.camp;
+end;
+$$;
+
+-- Master: move a member to another camp (null = spectator) or remove them.
+create or replace function public.set_campaign_member(p_campaign uuid, p_user uuid, p_camp text, p_remove boolean default false)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_campaign_master(p_campaign) then
+    raise exception 'not_master';
+  end if;
+  if p_remove then
+    if p_user = auth.uid() then
+      raise exception 'master_stays';
+    end if;
+    delete from public.campaign_members where campaign_id = p_campaign and user_id = p_user;
+  else
+    update public.campaign_members set camp = case when p_camp in ('A', 'B', 'C', 'D') then p_camp end
+     where campaign_id = p_campaign and user_id = p_user;
+  end if;
+end;
+$$;
+
+create or replace function public.leave_campaign(p_campaign uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if public.is_campaign_master(p_campaign) then
+    raise exception 'master_stays';
+  end if;
+  delete from public.campaign_members where campaign_id = p_campaign and user_id = auth.uid();
+end;
+$$;
+
+-- Master: the whole board (map, camps, rules). Fails when someone changed it in between.
+create or replace function public.save_campaign_state(p_campaign uuid, p_state jsonb, p_version int,
+  p_title text default null, p_sector text default null, p_description text default null, p_public boolean default null, p_status text default null)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v int;
+begin
+  if not public.is_campaign_master(p_campaign) then
+    raise exception 'not_master';
+  end if;
+  if not public.campaign_state_ok(p_state) then
+    raise exception 'bad_state';
+  end if;
+  update public.campaigns
+     set state = p_state, version = version + 1, updated_at = now(),
+         title = coalesce(nullif(btrim(p_title), ''), title),
+         sector = case when p_sector is null then sector else nullif(btrim(p_sector), '') end,
+         description = case when p_description is null then description else nullif(btrim(p_description), '') end,
+         is_public = coalesce(p_public, is_public),
+         status = case when p_status in ('active', 'finished') then p_status else status end
+   where id = p_campaign and version = p_version
+  returning version into v;
+  if v is null then
+    raise exception 'version_conflict';
+  end if;
+  return v;
+end;
+$$;
+
+create or replace function public.delete_campaign(p_campaign uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_campaign_master(p_campaign) then
+    raise exception 'not_master';
+  end if;
+  delete from public.campaigns where id = p_campaign;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------
+-- Actions
+-- ---------------------------------------------------------------------------------------------
+-- Applies one effect for a camp; returns the new board, what happened and how to undo it.
+create or replace function public.cn_apply(s jsonb, p_camp text, p_effect text, p_target text, p_amount int,
+  out new_state jsonb, out detail jsonb, out inverse jsonb)
+language plpgsql
+immutable
+as $$
+declare
+  p jsonb;
+  r jsonb;
+  k jsonb;
+  h jsonb;
+  n int;
+begin
+  new_state := s;
+  detail := '{}'::jsonb;
+  inverse := null;
+  if p_effect in ('take', 'fort', 'battle') then
+    select e into p from jsonb_array_elements(s -> 'places') e where e ->> 'id' = p_target;
+    if p is null then
+      raise exception 'bad_target';
+    end if;
+    detail := jsonb_build_object('place', p ->> 'name', 'placeId', (p ->> 'id')::int, 'from', p -> 'owner');
+    inverse := jsonb_build_object('place', p_target, 'patch',
+      jsonb_build_object('owner', p -> 'owner', 'capital', coalesce(p -> 'capital', 'false'), 'fort', coalesce(p -> 'fort', '0')));
+    if p_effect = 'fort' then
+      if p ->> 'owner' is distinct from p_camp then
+        raise exception 'not_your_place';
+      end if;
+      new_state := jsonb_set(s, '{places}', public.cn_patch(s -> 'places', 'id', p_target,
+        jsonb_build_object('fort', least(3, coalesce((p ->> 'fort')::int, 0) + 1))));
+      detail := detail || '{"result": "fortified"}';
+    elsif p ->> 'owner' is not distinct from p_camp then
+      detail := detail || '{"result": "held"}';
+    elsif coalesce((p ->> 'fort')::int, 0) > 0 then
+      new_state := jsonb_set(s, '{places}', public.cn_patch(s -> 'places', 'id', p_target,
+        jsonb_build_object('fort', (p ->> 'fort')::int - 1)));
+      detail := detail || '{"result": "resisted"}';
+    else
+      new_state := jsonb_set(s, '{places}', public.cn_patch(s -> 'places', 'id', p_target,
+        jsonb_build_object('owner', p_camp, 'capital', false)));
+      detail := detail || jsonb_build_object('result', 'taken', 'capital', coalesce((p ->> 'capital')::boolean, false));
+    end if;
+  elsif p_effect = 'cut' then
+    select e into r from jsonb_array_elements(s -> 'routes') e where public.cn_route_key(e) = p_target;
+    if r is null then
+      raise exception 'bad_target';
+    end if;
+    -- A secret route stays secret in the journal: no route key, no place names
+    detail := case when r ->> 'type' = 'secret' then '{"secret": true}'::jsonb else jsonb_build_object('route', p_target,
+      'a', (select e ->> 'name' from jsonb_array_elements(s -> 'places') e where e ->> 'id' = r ->> 'a'),
+      'b', (select e ->> 'name' from jsonb_array_elements(s -> 'places') e where e ->> 'id' = r ->> 'b')) end;
+    inverse := jsonb_build_object('route', p_target, 'cut', coalesce(r -> 'cut', 'false'));
+    new_state := jsonb_set(s, '{routes}', coalesce((
+      select jsonb_agg(case when public.cn_route_key(e) = p_target then e || '{"cut": true}' else e end order by ord)
+        from jsonb_array_elements(s -> 'routes') with ordinality t(e, ord)), '[]'::jsonb));
+  elsif p_effect = 'res' then
+    select e into k from jsonb_array_elements(s -> 'camps') e where e ->> 'id' = p_camp;
+    n := greatest(-10, least(10, coalesce(p_amount, 1)));
+    detail := jsonb_build_object('amount', n);
+    inverse := jsonb_build_object('camp', p_camp, 'patch', jsonb_build_object('res', coalesce(k -> 'res', '0')));
+    new_state := jsonb_set(s, '{camps}', public.cn_patch(s -> 'camps', 'id', p_camp,
+      jsonb_build_object('res', greatest(0, coalesce((k ->> 'res')::int, 0) + n))));
+  elsif p_effect in ('xp', 'fall') then
+    select e into k from jsonb_array_elements(s -> 'camps') e where e ->> 'id' = p_camp;
+    n := p_target::int;
+    h := k -> 'heroes' -> n;
+    if h is null then
+      raise exception 'bad_target';
+    end if;
+    detail := jsonb_build_object('hero', h ->> 'name');
+    inverse := jsonb_build_object('camp', p_camp, 'patch', jsonb_build_object('heroes', k -> 'heroes'));
+    new_state := jsonb_set(s, '{camps}', public.cn_patch(s -> 'camps', 'id', p_camp,
+      jsonb_build_object('heroes', jsonb_set(k -> 'heroes', array[n::text],
+        case when p_effect = 'xp' then h || jsonb_build_object('xp', coalesce((h ->> 'xp')::int, 0) + 1)
+             else h || '{"fallen": true}' end))));
+    if p_effect = 'xp' then
+      detail := detail || jsonb_build_object('xp', coalesce((h ->> 'xp')::int, 0) + 1);
+    end if;
+  end if;
+end;
+$$;
+
+-- Undo an action (contest upheld): put back what the inverse says.
+create or replace function public.cn_unapply(s jsonb, inv jsonb)
+returns jsonb
+language sql
+immutable
+as $$
+  select case
+    when inv is null then s
+    when inv ? 'place' then jsonb_set(s, '{places}', public.cn_patch(s -> 'places', 'id', inv ->> 'place', inv -> 'patch'))
+    when inv ? 'route' then jsonb_set(s, '{routes}', coalesce((
+      select jsonb_agg(case when public.cn_route_key(e) = inv ->> 'route' then e || jsonb_build_object('cut', inv -> 'cut') else e end order by ord)
+        from jsonb_array_elements(s -> 'routes') with ordinality t(e, ord)), '[]'::jsonb))
+    when inv ? 'camp' then jsonb_set(s, '{camps}', public.cn_patch(s -> 'camps', 'id', inv ->> 'camp', inv -> 'patch'))
+    else s end;
+$$;
+
+-- A player records an action for their camp (the master for any camp). Returns the log id.
+create or replace function public.record_campaign_action(p_campaign uuid, p_camp text, p_effect text, p_target text,
+  p_amount int default null, p_label text default null, p_text text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c public.campaigns;
+  res record;
+  log_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  -- coalesce: a non-member has no camp (null), which must count as "no"
+  if not (public.is_campaign_master(p_campaign) or coalesce(public.my_campaign_camp(p_campaign) = p_camp, false)) then
+    raise exception 'not_your_camp';
+  end if;
+  if public.is_suspended(auth.uid()) then
+    raise exception 'suspended';
+  end if;
+  if p_effect not in ('take', 'fort', 'cut', 'res', 'xp', 'fall', 'event') then
+    raise exception 'bad_effect';
+  end if;
+  if (select count(*) from public.campaign_log where author_id = auth.uid() and created_at > now() - interval '1 hour') >= 60 then
+    raise exception 'rate_limited';
+  end if;
+  select * into c from public.campaigns where id = p_campaign for update;
+  if c.status <> 'active' then
+    raise exception 'campaign_finished';
+  end if;
+  if not exists (select 1 from jsonb_array_elements(c.state -> 'camps') k where k ->> 'id' = p_camp) then
+    raise exception 'bad_camp';
+  end if;
+  select * into res from public.cn_apply(c.state, p_camp, p_effect, p_target, p_amount);
+  if p_effect = 'event' then
+    res.detail := jsonb_build_object('text', left(btrim(coalesce(p_text, '')), 200));
+  end if;
+  update public.campaigns set state = res.new_state, turn = turn + 1, version = version + 1, updated_at = now()
+   where id = p_campaign;
+  insert into public.campaign_log (campaign_id, turn, camp, author_id, effect, label, detail, inverse, snapshot)
+  values (p_campaign, c.turn + 1, p_camp, auth.uid(), p_effect, nullif(left(btrim(coalesce(p_label, '')), 60), ''),
+          res.detail, res.inverse, public.cn_snapshot(res.new_state))
+  returning id into log_id;
+  return log_id;
+end;
+$$;
+
+-- Another camp contests an action within 48 hours; the master keeps or undoes it.
+create or replace function public.contest_campaign_action(p_log uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  l public.campaign_log;
+  mine text;
+begin
+  select * into l from public.campaign_log where id = p_log;
+  if not found then
+    raise exception 'not_found';
+  end if;
+  mine := public.my_campaign_camp(l.campaign_id);
+  if mine is null or l.camp is null or mine = l.camp then
+    raise exception 'not_other_camp';
+  end if;
+  if l.created_at < now() - interval '48 hours' then
+    raise exception 'too_late';
+  end if;
+  if l.contested_by is not null or l.resolution is not null then
+    raise exception 'already_contested';
+  end if;
+  update public.campaign_log set contested_by = auth.uid(), contested_at = now() where id = p_log;
+end;
+$$;
+
+create or replace function public.resolve_campaign_contest(p_log uuid, p_undo boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  l public.campaign_log;
+begin
+  select * into l from public.campaign_log where id = p_log;
+  if not found or not public.is_campaign_master(l.campaign_id) then
+    raise exception 'not_master';
+  end if;
+  if l.contested_by is null or l.resolution is not null then
+    raise exception 'not_contested';
+  end if;
+  if p_undo then
+    update public.campaigns set state = public.cn_unapply(state, l.inverse), version = version + 1, updated_at = now()
+     where id = l.campaign_id;
+  end if;
+  update public.campaign_log set resolution = case when p_undo then 'undone' else 'kept' end where id = p_log;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------
+-- Battles to come
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.plan_campaign_battle(p_campaign uuid, p_place int, p_title text, p_date date,
+  p_camp_a text, p_camp_b text, p_note text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  s jsonb;
+  new_id uuid;
+begin
+  if not (public.is_campaign_master(p_campaign) or coalesce(public.my_campaign_camp(p_campaign) in (p_camp_a, p_camp_b), false)) then
+    raise exception 'not_your_camp';
+  end if;
+  if public.is_suspended(auth.uid()) then
+    raise exception 'suspended';
+  end if;
+  if (select count(*) from public.campaign_battles where campaign_id = p_campaign and status = 'planned') >= 30 then
+    raise exception 'too_many_battles';
+  end if;
+  select state into s from public.campaigns where id = p_campaign;
+  if not exists (select 1 from jsonb_array_elements(s -> 'places') e where (e ->> 'id')::int = p_place) then
+    raise exception 'bad_target';
+  end if;
+  insert into public.campaign_battles (campaign_id, place_id, title, starts_on, camps, note, created_by)
+  values (p_campaign, p_place, nullif(btrim(p_title), ''), p_date, array[p_camp_a, p_camp_b], nullif(btrim(p_note), ''), auth.uid())
+  returning id into new_id;
+  return new_id;
+end;
+$$;
+
+-- The winner of a battle tries to take the place (fortifications hold it once). Logged like an action.
+create or replace function public.record_campaign_battle(p_battle uuid, p_winner text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  b public.campaign_battles;
+  c public.campaigns;
+  res record;
+  log_id uuid;
+begin
+  select * into b from public.campaign_battles where id = p_battle;
+  if not found then
+    raise exception 'not_found';
+  end if;
+  if not (public.is_campaign_master(b.campaign_id) or coalesce(public.my_campaign_camp(b.campaign_id) = any (b.camps), false)) then
+    raise exception 'not_your_camp';
+  end if;
+  if b.status <> 'planned' then
+    raise exception 'already_played';
+  end if;
+  if not coalesce(p_winner = any (b.camps), false) then
+    raise exception 'bad_camp';
+  end if;
+  select * into c from public.campaigns where id = b.campaign_id for update;
+  if c.status <> 'active' then
+    raise exception 'campaign_finished';
+  end if;
+  select * into res from public.cn_apply(c.state, p_winner, 'battle', b.place_id::text, null);
+  update public.campaigns set state = res.new_state, turn = turn + 1, version = version + 1, updated_at = now() where id = c.id;
+  update public.campaign_battles set status = 'played', winner = p_winner where id = p_battle;
+  insert into public.campaign_log (campaign_id, turn, camp, author_id, effect, label, detail, inverse, snapshot)
+  values (c.id, c.turn + 1, p_winner, auth.uid(), 'battle', b.title,
+          res.detail || jsonb_build_object('battle', p_battle, 'loser', (select x from unnest(b.camps) x where x <> p_winner limit 1)),
+          res.inverse, public.cn_snapshot(res.new_state))
+  returning id into log_id;
+  return log_id;
+end;
+$$;
+
+create or replace function public.cancel_campaign_battle(p_battle uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  b public.campaign_battles;
+begin
+  select * into b from public.campaign_battles where id = p_battle;
+  if not found or not (public.is_campaign_master(b.campaign_id) or b.created_by = auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  update public.campaign_battles set status = 'cancelled' where id = p_battle and status = 'planned';
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------
+-- My campaigns (list page)
+-- ---------------------------------------------------------------------------------------------
+create or replace function public.my_campaigns()
+returns table (id uuid, title text, sector text, status text, turn int, camp text, is_master boolean, members bigint,
+               next_battle date, updated_at timestamptz)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select c.id, c.title, c.sector, c.status, c.turn, m.camp, c.master_id = auth.uid(),
+         (select count(*) from public.campaign_members x where x.campaign_id = c.id),
+         (select min(b.starts_on) from public.campaign_battles b where b.campaign_id = c.id and b.status = 'planned' and b.starts_on >= current_date),
+         c.updated_at
+    from public.campaign_members m join public.campaigns c on c.id = m.campaign_id
+   where m.user_id = auth.uid()
+   order by c.status, c.updated_at desc;
+$$;
+
+revoke execute on function public.create_campaign(text, text, text, text, jsonb, text), public.join_campaign(uuid, text, text),
+  public.set_campaign_member(uuid, uuid, text, boolean), public.leave_campaign(uuid),
+  public.save_campaign_state(uuid, jsonb, int, text, text, text, boolean, text), public.delete_campaign(uuid),
+  public.record_campaign_action(uuid, text, text, text, int, text, text), public.contest_campaign_action(uuid),
+  public.resolve_campaign_contest(uuid, boolean), public.plan_campaign_battle(uuid, int, text, date, text, text, text),
+  public.record_campaign_battle(uuid, text), public.cancel_campaign_battle(uuid), public.my_campaigns(),
+  public.campaign_invite_code(uuid)
+  from public, anon;
+grant execute on function public.create_campaign(text, text, text, text, jsonb, text), public.join_campaign(uuid, text, text),
+  public.set_campaign_member(uuid, uuid, text, boolean), public.leave_campaign(uuid),
+  public.save_campaign_state(uuid, jsonb, int, text, text, text, boolean, text), public.delete_campaign(uuid),
+  public.record_campaign_action(uuid, text, text, text, int, text, text), public.contest_campaign_action(uuid),
+  public.resolve_campaign_contest(uuid, boolean), public.plan_campaign_battle(uuid, int, text, date, text, text, text),
+  public.record_campaign_battle(uuid, text), public.cancel_campaign_battle(uuid), public.my_campaigns(),
+  public.campaign_invite_code(uuid)
+  to authenticated;
+-- Internal helpers: not callable from the browser
+revoke execute on function public.cn_apply(jsonb, text, text, text, int), public.cn_unapply(jsonb, jsonb) from public, anon, authenticated;
+
+-- Live updates of the journal and battles (the board itself is fetched through campaign_view)
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.campaign_log, public.campaign_battles;
+  end if;
+end $$;
+
+$setup_20261109000021_narrative_campaigns$;
+    raise notice 'applied: 20261109000021_narrative_campaigns.sql';
+  else
+    raise notice 'already there, skipped: 20261109000021_narrative_campaigns.sql';
+  end if;
+end $guard$;

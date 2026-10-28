@@ -1410,3 +1410,81 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .suggestions del { color: var(--muted); }
 .site-footer .modal { text-align: left; font-size: 0.9375rem; }
 .table-editor > .card { margin-bottom: 1rem; }
+
+/* Narrative campaigns */
+.nc-page { max-width: 80rem; margin: 0 auto; }
+.nc-desc { max-width: 46rem; margin: 0.4rem 0 0; }
+.nc-camps-strip { display: flex; flex-wrap: wrap; gap: 0.4rem; align-content: flex-start; }
+.nc-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem 0.15rem 0.2rem; border: 2px solid var(--ink2); background: var(--surface); font-weight: 700; font-size: 0.875rem; }
+.nc-emblem { display: inline-block; flex: none; }
+.nc-emblem-empty { display: inline-block; width: 24px; height: 24px; border: 1.5px dashed var(--muted); border-radius: 50%; flex: none; }
+.nc-save { margin: 0 0 0.5rem; }
+.nc-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+@media (max-width: 64rem) { .nc-layout { grid-template-columns: 1fr; } }
+.nc-main, .nc-side { display: grid; gap: 1rem; min-width: 0; }
+.nc-board { display: grid; gap: 0.6rem; }
+.nc-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; align-items: end; }
+.nc-toolbar .field.mini { gap: 0.15rem; font-size: 0.75rem; }
+.nc-toolbar .field.mini.dim { opacity: 0.45; }
+.nc-canvas { border: 3px solid var(--ink2); box-shadow: 7px 7px 0 var(--ink1); background: #123a7a; }
+.nc-canvas canvas { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; }
+.nc-canvas canvas.editing { touch-action: none; cursor: crosshair; }
+.nc-board > .hint { margin: 0; }
+.nc-sel { display: grid; gap: 0.6rem; }
+.nc-sel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.nc-sel-head h3 { margin: 0; flex: 1 1 auto; font-size: 1.15rem; }
+.nc-notes { margin: 0; white-space: pre-line; padding: 0.5rem 0.7rem; background: var(--paper); border-left: 4px solid var(--ink3); }
+.nc-map { display: grid; gap: 0.35rem; }
+.field-label { font-size: 0.875rem; font-weight: 700; }
+.nc-map-row { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: flex-start; }
+.nc-thumb { flex: none; border: 2px solid var(--ink2); background: var(--paper); line-height: 0; }
+.nc-thumb canvas { width: 132px; height: auto; }
+.nc-map-actions { flex: 1 1 14rem; display: grid; gap: 0.4rem; min-width: 0; }
+.nc-map-actions .hint { margin: 0; }
+.nc-replay { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.8rem; font-size: 0.875rem; font-weight: 700; }
+.nc-replay input { flex: 1 1 10rem; accent-color: var(--ink1); }
+.nc-replay span { font-variant-numeric: tabular-nums; }
+.nc-tabs { display: flex; width: 100%; }
+.nc-tabs button { flex: 1 1 auto; }
+.nc-pane { display: grid; gap: 0.8rem; }
+.nc-pane .card h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+.nc-pane .card { display: grid; gap: 0.6rem; }
+.nc-camp { display: grid; gap: 0.5rem; padding: 0.7rem 0.8rem; border: 2px solid var(--ink2); border-left-width: 8px; background: var(--surface); }
+.nc-camp .hint { margin: 0; }
+.grow { flex: 1 1 9rem; min-width: 0; }
+.nc-color { width: 2.6rem; height: 2.2rem; padding: 0; border: 2px solid var(--ink2); background: var(--surface); }
+.nc-heroes, .nc-custom, .nc-members { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.nc-heroes li, .nc-custom li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+.nc-heroes li.fallen span { text-decoration: line-through; color: var(--muted); }
+.nc-members li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px dashed var(--border); }
+.nc-members li a { font-weight: 700; flex: 1 1 8rem; }
+.nc-battle { display: grid; gap: 0.35rem; padding: 0.7rem 0.8rem; border: 2px solid var(--ink2); background: var(--surface); box-shadow: 4px 4px 0 var(--ink3); }
+.nc-battle.played { opacity: 0.65; box-shadow: none; }
+.nc-battle h3 { margin: 0; font-size: 1.05rem; }
+.nc-battle .when { font: 700 0.75rem/1 var(--body, inherit); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink1); }
+.nc-battle p { margin: 0; }
+.nc-vs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-weight: 700; }
+.nc-vs span { font-weight: 400; color: var(--muted); }
+.nc-progress { display: grid; gap: 0.25rem; font-size: 0.9rem; font-weight: 700; }
+.nc-bar { height: 0.75rem; border: 1.5px solid var(--ink2); background: var(--paper); }
+.nc-bar i { display: block; height: 100%; }
+.nc-winner { margin: 0; padding: 0.6rem 0.8rem; background: var(--ink3); border: 2px solid var(--ink2); font-family: var(--display); }
+.nc-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; max-height: 26rem; overflow: auto; }
+.nc-log li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr) auto; gap: 0.5rem; align-items: start; padding: 0.35rem 0.5rem; border-left: 4px solid var(--border); background: var(--paper); font-size: 0.9rem; }
+.nc-log li.undone .txt { text-decoration: line-through; color: var(--muted); }
+.nc-log .turn { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.8rem; }
+.nc-log .txt { min-width: 0; }
+.nc-log .tag { margin-left: 0.35rem; }
+.nc-log .acts { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+@media (max-width: 30rem) { .nc-log li { grid-template-columns: 3.4rem minmax(0, 1fr); } .nc-log .acts { grid-column: 2; } }
+.nc-features { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.6rem; }
+.nc-features li { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.6rem 0.7rem; border: 2px solid var(--ink2); background: var(--surface); }
+.nc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+.nc-create { display: grid; gap: 0.8rem; }
+.nc-templates { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.6rem; }
+.nc-template { display: grid; gap: 0.25rem; text-align: left; padding: 0.7rem 0.8rem; border: 2px solid var(--ink2); background: var(--surface); color: var(--ink2); cursor: pointer; font: inherit; }
+.nc-template small { color: var(--muted); }
+.nc-template span { font-size: 0.875rem; }
+.nc-template.on { background: var(--ink3); box-shadow: 4px 4px 0 var(--ink2); }
+.nc-template:focus-visible { outline: 3px solid var(--ink1); outline-offset: 2px; }
+textarea.text-input { font: inherit; line-height: 1.45; resize: vertical; }
