@@ -1666,6 +1666,7 @@ export const es: Record<MessageKey, string> = {
   "admin.storage.r.orphan": "Archivos huérfanos (subidas interrumpidas, contenido borrado) de más de 7 días",
   "admin.storage.r.bug_closed_90d": "Capturas de errores cerrados hace más de 90 días",
   "admin.storage.r.swap_closed_30d": "Fotos de anuncios de intercambio cerrados hace más de 30 días",
+  "admin.storage.r.hidden_7d": "Fotos de contenido ocultado por moderación hace más de 7 días",
   "admin.storage.r.challenge_12m": "Retos de hace más de 12 meses, salvo los 10 con más «me gusta»",
   "admin.storage.r.contest_12m": "Concursos de hace más de 12 meses, salvo el podio",
   "admin.storage.clean": "Borrar {n} archivos",

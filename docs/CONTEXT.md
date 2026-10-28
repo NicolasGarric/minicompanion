@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-10-26 (PLAY "Stats" tab: dice odds)
+> Last update: 2026-10-28 (security audit, migration 19)
 
 ## What it is
 
@@ -338,8 +338,24 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 18. ~~Translations review~~: "Suggest a translation" in the footer (selected text pre-fills it; matching dictionary
     keys are sent), `/admin` → Translations with ready-to-paste lines. Migration 18 **to apply**. 9 SQL tests.
 19. Quick games privacy: nothing to change (already public with the address for accepted players only).
-20. Still open: Twitch live status (later), nightly automatic photo cleanup (optional), demo cleanup and password
-    rotation (owner actions).
+20. Still open: Twitch live status (later), nightly automatic photo cleanup (optional), demo cleanup (owner action).
+    DB password rotated by the owner (2026-10-28); the old passwords were removed from the local `.env` comments.
+21. **Security audit (2026-10-28)**, migration 19 **to apply** (+16 SQL tests in `supabase/tests/rls_security_fixes.sql`):
+    - a thumbnail (`*.t.webp`) skipped the photo quota by its name alone: it is now accepted only when the full image
+      `*.w.webp` is already stored and belongs to the uploader (`thumb_has_main`). The app uploads the full image first.
+    - `track_page_view` creates at most 1,000 page / language rows a day (made-up route names could grow the table).
+    - `hidden_at` on contest entries, challenge entries and swap posts (trigger); `/admin` → Storage cleanup offers the
+      photos of content hidden for 7+ days (reason `hidden_7d`), since those buckets are public and a hidden photo
+      stayed reachable by its URL. Restoring after the cleanup leaves the entry without photo (contest / challenge
+      entries are deleted, swap posts lose the photo).
+    - Live check: `supabase/checks/security_check.sql` (= `resources/supabase/3_security_check.sql`), changes nothing,
+      reports OK / BAD / WARN lines in its final error message.
+    - Checked and fine: RLS on every table, no TRUNCATE grant, every SECURITY DEFINER function has a search_path,
+      admin functions check `is_admin`, private profile columns closed, no service key in the bundle or git history,
+      CSP / HSTS live, npm audit clean, no HTML injection sinks, user links through `safeHref`.
+    - Not fixed (minor): the anonymous rate limits of bug reports / translation suggestions are shared by all visitors
+      (a spammer can use up the 30 / hour). Owner to check in the Supabase dashboard: email confirmation, leaked
+      password protection, MFA on the admin account, redirect URL allow-list, CAPTCHA on sign-up.
 
 ## Dev environment notes
 

@@ -32,9 +32,11 @@ select pg_temp.ok(public.photo_thumb('a/b.w.webp') = 'a/b.t.webp' and public.pho
 
 set role authenticated;
 select pg_temp.as_user(pg_temp.uid(21));
+-- Two uploads, like the app: a thumbnail is only accepted once its full image is stored.
 insert into storage.objects (bucket_id, name, owner, metadata)
-values ('gallery', pg_temp.uid(21) || '/11111111-1111-1111-1111-111111111111.w.webp', auth.uid(), '{"size": 150000}'),
-       ('gallery', pg_temp.uid(21) || '/11111111-1111-1111-1111-111111111111.t.webp', auth.uid(), '{"size": 25000}');
+values ('gallery', pg_temp.uid(21) || '/11111111-1111-1111-1111-111111111111.w.webp', auth.uid(), '{"size": 150000}');
+insert into storage.objects (bucket_id, name, owner, metadata)
+values ('gallery', pg_temp.uid(21) || '/11111111-1111-1111-1111-111111111111.t.webp', auth.uid(), '{"size": 25000}');
 insert into public.gallery_items (owner_id, title, image_path, is_public)
 values (auth.uid(), 'Storage test', pg_temp.uid(21) || '/11111111-1111-1111-1111-111111111111.w.webp', true);
 reset role;

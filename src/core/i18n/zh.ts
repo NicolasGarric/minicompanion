@@ -1666,6 +1666,7 @@ export const zh: Record<MessageKey, string> = {
   "admin.storage.r.orphan": "超过 7 天的孤立文件（中断的上传、已删除的内容）",
   "admin.storage.r.bug_closed_90d": "关闭超过 90 天的错误报告截图",
   "admin.storage.r.swap_closed_30d": "关闭超过 30 天的交换帖子照片",
+  "admin.storage.r.hidden_7d": "被审核隐藏超过 7 天的内容照片",
   "admin.storage.r.challenge_12m": "超过 12 个月的挑战，点赞最多的 10 个除外",
   "admin.storage.r.contest_12m": "超过 12 个月的比赛，领奖台作品除外",
   "admin.storage.clean": "删除 {n} 个文件",

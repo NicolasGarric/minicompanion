@@ -1666,6 +1666,7 @@ export const fr: Record<MessageKey, string> = {
   "admin.storage.r.orphan": "Fichiers orphelins (envois interrompus, contenus supprimés) de plus de 7 jours",
   "admin.storage.r.bug_closed_90d": "Captures de bugs clos depuis plus de 90 jours",
   "admin.storage.r.swap_closed_30d": "Photos d’annonces de troc fermées depuis plus de 30 jours",
+  "admin.storage.r.hidden_7d": "Photos de contenus masqués par la modération depuis plus de 7 jours",
   "admin.storage.r.challenge_12m": "Défis de plus de 12 mois, sauf les 10 plus aimés",
   "admin.storage.r.contest_12m": "Concours de plus de 12 mois, sauf le podium",
   "admin.storage.clean": "Supprimer {n} fichiers",

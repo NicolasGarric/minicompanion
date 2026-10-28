@@ -1691,6 +1691,7 @@ export const en = {
   'admin.storage.r.orphan': 'Orphan files (interrupted uploads, deleted content), older than 7 days',
   'admin.storage.r.bug_closed_90d': 'Screenshots of bugs closed more than 90 days ago',
   'admin.storage.r.swap_closed_30d': 'Photos of swap posts closed more than 30 days ago',
+  'admin.storage.r.hidden_7d': 'Photos of content hidden by moderation more than 7 days ago',
   'admin.storage.r.challenge_12m': 'Challenges over 12 months old, except the 10 most liked',
   'admin.storage.r.contest_12m': 'Contests over 12 months old, except the podium',
   'admin.storage.clean': 'Delete {n} files',

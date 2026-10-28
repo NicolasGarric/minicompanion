@@ -1666,6 +1666,7 @@ export const de: Record<MessageKey, string> = {
   "admin.storage.r.orphan": "Verwaiste Dateien (abgebrochene Uploads, gelöschte Inhalte), älter als 7 Tage",
   "admin.storage.r.bug_closed_90d": "Screenshots von Fehlern, die vor über 90 Tagen geschlossen wurden",
   "admin.storage.r.swap_closed_30d": "Fotos von Tauschangeboten, die vor über 30 Tagen geschlossen wurden",
+  "admin.storage.r.hidden_7d": "Fotos von Inhalten, die vor über 7 Tagen von der Moderation ausgeblendet wurden",
   "admin.storage.r.challenge_12m": "Challenges älter als 12 Monate, außer den 10 beliebtesten",
   "admin.storage.r.contest_12m": "Wettbewerbe älter als 12 Monate, außer dem Podium",
   "admin.storage.clean": "{n} Dateien löschen",

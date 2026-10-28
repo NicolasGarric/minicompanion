@@ -1666,6 +1666,7 @@ export const ko: Record<MessageKey, string> = {
   "admin.storage.r.orphan": "7일이 지난 고아 파일(중단된 업로드, 삭제된 콘텐츠)",
   "admin.storage.r.bug_closed_90d": "종료 후 90일이 지난 버그 보고의 스크린샷",
   "admin.storage.r.swap_closed_30d": "마감 후 30일이 지난 교환 게시물 사진",
+  "admin.storage.r.hidden_7d": "운영진이 숨긴 지 7일이 지난 콘텐츠 사진",
   "admin.storage.r.challenge_12m": "12개월이 지난 챌린지(좋아요 상위 10개 제외)",
   "admin.storage.r.contest_12m": "12개월이 지난 대회(입상작 제외)",
   "admin.storage.clean": "파일 {n}개 삭제",

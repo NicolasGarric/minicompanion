@@ -1684,6 +1684,7 @@ export const ja: Record<MessageKey, string> = {
   'admin.storage.r.orphan': '7 日以上前の孤立ファイル（中断した送信、削除済みの内容）',
   'admin.storage.r.bug_closed_90d': '解決から 90 日以上たったバグ報告の画像',
   'admin.storage.r.swap_closed_30d': '締め切りから 30 日以上たった交換掲示板の写真',
+  'admin.storage.r.hidden_7d': 'モデレーションで非表示にしてから 7 日以上たった内容の写真',  // CHECK: moderation wording
   'admin.storage.r.challenge_12m': '12 か月以上前のチャレンジ（いいね上位 10 件を除く）',
   'admin.storage.r.contest_12m': '12 か月以上前のコンテスト（入賞作品を除く）',
   'admin.storage.clean': '{n} 件のファイルを削除',

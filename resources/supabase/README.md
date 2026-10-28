@@ -11,19 +11,22 @@ run it again after adding a migration, never edit these copies by hand.
 | Migrations 01 – 16 | applied (confirmed by the owner) |
 | **Migration 17 – photo storage** | **to apply**: WebP photos with thumbnails, 100-photo quota, storage gauge and cleanup in `/admin` |
 | **Migration 18 – translation suggestions** | **to apply**: "Suggest a translation" in the footer, review in `/admin` |
+| **Migration 19 – security fixes** | **to apply**: thumbnails no longer skip the photo quota, page view counters capped, photos of content hidden 7+ days offered by the cleanup |
 | Demo data | owner decided to remove it: run `demo/cleanup_demo_data.sql` (PREVIEW first) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: only the latest migration (18). Use `1_apply_all_migrations.sql` now: it applies 17 and 18 and skips the rest.
+   - `2_apply_latest_migration.sql`: only the latest migration (19). Use `1_apply_all_migrations.sql` now: it applies 17, 18 and 19 and skips the rest.
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
 3. Run `0_check_status.sql` again: every line should say `applied`.
+4. `3_security_check.sql`: security check of the live database. It changes nothing (it always ends
+   with an error whose message is the report). Every line should start with `OK`.
 
-The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `18_translation_suggestions.sql`),
+The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `19_security_fixes.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip
 themselves: running one twice stops with "already exists".
 
