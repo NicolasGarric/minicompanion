@@ -403,13 +403,25 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       player of camp B: read-only board, only their camp in the action form. Not checked against the real database
       (migration not applied yet).
     - Owner decision (2026-10-28): **every text of the site in all 9 languages**, campaign and scenario texts included.
-    - Next: step 2 = the 10 campaigns (50 scenarios + 12 standalone), step 3 = chosen improvements.
+    - Next: step 3 = chosen improvements (step 2 done, see 25).
 24. **Delete a game (2026-10-28, owner request)**, migration 22 **to apply** (+11 SQL tests `supabase/tests/rls_delete_game.sql`):
     `delete_game(game)` for the host or an admin, upcoming, cancelled or played. Everything cascades (players, chat, address,
     report, results; report photos become orphans for the storage cleanup). If the result was confirmed, the ratings of that
     game system are rebuilt by replaying the remaining confirmed games in order (`recompute_game_ratings`, internal).
     Accepted players get a `game_deleted` notification. Button on the game page with an in-page confirmation (played games
     get a stronger warning), then back to My games.
+25. **Narrative campaigns, step 2 (2026-10-28)**: the scenario library, every text in the 9 languages (owner decision).
+    `src/play/data/scenarios/`: `blocks.ts` (16 missions, 16 special rules, 9 aftermaths; `{A}` / `{B}` = camp names),
+    `standalone.ts` (12), `campaigns1-5.ts` (10 campaigns × 5 scenarios, invented sectors and places, background texts),
+    `catalog.ts` (ids `key.n` / `free.n`, `scenarioTexts`, `loreText`, `localizedCampaign`, `templateBoard`). Boards store
+    `place.sc` and `place.lore` ids, not texts, so each reader sees them in their own language; a campaign title or pitch
+    kept as in the template is shown in the reader's language too. No migration (the board JSON accepts the new fields).
+    UI: place panel shows the background and the full scenario card; the master picks any of the 62 scenarios for a place
+    (or writes their own); planning a battle there pre-fills its title; rolling a place map uses the scenario's theme and
+    deployment; `/play/campaigns` lists the 10 campaigns and a public "Scenario library" (open a table map for any scenario).
+    Tests: `tests/play/scenarios.test.ts` (counts, 9 languages everywhere, same camp placeholders in every language, ids
+    resolve, finale last, valid boards). Checked in headless Chromium (desktop, mobile): create from a template, scenario and
+    background on a place, same campaign read in Japanese, library, open a table from a scenario.
 
 ## Dev environment notes
 

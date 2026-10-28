@@ -6,6 +6,7 @@ import {
   type BattleRow, type Board, type Camp, type CampId, type Effect, type EmblemShape, type EmblemSign, type LogRow, type Member, type VictoryRule,
 } from '../../lib/narrative';
 import { drawEmblem } from '../../visual/networkMap';
+import { scenarioById, tr } from '../../data/campaignTemplates';
 
 /** Side panels of a narrative campaign: camps, actions, battles, victory, players, and the journal. */
 
@@ -198,8 +199,11 @@ export function BattlesPanel({ board, battles, myCamp, isMaster, draftPlace, onP
   const lang = useLang((s) => s.lang);
   const week = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   const [f, setF] = useState({ place: draftPlace ?? board.places[0]?.id ?? 0, title: '', date: week, a: (myCamp ?? board.camps[0].id) as CampId, b: board.camps.find((c) => c.id !== (myCamp ?? board.camps[0].id))!.id, note: '' });
+  // Planning from a place with a scenario: its title becomes the battle title
   useEffect(() => {
-    if (draftPlace !== null) setF((x) => ({ ...x, place: draftPlace }));
+    if (draftPlace === null) return;
+    const sc = scenarioById(board.places.find((p) => p.id === draftPlace)?.sc)?.scenario;
+    setF((x) => ({ ...x, place: draftPlace, title: sc ? tr(sc.title, lang) : x.title }));
   }, [draftPlace]);
   const camp = (id: CampId) => board.camps.find((c) => c.id === id);
   const canAct = (b: BattleRow) => isMaster || (myCamp !== null && b.camps.includes(myCamp));

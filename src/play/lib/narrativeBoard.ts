@@ -37,6 +37,10 @@ export interface Place {
   notes: string;
   /** Table map code (tableCodec) */
   map: string | null;
+  /** Scenario of the library played here ("amber_veil.3", "free.7"), shown in each reader's language */
+  sc?: string | null;
+  /** Background text of a ready-made campaign ("amber_veil.4") */
+  lore?: string | null;
 }
 export interface Route { a: number; b: number; type: RouteType; owner: CampId | null; cut: boolean }
 export interface Zone { x: number; y: number; r: number; type: ZoneType }

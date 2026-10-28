@@ -1,6 +1,6 @@
 import { supabase } from '../../core/auth/supabase';
 import { encodeTable } from './tableCodec';
-import { generate, newSeed, type Theme } from './tableGen';
+import { generate, newSeed, zonesFor, type Deployment, type Theme } from './tableGen';
 import type { Board, BattleRow, CampId, CampaignRow, Effect, LogRow, Member, MyCampaign, Place, PlaceType } from './narrativeBoard';
 
 export * from './narrativeBoard';
@@ -10,11 +10,12 @@ export * from './narrativeBoard';
  * the campaign master draws, 2 to 4 camps, actions recorded by the players. The board is one JSON
  * document; players change it only through server functions (fixed effects), the master saves it whole.
  */
-/** A table map suited to the kind of place, as a code for the table editor. */
+/** A table map suited to the kind of place (or to a scenario: theme and deployment), as a code for the table editor. */
 const THEME_OF: Record<PlaceType, Theme> = { planet: 'forest', moon: 'desert', station: 'outpost', belt: 'frozen', nebula: 'frozen', wreck: 'city' };
-export function rollPlaceMap(p: Place, name: string): Promise<string> {
-  const t = generate({ mode: 'narrative', size: 1, density: 'standard', theme: THEME_OF[p.type], seed: newSeed() });
-  return encodeTable({ ...t, name: name.slice(0, 60) });
+export function rollPlaceMap(p: Place, opts: { theme?: Theme; deploy?: Deployment } = {}): Promise<string> {
+  const t = generate({ mode: 'narrative', size: 1, density: 'standard', theme: opts.theme ?? THEME_OF[p.type], seed: newSeed() });
+  const deployment = opts.deploy ?? t.deployment;
+  return encodeTable({ ...t, name: p.name.slice(0, 60), deployment, zones: zonesFor(deployment, t.width, t.height) });
 }
 
 // ---------------------------------------------------------------------------------------------

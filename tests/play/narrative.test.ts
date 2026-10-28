@@ -55,8 +55,8 @@ test('victory rules', () => {
 
 test('templates are valid boards', () => {
   for (const t of TEMPLATES) {
-    for (const lang of ['en', 'fr', 'ja', 'ko'] as const) {
-      const b = templateBoard(t, lang, ['North', 'South']);
+    {
+      const b = templateBoard(t, ['North', 'South']);
       const ids = new Set(b.places.map((p) => p.id));
       assert.equal(ids.size, b.places.length, `${t.key}: unique place ids`);
       assert.ok(b.routes.every((r) => ids.has(r.a) && ids.has(r.b) && r.a !== r.b), `${t.key}: routes join places`);

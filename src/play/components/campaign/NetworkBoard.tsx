@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { k, useT } from '../../../core/i18n';
+import { k, useLang, useT } from '../../../core/i18n';
 import { Icon } from '../../../core/ui/ui';
 import { decodeTable } from '../../lib/tableCodec';
 import type { Table } from '../../lib/tableGen';
@@ -9,6 +9,8 @@ import {
 } from '../../lib/narrative';
 import { BOARD_H, BOARD_W, drawNetwork, hitPlace, hitRoute, hitZone, type Flash, type NetworkOptions } from '../../visual/networkMap';
 import { drawTable } from '../../visual/tableMap';
+import { SCENARIOS, TEMPLATES, loreText, scenarioById, tr } from '../../data/campaignTemplates';
+import { ScenarioCard } from './ScenarioCard';
 
 /**
  * The campaign board. Everyone can select a place to read its notes, scenario and table map; the
@@ -227,12 +229,15 @@ function Selection({ board, sel, onEdit, onClose, onPlanBattle, canPlan }: {
   board: Board; sel: NonNullable<Sel>; onEdit: ((b: Board) => void) | null; onClose: () => void; onPlanBattle: (id: number) => void; canPlan: boolean;
 }) {
   const t = useT();
+  const lang = useLang((s) => s.lang);
   const ro = !onEdit;
   if (sel.kind === 'place') {
     const p = board.places.find((x) => x.id === sel.id);
     if (!p) return null;
     const set = (patch: Partial<Place>) => onEdit?.({ ...board, places: board.places.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) });
     const owner = board.camps.find((c) => c.id === p.owner);
+    const sc = scenarioById(p.sc);
+    const lore = loreText(p.lore, lang);
     return (
       <section className="card nc-sel">
         <div className="nc-sel-head">
@@ -265,17 +270,31 @@ function Selection({ board, sel, onEdit, onClose, onPlanBattle, canPlan }: {
             <button className="btn small" onClick={() => set({ fort: Math.min(3, p.fort + 1) })}>+</button>
           </div>
         )}
+        {lore && <p className="nc-notes nc-lore">{lore}</p>}
         {ro ? (
           <>
-            {p.scenario && <p><span className="tag on">{t('nc.scenario')}</span> {p.scenario}</p>}
-            {p.notes ? <p className="nc-notes">{p.notes}</p> : <p className="hint">{t('nc.noNotes')}</p>}
+            {!sc && p.scenario && <p><span className="tag on">{t('nc.scenario')}</span> {p.scenario}</p>}
+            {p.notes ? <p className="nc-notes">{p.notes}</p> : !lore && <p className="hint">{t('nc.noNotes')}</p>}
           </>
         ) : (
           <>
-            <label className="field"><span>{t('nc.scenario')}</span><input className="text-input" maxLength={LIMITS.scenario} value={p.scenario} placeholder={t('nc.scenarioNone')} onChange={(e) => set({ scenario: e.target.value })} /></label>
+            <label className="field"><span>{t('nc.sc.catalog')}</span>
+              <select className="select" value={p.sc ?? ''} onChange={(e) => set({ sc: e.target.value || null })}>
+                <option value="">{t('nc.sc.none')}</option>
+                {TEMPLATES.map((c) => (
+                  <optgroup key={c.key} label={tr(c.title, lang)}>
+                    {SCENARIOS.filter((x) => x.campaign === c).map((x) => <option key={x.id} value={x.id}>{x.n}. {tr(x.scenario.title, lang)}</option>)}
+                  </optgroup>
+                ))}
+                <optgroup label={t('nc.sc.free')}>
+                  {SCENARIOS.filter((x) => !x.campaign).map((x) => <option key={x.id} value={x.id}>{tr(x.scenario.title, lang)}</option>)}
+                </optgroup>
+              </select></label>
+            {!sc && <label className="field"><span>{t('nc.sc.own')}</span><input className="text-input" maxLength={LIMITS.scenario} value={p.scenario} placeholder={t('nc.scenarioNone')} onChange={(e) => set({ scenario: e.target.value })} /></label>}
             <label className="field"><span>{t('nc.notes')}</span><textarea className="text-input" rows={3} maxLength={LIMITS.notes} value={p.notes} placeholder={t('nc.notesPlaceholder')} onChange={(e) => set({ notes: e.target.value })} /></label>
           </>
         )}
+        {sc && <ScenarioCard refd={sc} campA={board.camps[0]?.name ?? 'A'} campB={board.camps[1]?.name ?? 'B'} />}
         <PlaceMap place={p} onSet={ro ? null : (map) => set({ map })} />
         <div className="field-row wrap">
           {canPlan && <button className="btn small primary" onClick={() => onPlanBattle(p.id)}><Icon name="calendar" size={14} /> {t('nc.planHere')}</button>}
@@ -378,7 +397,7 @@ function PlaceMap({ place, onSet }: { place: Place; onSet: ((map: string | null)
             : <p className="hint">{onSet ? t('nc.noMapMaster') : t('nc.noMap')}</p>}
           <div className="field-row wrap">
             {editor && <a className="btn small" href={editor}><Icon name="map" size={14} /> {t('nc.openMap')}</a>}
-            {onSet && <button className="btn small" onClick={async () => onSet(await rollPlaceMap(place, `${place.name}${place.scenario ? ` · ${place.scenario}` : ''}`))}><Icon name="sparkle" size={14} /> {t(place.map ? 'nc.rollAnother' : 'nc.rollMap')}</button>}
+            {onSet && <button className="btn small" onClick={async () => { const sc = scenarioById(place.sc)?.scenario; onSet(await rollPlaceMap(place, sc ? { theme: sc.theme, deploy: sc.deploy } : {})); }}><Icon name="sparkle" size={14} /> {t(place.map ? 'nc.rollAnother' : 'nc.rollMap')}</button>}
             {onSet && place.map && <button className="btn small ghost" onClick={() => onSet(null)}>{t('nc.detach')}</button>}
           </div>
           {onSet && (

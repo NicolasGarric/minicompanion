@@ -5,7 +5,8 @@ import { requireSignIn, useSession } from '../../core/auth/session';
 import { navigate } from '../../core/router';
 import { Icon } from '../../core/ui/ui';
 import { blankBoard, campaignError, createCampaign, myCampaigns, rollPlaceMap, type CampId, type MyCampaign } from '../lib/narrative';
-import { TEMPLATES, templateBoard, templatePitch, templateTitle } from '../data/campaignTemplates';
+import { SCENARIOS, TEMPLATES, scenarioById, templateBoard, templatePitch, templateTitle, tr } from '../data/campaignTemplates';
+import { ScenarioCard } from '../components/campaign/ScenarioCard';
 
 /**
  * Narrative campaigns: my campaigns, and a new one from a ready-made sector or a blank map.
@@ -22,6 +23,7 @@ export function Campaigns() {
   const [camp, setCamp] = useState<CampId | ''>('A');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shelf, setShelf] = useState<string>(TEMPLATES[0]?.key ?? 'free');
 
   useEffect(() => {
     if (!backendConfigured || !session) return;
@@ -34,9 +36,12 @@ export function Campaigns() {
     setError(null);
     try {
       const campNames: [string, string] = [names[0].trim() || t('nc.campN', { id: 'A' }), names[1].trim() || t('nc.campN', { id: 'B' })];
-      const board = tpl ? templateBoard(tpl, lang, campNames) : { ...blankBoard(), camps: blankBoard().camps.map((c, i) => ({ ...c, name: campNames[i] })) };
-      // Every place with a scenario comes with a table map ready to play
-      board.places = await Promise.all(board.places.map(async (p) => (p.scenario ? { ...p, map: await rollPlaceMap(p, `${p.name} · ${p.scenario}`) } : p)));
+      const board = tpl ? templateBoard(tpl, campNames) : { ...blankBoard(), camps: blankBoard().camps.map((c, i) => ({ ...c, name: campNames[i] })) };
+      // Every place with a scenario comes with a table map ready to play (theme and deployment of the scenario)
+      board.places = await Promise.all(board.places.map(async (p) => {
+        const sc = scenarioById(p.sc)?.scenario;
+        return sc ? { ...p, map: await rollPlaceMap(p, { theme: sc.theme, deploy: sc.deploy }) } : p;
+      }));
       const id = await createCampaign(title.trim() || (tpl ? templateTitle(tpl, lang) : t('nc.untitled')), tpl?.sector ?? '', tpl ? templatePitch(tpl, lang) : '', tpl?.key ?? null, board, camp || null);
       navigate(`play/campaign/${id}`);
     } catch (e) {
@@ -70,7 +75,7 @@ export function Campaigns() {
               <div className="nc-cards">
                 {list.map((c) => (
                   <a key={c.id} className={`game-card ${c.status === 'finished' ? 'past' : ''}`} href={`/play/campaign/${c.id}`}>
-                    <strong>{c.title}</strong>
+                    <strong>{TEMPLATES.find((x) => x.title.includes(c.title)) ? tr(TEMPLATES.find((x) => x.title.includes(c.title))!.title, lang) : c.title}</strong>
                     <small className="muted">{[c.sector, t('nc.turn', { n: c.turn }), t('nc.membersN', { n: c.members })].filter(Boolean).join(' · ')}</small>
                     <span className="game-tags">
                       {c.is_master && <span className="tag">{t('nc.master')}</span>}
@@ -115,6 +120,24 @@ export function Campaigns() {
           </section>
         </>
       )}
+
+      <section className="nc-library" aria-labelledby="nc-library-title">
+        <h2 id="nc-library-title">{t('nc.lib.title')}</h2>
+        <p className="lead">{t('nc.lib.lead', { n: SCENARIOS.length })}</p>
+        <label className="field"><span>{t('nc.lib.show')}</span>
+          <select className="select" value={shelf} onChange={(e) => setShelf(e.target.value)}>
+            {TEMPLATES.map((c) => <option key={c.key} value={c.key}>{tr(c.title, lang)}</option>)}
+            <option value="free">{t('nc.sc.free')}</option>
+          </select></label>
+        {shelf !== 'free' && TEMPLATES.find((c) => c.key === shelf) && (
+          <p className="nc-desc">{templatePitch(TEMPLATES.find((c) => c.key === shelf)!, lang)}</p>
+        )}
+        <div className="nc-scenarios">
+          {SCENARIOS.filter((x) => (shelf === 'free' ? !x.campaign : x.campaign?.key === shelf)).map((x) => (
+            <ScenarioCard key={x.id} refd={x} campA={t('nc.campN', { id: 'A' })} campB={t('nc.campN', { id: 'B' })} withMap compact />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

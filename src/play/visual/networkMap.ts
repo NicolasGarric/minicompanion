@@ -195,7 +195,7 @@ export function drawNetwork(ctx: CanvasRenderingContext2D, b: Board, o: NetworkO
     ctx.fillText(p.name.toUpperCase(), p.x, p.y - r0 - 10);
     ctx.fillStyle = th.soft;
     for (let v = 0; v < p.value; v++) ctx.fillRect(p.x - p.value * 3.5 + v * 7, p.y + r0 + 8, 4, 4);
-    if (p.scenario) {
+    if (p.scenario || p.sc) {
       ctx.strokeStyle = th.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p.x + r0 + 4, p.y + 4); ctx.lineTo(p.x + r0 + 4, p.y - 12); ctx.stroke();
       ctx.fillStyle = YELLOW; ctx.beginPath(); ctx.moveTo(p.x + r0 + 4, p.y - 12); ctx.lineTo(p.x + r0 + 14, p.y - 8); ctx.lineTo(p.x + r0 + 4, p.y - 4); ctx.fill();
     }

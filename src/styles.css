@@ -1489,3 +1489,16 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .nc-template:focus-visible { outline: 3px solid var(--ink1); outline-offset: 2px; }
 textarea.text-input { font: inherit; line-height: 1.45; resize: vertical; }
 .game-delete { display: grid; gap: 0.5rem; } .game-delete p { margin: 0; }
+.nc-lore { border-left-color: var(--ink1); font-style: italic; }
+.nc-scenario { display: grid; gap: 0.45rem; padding: 0.8rem 0.9rem; border: 2px solid var(--ink2); background: var(--surface); box-shadow: 4px 4px 0 var(--ink3); min-width: 0; }
+.nc-scenario h3 { margin: 0; font-size: 1.1rem; }
+.nc-scenario .nc-hook { margin: 0; font-style: italic; }
+.nc-scenario dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.3rem 0.8rem; margin: 0; font-size: 0.9rem; }
+.nc-scenario dt { font-weight: 700; }
+.nc-scenario dd { margin: 0; }
+@media (max-width: 30rem) { .nc-scenario dl { grid-template-columns: 1fr; } .nc-scenario dd { margin-bottom: 0.3rem; } }
+.nc-scenario .btn { justify-self: start; }
+.nc-library { display: grid; gap: 0.8rem; margin-top: 2.5rem; }
+.nc-library h2 { margin: 0; }
+.nc-library .field { max-width: 24rem; }
+.nc-scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }

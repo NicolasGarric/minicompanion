@@ -1,0 +1,123 @@
+import type { CampaignTemplate } from './types.ts';
+
+/** Campaigns 9-10: The Market of Brassoleil, The Awakening of Zharn. */
+export const CAMPAIGNS_5: CampaignTemplate[] = [
+  {
+    key: 'brassoleil_market',
+    title: ['The Market of Brassoleil', 'Le Marché de Brassoleil', 'ブラソレイユの市場', 'El Mercado de Brassoleil', 'Der Markt von Brassoleil', 'Il Mercato di Brassoleil', 'O Mercado de Brassoleil', '布拉索莱伊集市', '브라솔레이 시장'],
+    pitch: [
+      'A market city where everything is for sale, loyalty included. Deals are struck in the morning and broken by nightfall.',
+      'Une ville-marché où tout s’achète, la loyauté comprise. Les accords se signent le matin et se rompent à la tombée de la nuit.',
+      '忠誠すら売り物になる市場都市。取引は朝に結ばれ、日暮れには破られる。',
+      'Una ciudad mercado donde todo se compra, la lealtad incluida. Los tratos se cierran por la mañana y se rompen al anochecer.',
+      'Eine Marktstadt, in der alles käuflich ist, auch Loyalität. Morgens werden Abmachungen getroffen, abends gebrochen.',
+      'Una città mercato dove tutto si compra, lealtà compresa. Gli accordi si stringono al mattino e si rompono al calar della notte.',
+      'Uma cidade-mercado onde tudo se compra, inclusive a lealdade. Acordos se fecham de manhã e se rompem ao anoitecer.',
+      '一座一切皆可买卖的集市之城，忠诚也不例外。交易清晨达成，入夜便告破裂。',
+      '충성마저 사고파는 시장 도시. 거래는 아침에 맺어지고 해 질 녘에 깨진다.',
+    ],
+    sector: 'Oskaya',
+    places: [
+      { id: 1, name: 'Cuprane', type: 'station', x: 110, y: 300, owner: 'A', capital: true },
+      { id: 2, name: 'Lanteris', type: 'moon', x: 220, y: 160, owner: 'A' },
+      { id: 3, name: 'Brassoleil', type: 'planet', x: 430, y: 300, sc: 5,
+        lore: ['The great market: a thousand stalls under a copper dome. Whoever controls the bazaar sets the price of everything in the sector.', 'Le grand marché : mille échoppes sous un dôme de cuivre. Qui contrôle le bazar fixe le prix de tout dans le secteur.', '大市場。銅のドームの下に千の露店が並ぶ。バザールを支配する者が、セクターのあらゆる物の値を決める。', 'El gran mercado: mil puestos bajo una cúpula de cobre. Quien controla el bazar fija el precio de todo en el sector.', 'Der große Markt: tausend Stände unter einer Kupferkuppel. Wer den Basar kontrolliert, bestimmt die Preise im ganzen Sektor.', 'Il grande mercato: mille bancarelle sotto una cupola di rame. Chi controlla il bazar fissa il prezzo di tutto nel settore.', 'O grande mercado: mil barracas sob uma cúpula de cobre. Quem controla o bazar fixa o preço de tudo no setor.', '大集市：铜穹顶下有上千个摊位。掌控集市的人决定星区内一切的价格。', '대시장. 구리 돔 아래 천 개의 노점이 늘어서 있다. 바자르를 쥔 자가 섹터 모든 것의 값을 정한다.'] },
+      { id: 4, name: 'Tallow', type: 'belt', x: 300, y: 460, sc: 1 },
+      { id: 5, name: 'Orvo', type: 'station', x: 450, y: 130, sc: 2,
+        lore: ['The counting house where every debt of the sector is written down. Burn the ledgers and half the sector owes nothing.', 'La maison de compte où chaque dette du secteur est inscrite. Brûlez les registres et la moitié du secteur ne doit plus rien.', 'セクターのあらゆる借金が記された勘定所。帳簿を燃やせば、セクターの半分は借りがなくなる。', 'La casa de cuentas donde se apunta cada deuda del sector. Quema los libros y medio sector no deberá nada.', 'Das Kontor, in dem jede Schuld des Sektors verzeichnet ist. Verbrenne die Bücher, und der halbe Sektor schuldet nichts mehr.', 'La casa di conto dove è scritto ogni debito del settore. Brucia i registri e metà settore non deve più nulla.', 'A casa de contas onde cada dívida do setor está anotada. Queime os livros e metade do setor não deve mais nada.', '记录着星区每一笔债务的账房。烧掉账簿，半个星区便不再欠任何东西。', '섹터의 모든 빚이 적힌 회계소. 장부를 태우면 섹터 절반은 빚이 사라진다.'] },
+      { id: 6, name: 'Aurel', type: 'wreck', x: 560, y: 470, sc: 3 },
+      { id: 7, name: 'Fumar', type: 'nebula', x: 640, y: 240, sc: 4 },
+      { id: 8, name: 'Quaresh', type: 'station', x: 800, y: 320, owner: 'B', capital: true },
+      { id: 9, name: 'Dosk', type: 'moon', x: 760, y: 520, owner: 'B' },
+    ],
+    routes: [[1, 2, 'normal'], [1, 3, 'normal'], [1, 4, 'normal'], [2, 5, 'normal'], [2, 3, 'normal'], [4, 3, 'normal'], [5, 3, 'normal'], [3, 6, 'normal'],
+      [3, 7, 'normal'], [5, 7, 'long'], [4, 6, 'unstable'], [6, 9, 'normal'], [7, 8, 'normal'], [9, 8, 'normal'], [6, 8, 'normal'], [2, 7, 'secret', 'A'], [4, 9, 'secret', 'B']],
+    zones: [[640, 240, 90, 'nebula'], [430, 300, 115, 'border'], [560, 470, 60, 'debris']],
+    scenarios: [
+      {
+        title: ['The auction', 'La vente aux enchères', '競売', 'La subasta', 'Die Auktion', 'L’asta', 'O leilão', '拍卖会', '경매'],
+        hook: ['The salvage of a whole fleet goes under the hammer in Tallow. Nobody plans to pay.', 'Les épaves de toute une flotte sont mises aux enchères à Tallow. Personne n’a l’intention de payer.', '艦隊一つ分の残骸がタロウで競売にかけられる。誰も金を払うつもりはない。', 'Los restos de toda una flota salen a subasta en Tallow. Nadie piensa pagar.', 'In Tallow kommt das Bergegut einer ganzen Flotte unter den Hammer. Niemand will bezahlen.', 'A Tallow vanno all’asta i relitti di un’intera flotta. Nessuno ha intenzione di pagare.', 'Os destroços de uma frota inteira vão a leilão em Tallow. Ninguém pretende pagar.', '整整一支舰队的残骸在塔洛拍卖。没有人打算付钱。', '함대 하나 분량의 잔해가 탈로우에서 경매에 오른다. 아무도 돈을 낼 생각이 없다.'],
+        mission: 'scramble', rule: 'crowd', deploy: 'diagonal', after: 'spoils', theme: 'city',
+      },
+      {
+        title: ['The counting house', 'La maison de compte', '勘定所', 'La casa de cuentas', 'Das Kontor', 'La casa di conto', 'A casa de contas', '账房', '회계소'],
+        hook: ['{A} owes {B} more than it can ever repay. The ledgers of Orvo could disappear tonight.', '{A} doit à {B} plus qu’il ne pourra jamais rembourser. Les registres d’Orvo pourraient disparaître cette nuit.', '{A}は{B}に返しきれないほどの借りがある。オルヴォの帳簿は今夜消えるかもしれない。', '{A} le debe a {B} más de lo que podrá pagar jamás. Los libros de Orvo podrían desaparecer esta noche.', '{A} schuldet {B} mehr, als es je zurückzahlen kann. Die Bücher von Orvo könnten heute Nacht verschwinden.', '{A} deve a {B} più di quanto potrà mai restituire. I registri di Orvo potrebbero sparire stanotte.', '{A} deve a {B} mais do que jamais poderá pagar. Os livros de Orvo podem sumir esta noite.', '{A} 欠 {B} 的债永远也还不清。奥尔沃的账簿今夜可能会消失。', '{A}는 {B}에게 결코 갚을 수 없을 만큼 빚졌다. 오르보의 장부는 오늘 밤 사라질지도 모른다.'],
+        mission: 'sabotage', rule: 'jamming', deploy: 'long', after: 'cut', theme: 'city',
+      },
+      {
+        title: ['The gilded wreck', 'L’épave dorée', '金色の残骸', 'El pecio dorado', 'Das vergoldete Wrack', 'Il relitto dorato', 'Os destroços dourados', '镀金残骸', '금빛 잔해'],
+        hook: ['A merchant prince’s yacht went down near Aurel with its strongbox. The salvage field is mined, of course.', 'Le yacht d’un prince marchand a sombré près d’Aurel avec son coffre-fort. Le champ d’épaves est miné, évidemment.', '商人王のヨットが金庫ごとオーレル近くで沈んだ。残骸地帯にはもちろん地雷が仕掛けてある。', 'El yate de un príncipe mercader se hundió cerca de Aurel con su caja fuerte. El campo de restos está minado, claro.', 'Die Jacht eines Handelsfürsten sank bei Aurel samt Tresor. Das Trümmerfeld ist natürlich vermint.', 'Lo yacht di un principe mercante è affondato vicino ad Aurel con la sua cassaforte. Il campo di relitti è minato, ovviamente.', 'O iate de um príncipe mercador afundou perto de Aurel com seu cofre. O campo de destroços está minado, claro.', '一位商业亲王的游艇带着保险箱沉没在奥雷尔附近。残骸区当然布满了地雷。', '상인 군주의 요트가 금고와 함께 오렐 근처에 가라앉았다. 잔해 지대엔 당연히 지뢰가 깔려 있다.'],
+        mission: 'retrieve', rule: 'minefield', deploy: 'corners', after: 'takeRes', theme: 'outpost',
+      },
+      {
+        title: ['Smugglers’ smoke', 'La fumée des contrebandiers', '密輸人の煙', 'El humo de los contrabandistas', 'Der Rauch der Schmuggler', 'Il fumo dei contrabbandieri', 'A fumaça dos contrabandistas', '走私者的烟幕', '밀수꾼의 연기'],
+        hook: ['A smuggler working for {B} knows every hidden route through Fumar. {A} wants to catch them before they vanish into the smoke.', 'Un contrebandier au service de {B} connaît toutes les routes cachées de Fumar. {A} veut l’attraper avant qu’il ne disparaisse dans la fumée.', '{B}に雇われた密輸人はフマルの隠し航路をすべて知っている。{A}は煙の中に消える前に捕まえたい。', 'Un contrabandista al servicio de {B} conoce todas las rutas ocultas de Fumar. {A} quiere atraparlo antes de que se esfume en el humo.', 'Ein Schmuggler im Dienst von {B} kennt jede verborgene Route durch Fumar. {A} will ihn fassen, bevor er im Rauch verschwindet.', 'Un contrabbandiere al servizio di {B} conosce ogni rotta nascosta di Fumar. {A} vuole prenderlo prima che svanisca nel fumo.', 'Um contrabandista a serviço de {B} conhece todas as rotas ocultas de Fumar. {A} quer pegá-lo antes que suma na fumaça.', '一名为 {B} 效力的走私者熟知穿过富马尔的每条隐秘航线。{A} 想在他消失于烟幕之前抓住他。', '{B}를 위해 일하는 밀수꾼은 푸마르의 숨은 항로를 모두 안다. {A}는 그가 연기 속으로 사라지기 전에 잡고 싶다.'],
+        mission: 'hunt', rule: 'fog', deploy: 'diagonal', after: 'secret', theme: 'outpost',
+      },
+      {
+        title: ['The grand bazaar', 'Le grand bazar', '大バザール', 'El gran bazar', 'Der große Basar', 'Il grande bazar', 'O grande bazar', '大集市', '대바자르'],
+        hook: ['Every stall of Brassoleil has chosen a side. The fight for the copper dome will decide who sets the prices tomorrow.', 'Chaque échoppe de Brassoleil a choisi son camp. La bataille pour le dôme de cuivre décidera qui fixera les prix demain.', 'ブラソレイユのすべての露店がどちらかに付いた。銅のドームをめぐる戦いが、明日の値を誰が決めるかを決める。', 'Cada puesto de Brassoleil ha elegido bando. La batalla por la cúpula de cobre decidirá quién fija los precios mañana.', 'Jeder Stand von Brassoleil hat Partei ergriffen. Der Kampf um die Kupferkuppel entscheidet, wer morgen die Preise macht.', 'Ogni bancarella di Brassoleil ha scelto da che parte stare. La battaglia per la cupola di rame deciderà chi fisserà i prezzi domani.', 'Cada barraca de Brassoleil escolheu um lado. A batalha pela cúpula de cobre decidirá quem fixa os preços amanhã.', '布拉索莱伊的每个摊位都已选边站。铜穹顶之战将决定明天由谁定价。', '브라솔레이의 모든 노점이 편을 골랐다. 구리 돔을 둘러싼 싸움이 내일의 값을 누가 정할지 결정한다.'],
+        mission: 'tug', rule: 'crowd', deploy: 'long', after: 'finale', theme: 'city',
+      },
+    ],
+  },
+  {
+    key: 'zharn_awakening',
+    title: ['The Awakening of Zharn', 'L’Éveil de Zharn', 'ザーンの目覚め', 'El Despertar de Zharn', 'Das Erwachen von Zharn', 'Il Risveglio di Zharn', 'O Despertar de Zharn', '扎恩的觉醒', '자른의 각성'],
+    pitch: [
+      'An ancient machine is waking up under the dead world of Zharn. Two rivals must decide how long they can afford to fight each other.',
+      'Une machine ancienne s’éveille sous le monde mort de Zharn. Deux rivaux doivent décider combien de temps ils peuvent encore se permettre de s’affronter.',
+      '死の惑星ザーンの地下で古代の機械が目覚めつつある。二つの宿敵は、いつまで互いに争っていられるかを決めねばならない。',
+      'Una máquina antigua despierta bajo el mundo muerto de Zharn. Dos rivales deben decidir cuánto tiempo pueden permitirse seguir luchando entre sí.',
+      'Unter der toten Welt Zharn erwacht eine uralte Maschine. Zwei Rivalen müssen entscheiden, wie lange sie sich ihren Streit noch leisten können.',
+      'Una macchina antica si risveglia sotto il mondo morto di Zharn. Due rivali devono decidere per quanto possono ancora permettersi di combattersi.',
+      'Uma máquina antiga desperta sob o mundo morto de Zharn. Dois rivais precisam decidir por quanto tempo ainda podem se dar ao luxo de lutar entre si.',
+      '一台远古机械正在死寂的扎恩星地下苏醒。两个宿敌必须决定，他们还能互相争斗多久。',
+      '죽은 세계 자른 아래에서 고대 기계가 깨어나고 있다. 두 경쟁자는 서로 싸울 여유가 얼마나 남았는지 정해야 한다.',
+    ],
+    sector: 'Zharn',
+    places: [
+      { id: 1, name: 'Velk', type: 'planet', x: 110, y: 330, owner: 'A', capital: true },
+      { id: 2, name: 'Ostrun', type: 'station', x: 230, y: 170, owner: 'A' },
+      { id: 3, name: 'Oumbre', type: 'moon', x: 300, y: 470, sc: 1,
+        lore: ['A mining moon emptied overnight. The miners left their meals on the tables and their machines still running.', 'Une lune minière vidée en une nuit. Les mineurs ont laissé leurs repas sur les tables et leurs machines en marche.', '一夜にして無人になった採掘衛星。採掘者たちは食事を卓に残し、機械を動かしたまま消えた。', 'Una luna minera vaciada en una noche. Los mineros dejaron la comida en las mesas y las máquinas en marcha.', 'Ein Bergbaumond, über Nacht verlassen. Die Bergleute ließen ihr Essen auf den Tischen und ihre Maschinen laufen.', 'Una luna mineraria svuotata in una notte. I minatori hanno lasciato i pasti sui tavoli e le macchine accese.', 'Uma lua mineradora esvaziada numa noite. Os mineiros deixaram a comida nas mesas e as máquinas ligadas.', '一夜之间人去楼空的采矿卫星。矿工们把饭菜留在桌上，机器仍在运转。', '하룻밤 사이 텅 빈 채굴 위성. 광부들은 식사를 식탁에 두고 기계를 켜 둔 채 사라졌다.'] },
+      { id: 4, name: 'Tesk', type: 'belt', x: 430, y: 330, sc: 2 },
+      { id: 5, name: 'Zharn', type: 'planet', x: 520, y: 160, sc: 5,
+        lore: ['A dead world, grey from pole to pole. Every night, lines of light run under its surface towards the same point.', 'Un monde mort, gris d’un pôle à l’autre. Chaque nuit, des lignes de lumière courent sous sa surface vers un même point.', '極から極まで灰色の死の惑星。毎晩、光の筋がその地下を同じ一点へと走る。', 'Un mundo muerto, gris de polo a polo. Cada noche, líneas de luz corren bajo su superficie hacia un mismo punto.', 'Eine tote Welt, grau von Pol zu Pol. Jede Nacht laufen Lichtlinien unter ihrer Oberfläche auf einen Punkt zu.', 'Un mondo morto, grigio da un polo all’altro. Ogni notte linee di luce corrono sotto la superficie verso un solo punto.', 'Um mundo morto, cinza de polo a polo. Toda noite, linhas de luz correm sob a superfície rumo a um mesmo ponto.', '一个从南极到北极一片灰暗的死寂世界。每晚都有光线在地表下奔向同一个点。', '극에서 극까지 잿빛인 죽은 세계. 매일 밤 빛줄기가 지표 아래로 한 점을 향해 달린다.'] },
+      { id: 6, name: 'Ekko', type: 'wreck', x: 570, y: 470, sc: 3 },
+      { id: 7, name: 'Nul', type: 'nebula', x: 670, y: 300, sc: 4 },
+      { id: 8, name: 'Sarth', type: 'station', x: 800, y: 230, owner: 'B', capital: true },
+      { id: 9, name: 'Ilon', type: 'moon', x: 790, y: 500, owner: 'B' },
+    ],
+    routes: [[1, 2, 'normal'], [1, 3, 'normal'], [1, 4, 'long'], [2, 5, 'long'], [2, 4, 'normal'], [3, 4, 'normal'], [4, 5, 'normal'], [4, 6, 'normal'],
+      [3, 6, 'unstable'], [5, 7, 'normal'], [6, 7, 'normal'], [5, 8, 'normal'], [7, 8, 'normal'], [6, 9, 'normal'], [9, 8, 'normal'], [3, 9, 'secret', 'B']],
+    zones: [[670, 300, 90, 'nebula'], [430, 330, 70, 'debris'], [520, 160, 110, 'border']],
+    scenarios: [
+      {
+        title: ['First signs', 'Premiers signes', '最初の兆候', 'Primeras señales', 'Erste Zeichen', 'Primi segni', 'Primeiros sinais', '最初的征兆', '첫 징후'],
+        hook: ['Both camps land on Oumbre to find out what emptied it. Something is still moving between the mine heads.', 'Les deux camps se posent sur Oumbre pour comprendre ce qui l’a vidée. Quelque chose bouge encore entre les puits de mine.', '両陣営は何が衛星を無人にしたのか確かめるためウンブルに降り立つ。坑口の間で、まだ何かが動いている。', 'Ambos bandos aterrizan en Oumbre para averiguar qué la vació. Algo sigue moviéndose entre las bocaminas.', 'Beide Lager landen auf Oumbre, um herauszufinden, was ihn leerte. Zwischen den Schachtköpfen bewegt sich noch etwas.', 'Entrambi gli schieramenti atterrano su Oumbre per capire cosa l’ha svuotata. Qualcosa si muove ancora tra le bocche di miniera.', 'Os dois lados pousam em Oumbre para descobrir o que a esvaziou. Algo ainda se move entre as bocas de mina.', '双方都降落在翁布尔，想弄清是什么让它人去楼空。矿井口之间仍有东西在移动。', '양 진영이 무엇이 운브르를 비웠는지 알아내려 착륙한다. 갱구 사이에서 아직 무언가가 움직인다.'],
+        mission: 'recon', rule: 'machine', deploy: 'short', after: 'initiative', theme: 'desert',
+      },
+      {
+        title: ['Drones in the belt', 'Des drones dans la ceinture', '小惑星帯のドローン', 'Drones en el cinturón', 'Drohnen im Gürtel', 'Droni nella fascia', 'Drones no cinturão', '小行星带中的无人机', '소행성대의 드론'],
+        hook: ['The machine has started to send drones through Tesk. Their broken shells hold parts both camps want to study.', 'La machine a commencé à envoyer des drones à travers Tesk. Leurs carcasses brisées contiennent des pièces que les deux camps veulent étudier.', '機械はテスクにドローンを送り始めた。その壊れた殻には、両陣営が調べたい部品が詰まっている。', 'La máquina ha empezado a enviar drones a través de Tesk. Sus carcasas rotas guardan piezas que ambos bandos quieren estudiar.', 'Die Maschine schickt Drohnen durch Tesk. Ihre zerbrochenen Hüllen enthalten Teile, die beide Lager untersuchen wollen.', 'La macchina ha cominciato a mandare droni attraverso Tesk. I loro gusci rotti contengono pezzi che entrambi vogliono studiare.', 'A máquina começou a enviar drones por Tesk. Suas carcaças quebradas guardam peças que os dois lados querem estudar.', '机械开始向特斯克派出无人机。它们破碎的外壳里有双方都想研究的零件。', '기계가 테스크로 드론을 보내기 시작했다. 부서진 껍데기에는 양 진영이 연구하고 싶은 부품이 들어 있다.'],
+        mission: 'scramble', rule: 'machine', deploy: 'diagonal', after: 'takeRes', theme: 'frozen',
+      },
+      {
+        title: ['The broken guardian', 'Le gardien brisé', '壊れた守護者', 'El guardián roto', 'Der zerbrochene Wächter', 'Il guardiano spezzato', 'O guardião partido', '破碎的守护者', '부서진 수호자'],
+        hook: ['Inside the wreck of Ekko lies one of the machine’s guardians, broken in two. Its core still hums, and it might say how to stop the others.', 'Dans l’épave d’Ekko gît un des gardiens de la machine, brisé en deux. Son noyau bourdonne encore, et pourrait dire comment arrêter les autres.', 'エッコの残骸の中に、真っ二つに折れた機械の守護者が横たわる。その核はまだ唸っており、他を止める方法を語るかもしれない。', 'Dentro del pecio de Ekko yace uno de los guardianes de la máquina, partido en dos. Su núcleo aún zumba y podría decir cómo detener a los demás.', 'Im Wrack von Ekko liegt einer der Wächter der Maschine, in zwei Teile gebrochen. Sein Kern summt noch und könnte verraten, wie man die anderen aufhält.', 'Nel relitto di Ekko giace uno dei guardiani della macchina, spezzato in due. Il suo nucleo ronza ancora e potrebbe dire come fermare gli altri.', 'Nos destroços de Ekko jaz um dos guardiões da máquina, partido ao meio. Seu núcleo ainda zumbe e pode revelar como deter os outros.', '埃科残骸中躺着一具断成两截的机械守护者。它的核心仍在嗡鸣，也许能告诉人们如何阻止其他守护者。', '에코 잔해 안에 두 동강 난 기계의 수호자가 누워 있다. 그 핵은 아직 웅웅거리고, 다른 것들을 멈추는 방법을 알려 줄지도 모른다.'],
+        mission: 'relic', rule: 'signal', deploy: 'corners', after: 'secret', theme: 'city',
+      },
+      {
+        title: ['Uneasy truce', 'Trêve fragile', '危うい休戦', 'Tregua frágil', 'Brüchiger Waffenstillstand', 'Tregua fragile', 'Trégua frágil', '脆弱的休战', '불안한 휴전'],
+        hook: ['{A} carries the guardian’s core through the Nul nebula. {B} agreed to a truce, but the core is worth more than any promise.', '{A} transporte le noyau du gardien à travers la nébuleuse de Nul. {B} a accepté une trêve, mais le noyau vaut plus que n’importe quelle promesse.', '{A}は守護者の核を運んでヌル星雲を抜ける。{B}は休戦に応じたが、核はどんな約束よりも価値がある。', '{A} transporta el núcleo del guardián a través de la nebulosa de Nul. {B} aceptó una tregua, pero el núcleo vale más que cualquier promesa.', '{A} bringt den Kern des Wächters durch den Nul-Nebel. {B} hat einem Waffenstillstand zugestimmt, doch der Kern ist mehr wert als jedes Versprechen.', '{A} trasporta il nucleo del guardiano attraverso la nebulosa di Nul. {B} ha accettato una tregua, ma il nucleo vale più di qualsiasi promessa.', '{A} leva o núcleo do guardião pela nebulosa de Nul. {B} aceitou uma trégua, mas o núcleo vale mais que qualquer promessa.', '{A} 正护送守护者的核心穿越努尔星云。{B} 答应了休战，但这颗核心比任何承诺都值钱。', '{A}는 수호자의 핵을 싣고 눌 성운을 지난다. {B}는 휴전에 동의했지만, 그 핵은 어떤 약속보다 값지다.'],
+        mission: 'escort', rule: 'machine', deploy: 'long', after: 'lesson', theme: 'forest',
+      },
+      {
+        title: ['The awakening', 'L’éveil', '目覚め', 'El despertar', 'Das Erwachen', 'Il risveglio', 'O despertar', '觉醒', '각성'],
+        hook: ['The lines of light meet under the plain of Zharn and the ground opens. Whoever holds the centre when the machine rises will decide what it obeys.', 'Les lignes de lumière se rejoignent sous la plaine de Zharn et le sol s’ouvre. Celui qui tiendra le centre quand la machine se lèvera décidera à qui elle obéit.', '光の筋がザーンの平原の下で交わり、大地が裂ける。機械が立ち上がるとき中心を握る者が、それが誰に従うかを決める。', 'Las líneas de luz se unen bajo la llanura de Zharn y el suelo se abre. Quien domine el centro cuando la máquina se alce decidirá a quién obedece.', 'Die Lichtlinien treffen sich unter der Ebene von Zharn und der Boden öffnet sich. Wer die Mitte hält, wenn sich die Maschine erhebt, bestimmt, wem sie gehorcht.', 'Le linee di luce si uniscono sotto la piana di Zharn e il suolo si apre. Chi terrà il centro quando la macchina si alzerà deciderà a chi obbedisce.', 'As linhas de luz se encontram sob a planície de Zharn e o chão se abre. Quem controlar o centro quando a máquina se erguer decidirá a quem ela obedece.', '光线在扎恩平原下交汇，大地裂开。机械升起时控制中心的人，将决定它听命于谁。', '빛줄기가 자른 평원 아래에서 만나고 땅이 갈라진다. 기계가 일어설 때 중심을 쥔 자가 그것이 누구에게 복종할지 정한다.'],
+        mission: 'hold', rule: 'machine', deploy: 'long', after: 'finale', theme: 'outpost',
+      },
+    ],
+  },
+];

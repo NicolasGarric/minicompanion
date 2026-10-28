@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { k, useT } from '../../core/i18n';
+import { k, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
@@ -14,6 +14,7 @@ import {
 import { NetworkBoard } from '../components/campaign/NetworkBoard';
 import { ActionsPanel, BattlesPanel, CampsPanel, Emblem, Journal, MembersPanel, VictoryPanel } from '../components/campaign/CampaignPanels';
 import type { Flash } from '../visual/networkMap';
+import { localizedCampaign } from '../data/campaignTemplates';
 
 /**
  * One narrative campaign: the board (drawn by the campaign master, read by everyone), the camps,
@@ -25,6 +26,7 @@ type Tab = 'camps' | 'actions' | 'battles' | 'victory' | 'players' | 'settings';
 
 export function CampaignPage({ id }: { id: string }) {
   const t = useT();
+  const lang = useLang((s) => s.lang);
   const session = useSession((s) => s.session);
   const me = session?.user.id ?? null;
   const [data, setData] = useState<Data | null | undefined>(undefined);
@@ -131,6 +133,7 @@ export function CampaignPage({ id }: { id: string }) {
   }
 
   const turn = row.turn;
+  const shownText = localizedCampaign(row, lang);
   const shown = replay !== null && snapshots[replay] ? boardAt(board, snapshots[replay].snapshot) : board;
   const w = winner(board, turn);
 
@@ -162,9 +165,9 @@ export function CampaignPage({ id }: { id: string }) {
       <a href="/play/campaigns" className="small">← {t('nav.play.campaigns')}</a>
       <div className="page-head">
         <div>
-          <h1>{row.title}</h1>
+          <h1>{shownText.title}</h1>
           <p className="lead">{[row.sector, t('nc.turn', { n: turn }), row.status === 'finished' ? t('nc.finished') : null].filter(Boolean).join(' · ')}</p>
-          {row.description && <p className="nc-desc">{row.description}</p>}
+          {shownText.description && <p className="nc-desc">{shownText.description}</p>}
         </div>
         <div className="nc-camps-strip">
           {board.camps.map((c) => <span key={c.id} className="nc-chip" style={{ borderColor: c.color }}><Emblem camp={c} size={11} /> {c.name}</span>)}
@@ -180,7 +183,7 @@ export function CampaignPage({ id }: { id: string }) {
           <NetworkBoard
             board={shown}
             onEdit={editor}
-            title={row.title}
+            title={shownText.title}
             subtitle={replay !== null ? t('nc.archive', { n: snapshots[replay]?.turn ?? 0 }) : myCamp ? t('nc.viewCamp', { camp: board.camps.find((c) => c.id === myCamp)?.name ?? '' }) : isMaster ? t('nc.viewMaster') : ''}
             isolatedLabel={t('nc.isolated')}
             winnerLabel={w && replay === null ? t('nc.winner', { camp: w.name }) : null}
@@ -225,7 +228,7 @@ export function CampaignPage({ id }: { id: string }) {
           {tab === 'settings' && isMaster && <Settings row={row} board={board} version={version} onSaved={load} onError={setError} />}
         </div>
       </div>
-      {invite && <ShareSheet title={t('nc.inviteTitle')} text={t('nc.inviteText', { title: row.title })} url={invite} onClose={() => setInvite(null)} />}
+      {invite && <ShareSheet title={t('nc.inviteTitle')} text={t('nc.inviteText', { title: shownText.title })} url={invite} onClose={() => setInvite(null)} />}
     </div>
   );
 }
