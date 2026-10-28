@@ -124,7 +124,7 @@ discover → paint → share → play → watch → back to physical stores.
 - [x] Step 1 — code split into `src/core` (shared), `src/paint`, `src/play`; `core` never imports
       `paint`. Nested hash routes, legacy `#/editor` and `#/beginner` redirect, `#/s/…` unchanged.
       Paint / Play navigation with sub-navigation. New platform home (customer journey).
-- [x] Step 2 (code) — Supabase client (PKCE), session store, sign in / sign up / Google, profile page
+- [x] Step 2 (code) — Supabase client (PKCE), session store, sign in / sign up / Google (button hidden since 2026-10-28, owner decision: `GOOGLE_SIGN_IN` in `SignInPage.tsx`), profile page
       (display name, username, home city, language, free-text factions). App runs without backend.
 - [x] Step 2 (database) — migrations `supabase/migrations/` (all PLAY tables, enums, indexes, RLS,
       search / register / withdraw / army list functions) + demo seed (9 stores, 50 users,

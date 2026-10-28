@@ -7,6 +7,9 @@ import { BackendNotice } from './BackendNotice';
 
 type Mode = 'signin' | 'signup';
 
+/** Google sign-in is switched off for now (owner, 2026-10-28); set to true to show the button again. */
+const GOOGLE_SIGN_IN = false;
+
 export function SignInPage() {
   const t = useT();
   const { session, signIn, signUp, signInWithGoogle } = useSession();
@@ -53,10 +56,14 @@ export function SignInPage() {
       <h1>{t(mode === 'signin' ? 'auth.signin.title' : 'auth.signup.title')}</h1>
       <p className="lead">{t('auth.lead')}</p>
 
-      <button type="button" className="btn wide" onClick={() => signInWithGoogle()} disabled={busy}>
-        <GoogleMark /> {t('auth.google')}
-      </button>
-      <p className="divider"><span>{t('auth.or')}</span></p>
+      {GOOGLE_SIGN_IN && (
+        <>
+          <button type="button" className="btn wide" onClick={() => signInWithGoogle()} disabled={busy}>
+            <GoogleMark /> {t('auth.google')}
+          </button>
+          <p className="divider"><span>{t('auth.or')}</span></p>
+        </>
+      )}
 
       <form className="field-col" onSubmit={submit}>
         {mode === 'signup' && (
