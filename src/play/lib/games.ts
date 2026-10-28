@@ -154,6 +154,8 @@ export const requestJoin = (id: string, message: string) => call('request_join_g
 export const respondJoin = (id: string, player: string, accept: boolean) => call('respond_join_game', { p_game: id, p_player: player, p_accept: accept });
 export const leaveGame = (id: string) => call('leave_game', { p_game: id });
 export const cancelGame = (id: string) => call('cancel_game', { p_game: id });
+/** Host (or admin): delete the game for good, played or not; a confirmed result leaves the ratings too. */
+export const deleteGame = (id: string) => call('delete_game', { p_game: id });
 /** Host only: attach a table map to the game, or remove it with null. */
 export const setGameMap = (id: string, map: string | null) => call('set_game_map', { p_game: id, p_map: map });
 

@@ -20,4 +20,5 @@ union all select 18 as n, '20261106000018_translation_suggestions.sql' as migrat
 union all select 19 as n, '20261107000019_security_fixes.sql' as migration, case when to_regproc('public.thumb_has_main') is null then 'TO APPLY' else 'applied' end as state
 union all select 20 as n, '20261108000020_game_maps.sql' as migration, case when to_regproc('public.set_game_map') is null then 'TO APPLY' else 'applied' end as state
 union all select 21 as n, '20261109000021_narrative_campaigns.sql' as migration, case when to_regclass('public.campaigns') is null then 'TO APPLY' else 'applied' end as state
+union all select 22 as n, '20261110000022_delete_game.sql' as migration, case when to_regproc('public.delete_game') is null then 'TO APPLY' else 'applied' end as state
 order by n;

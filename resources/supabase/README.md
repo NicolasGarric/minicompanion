@@ -9,6 +9,7 @@ run it again after adding a migration, never edit these copies by hand.
 | | |
 |---|---|
 | Migrations 01 – 21 | applied (by the owner on 2026-10-28) |
+| **Migration 22 – delete a game** | **to apply**: the host (or an admin) deletes a game, played or not; ratings are rebuilt without it |
 | Demo data | removed from the live database (checked 2026-10-28) |
 
 ## What to run
@@ -25,7 +26,7 @@ run it again after adding a migration, never edit these copies by hand.
 5. `4_campaign_check.sql`: check of the narrative campaigns (and game maps). Same principle: it creates a test
    campaign, tries every action and permission, then cancels everything. Every line should start with `OK` (or `SKIP`).
 
-The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `21_narrative_campaigns.sql`),
+The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `22_delete_game.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip
 themselves: running one twice stops with "already exists".
 

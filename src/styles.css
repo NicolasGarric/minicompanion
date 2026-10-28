@@ -1488,3 +1488,4 @@ a.game-card:hover, .journey-step:hover, .module-card:hover { transform: translat
 .nc-template.on { background: var(--ink3); box-shadow: 4px 4px 0 var(--ink2); }
 .nc-template:focus-visible { outline: 3px solid var(--ink1); outline-offset: 2px; }
 textarea.text-input { font: inherit; line-height: 1.45; resize: vertical; }
+.game-delete { display: grid; gap: 0.5rem; } .game-delete p { margin: 0; }

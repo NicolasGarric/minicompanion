@@ -5482,3 +5482,80 @@ $setup_20261109000021_narrative_campaigns$;
     raise notice 'already there, skipped: 20261109000021_narrative_campaigns.sql';
   end if;
 end $guard$;
+
+-- >>> 20261110000022_delete_game.sql (skipped automatically if already applied)
+do $guard$ begin
+  if to_regproc('public.delete_game') is null then
+    execute $setup_20261110000022_delete_game$
+-- Deleting a quick-play game (owner request 2026-10-28): upcoming, cancelled or already played.
+-- The host (or an admin) deletes it; players, chat, address, report and results go with it
+-- (foreign keys cascade; report photos become orphans that the storage cleanup removes).
+-- When the result was confirmed, the ratings of that game system are rebuilt from the remaining
+-- confirmed games, in order, so nobody keeps points from a game that no longer exists.
+
+alter table public.notifications drop constraint notifications_kind_check;
+alter table public.notifications add constraint notifications_kind_check check (kind in (
+  'join_request', 'join_answer', 'game_match', 'report_to_confirm', 'report_answer', 'message',
+  'game_message', 'league_game', 'round_paired', 'match_to_confirm', 'match_answer', 'contest_results',
+  'round_schedule', 'mentor_request', 'mentor_answer', 'game_deleted'));
+
+-- Replays every confirmed game of one game system (key = lower(trim(game_system))).
+create or replace function public.recompute_game_ratings(p_key text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  g uuid;
+begin
+  delete from public.player_ratings where game_key = p_key;
+  for g in
+    select r.game_id from public.game_reports r join public.games x on x.id = r.game_id
+     where r.status = 'confirmed' and lower(btrim(x.game_system)) = p_key
+     order by r.confirmed_at, r.game_id
+  loop
+    perform public.apply_report_ratings(g);
+  end loop;
+end;
+$$;
+revoke execute on function public.recompute_game_ratings(text) from public, anon, authenticated;
+
+create or replace function public.delete_game(p_game uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  g public.games;
+  rated boolean;
+  host_name text;
+begin
+  select * into g from public.games where id = p_game for update;
+  if not found then
+    raise exception 'not_found';
+  end if;
+  if g.host_id is distinct from auth.uid() and not public.is_admin() then
+    raise exception 'not_host';
+  end if;
+  rated := exists (select 1 from public.game_reports where game_id = p_game and status = 'confirmed');
+  select display_name into host_name from public.profiles where id = g.host_id;
+  perform public.notify(p.player_id, 'game_deleted', jsonb_build_object('game', g.game_system, 'from', host_name))
+     from public.game_players p
+    where p.game_id = p_game and p.status = 'accepted' and p.player_id <> coalesce(auth.uid(), g.host_id);
+  delete from public.games where id = p_game;
+  if rated then
+    perform public.recompute_game_ratings(lower(btrim(g.game_system)));
+  end if;
+end;
+$$;
+revoke execute on function public.delete_game(uuid) from public, anon;
+grant execute on function public.delete_game(uuid) to authenticated;
+
+$setup_20261110000022_delete_game$;
+    raise notice 'applied: 20261110000022_delete_game.sql';
+  else
+    raise notice 'already there, skipped: 20261110000022_delete_game.sql';
+  end if;
+end $guard$;

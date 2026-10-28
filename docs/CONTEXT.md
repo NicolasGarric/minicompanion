@@ -404,6 +404,12 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       (migration not applied yet).
     - Owner decision (2026-10-28): **every text of the site in all 9 languages**, campaign and scenario texts included.
     - Next: step 2 = the 10 campaigns (50 scenarios + 12 standalone), step 3 = chosen improvements.
+24. **Delete a game (2026-10-28, owner request)**, migration 22 **to apply** (+11 SQL tests `supabase/tests/rls_delete_game.sql`):
+    `delete_game(game)` for the host or an admin, upcoming, cancelled or played. Everything cascades (players, chat, address,
+    report, results; report photos become orphans for the storage cleanup). If the result was confirmed, the ratings of that
+    game system are rebuilt by replaying the remaining confirmed games in order (`recompute_game_ratings`, internal).
+    Accepted players get a `game_deleted` notification. Button on the game page with an in-page confirmation (played games
+    get a stronger warning), then back to My games.
 
 ## Dev environment notes
 

@@ -3,10 +3,11 @@ import { k, langName, useLang, useT } from '../../core/i18n';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
+import { navigate } from '../../core/router';
 import { Icon } from '../../core/ui/ui';
 import { ShareSheet } from '../../core/ui/ShareSheet';
 import { countryName } from '../lib/countries';
-import { cancelGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameMap, type Game, type GamePlayer } from '../lib/games';
+import { cancelGame, deleteGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameMap, type Game, type GamePlayer } from '../lib/games';
 import { decodeTable } from '../lib/tableCodec';
 import type { Table } from '../lib/tableGen';
 import { drawTable } from '../visual/tableMap';
@@ -25,6 +26,7 @@ export function GameDetail({ id }: { id: string }) {
   // Arrived from an invitation link (?from=<handle> of the player who shared it)
   const from = /^[a-z0-9_]{3,24}$/.test(new URLSearchParams(location.search).get('from') ?? '') ? new URLSearchParams(location.search).get('from') : null;
   const [inviting, setInviting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [data, setData] = useState<{ game: Game; players: GamePlayer[]; address: string | null } | null | undefined>(undefined);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -209,6 +211,21 @@ export function GameDetail({ id }: { id: string }) {
 
       {past && game.status !== 'cancelled' && <ReportSection game={game} players={players} me={me} />}
       {me && (isHost || mine?.status === 'accepted') && game.status !== 'cancelled' && <GameChat gameId={game.id} me={me} />}
+      {(isHost || profile?.is_admin) && (
+        <section className="card game-delete">
+          {!confirmDelete ? (
+            <button className="btn small danger-ghost" onClick={() => setConfirmDelete(true)}><Icon name="trash" size={14} /> {t('games.delete')}</button>
+          ) : (
+            <>
+              <p>{t(past && game.status !== 'cancelled' ? 'games.deleteConfirmPlayed' : 'games.deleteConfirm')}</p>
+              <div className="field-row wrap">
+                <button className="btn small danger-ghost" disabled={busy} onClick={() => act(async () => { await deleteGame(game.id); navigate('play/mine'); })}>{t('games.deleteYes')}</button>
+                <button className="btn small ghost" onClick={() => setConfirmDelete(false)}>{t('common.cancel')}</button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
       {inviting && <ShareSheet title={t('games.invite.title')} text={inviteText} url={inviteUrl} onClose={() => setInviting(false)} />}
     </div>
   );
