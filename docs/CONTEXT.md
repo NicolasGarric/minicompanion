@@ -338,9 +338,10 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 18. ~~Translations review~~: "Suggest a translation" in the footer (selected text pre-fills it; matching dictionary
     keys are sent), `/admin` → Translations with ready-to-paste lines. Migration 18 **to apply**. 9 SQL tests.
 19. Quick games privacy: nothing to change (already public with the address for accepted players only).
-20. Still open: Twitch live status (later), nightly automatic photo cleanup (optional), demo cleanup (owner action).
+20. Still open: Twitch live status (later), nightly automatic photo cleanup (optional).
+    Live database checked 2026-10-28: migrations 01-19 applied, demo accounts removed, 1 admin, `security_check.sql` all OK.
     DB password rotated by the owner (2026-10-28); the old passwords were removed from the local `.env` comments.
-21. **Security audit (2026-10-28)**, migration 19 **to apply** (+16 SQL tests in `supabase/tests/rls_security_fixes.sql`):
+21. **Security audit (2026-10-28)**, migration 19 applied on the live database by the owner the same day (+16 SQL tests in `supabase/tests/rls_security_fixes.sql`):
     - a thumbnail (`*.t.webp`) skipped the photo quota by its name alone: it is now accepted only when the full image
       `*.w.webp` is already stored and belongs to the uploader (`thumb_has_main`). The app uploads the full image first.
     - `track_page_view` creates at most 1,000 page / language rows a day (made-up route names could grow the table).

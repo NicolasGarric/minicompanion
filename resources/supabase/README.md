@@ -8,17 +8,14 @@ run it again after adding a migration, never edit these copies by hand.
 
 | | |
 |---|---|
-| Migrations 01 – 16 | applied (confirmed by the owner) |
-| **Migration 17 – photo storage** | **to apply**: WebP photos with thumbnails, 100-photo quota, storage gauge and cleanup in `/admin` |
-| **Migration 18 – translation suggestions** | **to apply**: "Suggest a translation" in the footer, review in `/admin` |
-| **Migration 19 – security fixes** | **to apply**: thumbnails no longer skip the photo quota, page view counters capped, photos of content hidden 7+ days offered by the cleanup |
-| Demo data | owner decided to remove it: run `demo/cleanup_demo_data.sql` (PREVIEW first) |
+| Migrations 01 – 19 | applied (checked by the owner on 2026-10-28) |
+| Demo data | removed from the live database (checked 2026-10-28) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: only the latest migration (19). Use `1_apply_all_migrations.sql` now: it applies 17, 18 and 19 and skips the rest.
+   - `2_apply_latest_migration.sql`: only the latest migration (19).
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
