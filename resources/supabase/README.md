@@ -8,22 +8,22 @@ run it again after adding a migration, never edit these copies by hand.
 
 | | |
 |---|---|
-| Migrations 01 – 19 | applied (checked by the owner on 2026-10-28) |
-| **Migration 20 – game maps** | **to apply**: a host attaches a table map (built or rolled in the Tables page) to a game |
-| **Migration 21 – narrative campaigns** | **to apply**: campaigns, members and invitations, actions, contests, battles, journal (needed by the new Campaigns tab) |
+| Migrations 01 – 21 | applied (by the owner on 2026-10-28) |
 | Demo data | removed from the live database (checked 2026-10-28) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: only the latest migration (21). Use `1_apply_all_migrations.sql` if 20 is not applied yet: it applies 20 and 21 and skips the rest.
+   - `2_apply_latest_migration.sql`: only the latest migration (21).
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
 3. Run `0_check_status.sql` again: every line should say `applied`.
 4. `3_security_check.sql`: security check of the live database. It changes nothing (it always ends
    with an error whose message is the report). Every line should start with `OK`.
+5. `4_campaign_check.sql`: check of the narrative campaigns (and game maps). Same principle: it creates a test
+   campaign, tries every action and permission, then cancels everything. Every line should start with `OK` (or `SKIP`).
 
 The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `21_narrative_campaigns.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip

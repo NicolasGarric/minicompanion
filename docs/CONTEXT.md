@@ -358,7 +358,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     - Not fixed (minor): the anonymous rate limits of bug reports / translation suggestions are shared by all visitors
       (a spammer can use up the 30 / hour). Owner to check in the Supabase dashboard: email confirmation, leaked
       password protection, MFA on the admin account, redirect URL allow-list, CAPTCHA on sign-up.
-22. **Tables rework (2026-10-28)**, migration 20 **to apply** (+9 SQL tests `supabase/tests/rls_game_maps.sql`, +6 unit tests
+22. **Tables rework (2026-10-28)**, migration 20 applied by the owner the same day (+9 SQL tests `supabase/tests/rls_game_maps.sql`, +6 unit tests
     `tests/play/tableCodec.test.ts`). Page `/play/table-generator` now titled "Tables & missions", two tabs:
     - **Roll a table** (as before) + number of pieces (Auto, 0-24) + "Edit this table". New sizes 30x22, 30x30, 36x36, 60x44
       (appended to `SIZES`, old `size=` links unchanged). Fixed: a competitive piece whose mirror had no room was kept alone.
@@ -381,7 +381,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       write any handle in a link): it only changes the banner wording.
     - Checked in headless Chromium (desktop 1280 and mobile 390): roll, edit, add, drag, rotate, mirror, re-roll, undo /
       redo, reload from the link, share sheet; game page with a mocked game (banner, map, invite). No error, no overflow.
-23. **Narrative campaigns, step 1 (2026-10-28)**, migration 21 **to apply** (+49 SQL tests `supabase/tests/rls_narrative.sql`,
+23. **Narrative campaigns, step 1 (2026-10-28)**, migration 21 applied by the owner the same day; live check `supabase/checks/campaign_check.sql` (+49 SQL tests `supabase/tests/rls_narrative.sql`,
     +5 unit tests `tests/play/narrative.test.ts`). Tab "Campagnes" in PLAY: `/play/campaigns` (mine + new from a template or a
     blank map) and `/play/campaign/<id>` (noindex).
     - Data: `campaigns.state` is the whole board (JSON checked by `campaign_state_ok`: ≤ 80 places, 200 routes, 40 zones, 2-4
@@ -402,6 +402,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       autosave, add place and route, notes, map thumbnail, plan a battle, record an action, journal, replay, invite link;
       player of camp B: read-only board, only their camp in the action form. Not checked against the real database
       (migration not applied yet).
+    - Owner decision (2026-10-28): **every text of the site in all 9 languages**, campaign and scenario texts included.
     - Next: step 2 = the 10 campaigns (50 scenarios + 12 standalone), step 3 = chosen improvements.
 
 ## Dev environment notes
