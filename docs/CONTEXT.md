@@ -437,6 +437,13 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       `bring_deck_to_campaign` (camp member, own deck; replace / `remove_campaign_deck` only while nothing evolved),
       `evolve_campaign_card` (owner or master; journal entry `effect = 'card'`, detail `{card, before, after, note}`, turn not
       advanced), contest as for actions; `resolve_campaign_contest` undoes a card change only if the card has not changed since.
+27. **Suggest improvements (2026-10-29, owner request)**, migration 24 **to apply** (+16 SQL tests `supabase/tests/rls_suggestions.sql`):
+    footer button "Suggest improvements" on every page (`src/core/feedback/Suggest.tsx`): topic (new feature, improve, content,
+    design, other) + message; visitors may leave an email. `submit_suggestion` stores it (page, language) and gives every admin
+    one unread `suggestion` notification. Admin inbox `/admin/suggestions` (`SuggestionsAdmin.tsx`, linked from the admin page):
+    suggestions as message bubbles, filters (to handle, new, planned, done, not for now, all; by topic), status, and an answer
+    box: `answer_suggestion` sends the answer as a direct message to the author (usual message notification; the author can
+    reply in Messages). `resources/supabase/2_apply_latest_migration.sql` now starts at `PENDING_FROM` (build script).
 
 ## To do (owner list, 2026-10-29)
 
@@ -449,7 +456,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       storage, store / league campaigns, organiser tools), donations; ads last. Needs payments (Stripe) and terms of sale.
 - [ ] **Promotion / users**: SEO of the public pages in 9 languages, shareable cards and scenario library, hobby communities
       (Discord, Reddit, X, Japanese forums), partner stores (QR on tables, store campaigns), tournaments, painting creators.
-- [ ] **Footer button "Suggest improvements"** on every page (next to the bug report; stored like bug reports, admin list).
+- [x] **Footer button "Suggest improvements"**: done (item 27, migration 24 to apply).
 - [ ] **Mobile app**: PWA first (install, offline), then Capacitor for the stores (Android, iOS) with the same code.
 - [ ] **Move to a VPS** bought by the owner: self-hosted Supabase (Docker) or plain Postgres + API, static site behind Caddy,
       backups, monitoring; plan the data migration (database dump, storage files, auth users) and costs vs Supabase / Vercel.

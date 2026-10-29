@@ -12,6 +12,7 @@ import { useUnread } from '../../core/social/unread';
 /** Where a notification leads. */
 function linkOf(n: AppNotification) {
   if (n.kind === 'message') return `/messages/${n.payload.from_id}`;
+  if (n.kind === 'suggestion') return '/admin/suggestions';
   if (n.kind.startsWith('mentor_')) return '/play/mentors';
   if (n.payload.slug) return `/play/t/${n.payload.slug}`;
   return n.payload.game_id ? `/play/game/${n.payload.game_id}` : '/play/quick';

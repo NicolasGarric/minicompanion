@@ -22,4 +22,5 @@ union all select 20 as n, '20261108000020_game_maps.sql' as migration, case when
 union all select 21 as n, '20261109000021_narrative_campaigns.sql' as migration, case when to_regclass('public.campaigns') is null then 'TO APPLY' else 'applied' end as state
 union all select 22 as n, '20261110000022_delete_game.sql' as migration, case when to_regproc('public.delete_game') is null then 'TO APPLY' else 'applied' end as state
 union all select 23 as n, '20261111000023_unit_cards.sql' as migration, case when to_regclass('public.pile_units') is null then 'TO APPLY' else 'applied' end as state
+union all select 24 as n, '20261112000024_suggestions.sql' as migration, case when to_regclass('public.suggestions') is null then 'TO APPLY' else 'applied' end as state
 order by n;

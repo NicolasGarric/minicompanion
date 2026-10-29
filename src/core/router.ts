@@ -50,6 +50,7 @@ export type RouteName =
   | 'me.card'
   | 'me.year'
   | 'admin.bugs'
+  | 'admin.suggestions'
   | 'admin'
   | 'notFound';
 
@@ -106,6 +107,7 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'me/card', name: 'me.card', section: 'none' },
   { pattern: 'me/year', name: 'me.year', section: 'none' },
   { pattern: 'admin/bugs', name: 'admin.bugs', section: 'none' },
+  { pattern: 'admin/suggestions', name: 'admin.suggestions', section: 'none' },
   { pattern: 'admin', name: 'admin', section: 'none' },
 ];
 

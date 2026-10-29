@@ -35,7 +35,10 @@ export function AdminDashboard() {
           <h1>{t('admin.title')}</h1>
           <p className="lead">{t('admin.lead')}</p>
         </div>
-        <a className="btn" href="/admin/bugs">{t('bug.adminTitle')}</a>
+        <span className="nav-row">
+          <a className="btn" href="/admin/suggestions">{t('sugg.adminTitle')}</a>
+          <a className="btn" href="/admin/bugs">{t('bug.adminTitle')}</a>
+        </span>
       </div>
       <div className="segmented view-switch" role="tablist">
         {TABS.map((x) => (

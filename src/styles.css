@@ -1502,3 +1502,17 @@ textarea.text-input { font: inherit; line-height: 1.45; resize: vertical; }
 .nc-library h2 { margin: 0; }
 .nc-library .field { max-width: 24rem; }
 .nc-scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1rem; }
+
+/* Suggestions: admin inbox */
+.sugg-filters { align-items: center; margin-block: 1rem; }
+.sugg-filters .chip b { margin-left: 0.25rem; }
+.sugg-inbox { list-style: none; padding: 0; display: grid; gap: 1.1rem; }
+.sugg-msg { display: grid; gap: 0.5rem; }
+.sugg-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
+.sugg-topic { font-weight: 700; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink1, var(--accent)); }
+.sugg-bubble { margin: 0; padding: 0.8rem 1rem; background: var(--surface); border: 2px solid var(--ink2); border-radius: 0 1rem 1rem 1rem; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 4px 4px 0 var(--ink1, var(--accent)); }
+.sugg-new .sugg-bubble { border-width: 3px; }
+.sugg-done .sugg-bubble, .sugg-declined .sugg-bubble { opacity: 0.65; box-shadow: none; }
+.sugg-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.sugg-answer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: end; }
+.sugg-answer small { grid-column: 1 / -1; }

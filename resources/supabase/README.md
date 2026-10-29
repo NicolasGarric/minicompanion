@@ -11,13 +11,14 @@ run it again after adding a migration, never edit these copies by hand.
 | Migrations 01 – 21 | applied (by the owner on 2026-10-28) |
 | Migration 22 – delete a game | applied (owner, 2026-10-29) |
 | **Migration 23 – unit cards and decks** | **to apply**: My pile on the account (armies, units, card info lists, chosen photo, linked units, photos bucket `pile`), composed decks (scroll order, share link, attached to a game), campaign copies of a deck that evolve through the journal |
+| **Migration 24 – suggestions** | **to apply**: "Suggest improvements" button in the footer, admin inbox with answers sent as direct messages |
 | Demo data | removed from the live database (checked 2026-10-28) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: only the latest migration (23).
+   - `2_apply_latest_migration.sql`: the migrations not applied yet (23 and 24).
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
@@ -30,7 +31,7 @@ run it again after adding a migration, never edit these copies by hand.
    and campaign, tries the permissions, the share link and a campaign copy, then cancels everything. Every line
    should start with `OK` (or `SKIP` when the database has fewer than two accounts).
 
-The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `23_unit_cards.sql`),
+The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `24_suggestions.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip
 themselves: running one twice stops with "already exists".
 

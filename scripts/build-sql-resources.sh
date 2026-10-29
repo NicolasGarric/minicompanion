@@ -23,8 +23,10 @@ done
 
 ascii <(bash "$SETUP" --print --status) > "$OUT/0_check_status.sql"
 ascii <(bash "$SETUP" --print --no-seed) > "$OUT/1_apply_all_migrations.sql"
-last=$(ls "$ROOT"/supabase/migrations/*.sql | tail -1 | xargs basename)
-ascii <(bash "$SETUP" --print --no-seed --from "$((10#$(echo "${last%%_*}" | tail -c 7)))") > "$OUT/2_apply_latest_migration.sql"
+# First migration not yet applied on the live database: 2_apply_latest_migration.sql holds it and every
+# later one. Update it when the owner reports the live status.
+PENDING_FROM=23
+ascii <(bash "$SETUP" --print --no-seed --from "$PENDING_FROM") > "$OUT/2_apply_latest_migration.sql"
 
 i=1
 for s in seed seed_games seed_social seed_contest seed_tournament; do

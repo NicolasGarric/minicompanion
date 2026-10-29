@@ -1,4 +1,5 @@
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
+import { SuggestionsAdmin } from './core/feedback/SuggestionsAdmin';
 import { AdminDashboard } from './core/admin/AdminDashboard';
 import { trackPageView } from './core/admin/admin';
 import { useLang } from './core/i18n';
@@ -124,6 +125,7 @@ function Page({ route }: { route: Route }) {
     case 'legal': return <Legal />;
     case 'stats': return <Stats />;
     case 'admin.bugs': return <BugReportsAdmin />;
+    case 'admin.suggestions': return <SuggestionsAdmin />;
     case 'admin': return <AdminDashboard />;
     default: return <Home />;
   }
