@@ -48,6 +48,7 @@ export type RouteName =
   | 'account'
   | 'signin'
   | 'legal'
+  | 'support'
   | 'stats'
   | 'me.level'
   | 'me.card'
@@ -108,6 +109,7 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'account', name: 'account', section: 'none' },
   { pattern: 'signin', name: 'signin', section: 'none' },
   { pattern: 'legal', name: 'legal', section: 'none' },
+  { pattern: 'support', name: 'support', section: 'none' },
   { pattern: 'stats', name: 'stats', section: 'none' },
   { pattern: 'me/level', name: 'me.level', section: 'none' },
   { pattern: 'me/card', name: 'me.card', section: 'none' },
@@ -157,7 +159,7 @@ function current(): Route {
 /** Pages that exist in every language under a prefix ("/fr/play"): the indexable ones. */
 export const PUBLIC_ROUTES: ReadonlySet<RouteName> = new Set<RouteName>([
   'home', 'paint', 'paint.beginner', 'paint.challenges', 'play', 'play.quick', 'play.leagues', 'play.tablegen', 'play.campaigns', 'play.mentors',
-  'play.swap', 'play.tournament', 'dice', 'stores', 'legal',
+  'play.swap', 'play.tournament', 'dice', 'stores', 'legal', 'support',
 ]);
 
 /**

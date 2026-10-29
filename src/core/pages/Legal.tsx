@@ -41,6 +41,16 @@ export function Legal() {
         </ul>
       </section>
 
+      <section>
+        <h2>{t('legal.supportTitle')}</h2>
+        <ul>
+          <li>{t('support.rule1')}</li>
+          <li>{t('legal.support2')}</li>
+          <li>{t('support.rule3')}</li>
+        </ul>
+        <p><a href="/support">{t('support.button')}</a></p>
+      </section>
+
       <section className="card">
         <h2>{t('legal.retailerTitle')}</h2>
         <p className="hint">{t('legal.retailerHint')}</p>

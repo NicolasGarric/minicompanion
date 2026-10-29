@@ -13,6 +13,7 @@ import { useSession } from './core/auth/session';
 import { Shell } from './core/layout/Shell';
 import { Home } from './core/pages/Home';
 import { Legal } from './core/pages/Legal';
+import { SupportPage } from './core/support/Support';
 import { Stats } from './core/pages/Stats';
 import { Stores } from './core/stores/StoresPage';
 import { SignInPage } from './core/auth/SignInPage';
@@ -128,6 +129,7 @@ function Page({ route }: { route: Route }) {
     case 'signin': return <SignInPage />;
     case 'account': return <AccountPage />;
     case 'legal': return <Legal />;
+    case 'support': return <SupportPage />;
     case 'stats': return <Stats />;
     case 'admin.bugs': return <BugReportsAdmin />;
     case 'admin.suggestions': return <SuggestionsAdmin />;

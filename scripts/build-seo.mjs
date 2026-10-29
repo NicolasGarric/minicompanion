@@ -111,6 +111,7 @@ const PAGES = [
   ['dice', 'dice.title', 'dice.lead', () => ''],
   ['stores', 'stores.title', 'stores.lead', () => '<p>OpenStreetMap (ODbL).</p>'],
   ['legal', 'legal.title', 'legal.about', (l) => `<p>${esc(tr(l, 'legal.full'))}</p>`],
+  ['support', 'support.button', 'support.lead', (l) => `<ul>${['support.what1', 'support.what2', 'support.what3'].map((k) => `<li>${esc(tr(l, k))}</li>`).join('')}</ul>`],
 ];
 for (const { code: lang } of LANGS) {
   for (const [path, titleKey, leadKey, extra] of PAGES) {

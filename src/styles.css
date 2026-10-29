@@ -1629,3 +1629,10 @@ p.pile-sync { display: block; }
 .nc-evolve[open] { background: var(--surface); }
 .nc-evolve summary { font-weight: 700; cursor: pointer; }
 .ucard .role-pill.role-elite { color: var(--ink2); }
+
+/* Support (donations) */
+.support-link { color: var(--link); }
+.support-link span { color: var(--ink1); }
+.support-page { display: grid; gap: 1.2rem; }
+.support-page ul { padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+.support-actions { display: grid; gap: 0.6rem; }

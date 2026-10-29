@@ -23,6 +23,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
   'play.swap': ['swap.title', 'swap.lead'],
   stores: ['stores.title', 'stores.lead'],
   legal: ['legal.title', 'legal.about'],
+  support: ['support.button', 'support.lead'],
 };
 
 /** Personal or tool pages: useful to people, not to search results. */
