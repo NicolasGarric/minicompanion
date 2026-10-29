@@ -46,6 +46,7 @@ declare -A GUARD=(
   [20261108000020_game_maps.sql]="to_regproc('public.set_game_map') is null"
   [20261109000021_narrative_campaigns.sql]="to_regclass('public.campaigns') is null"
   [20261110000022_delete_game.sql]="to_regproc('public.delete_game') is null"
+  [20261111000023_unit_cards.sql]="to_regclass('public.pile_units') is null"
 )
 seq_of() { local n="${1%%_*}"; echo $((10#${n: -6})); } # 20261104000016_x.sql -> 16
 

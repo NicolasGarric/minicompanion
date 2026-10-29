@@ -405,7 +405,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       (migration not applied yet).
     - Owner decision (2026-10-28): **every text of the site in all 9 languages**, campaign and scenario texts included.
     - Next: step 3 = chosen improvements (step 2 done, see 25).
-24. **Delete a game (2026-10-28, owner request)**, migration 22 **to apply** (+11 SQL tests `supabase/tests/rls_delete_game.sql`):
+24. **Delete a game (2026-10-28, owner request)**, migration 22 applied by the owner (2026-10-29) (+11 SQL tests `supabase/tests/rls_delete_game.sql`):
     `delete_game(game)` for the host or an admin, upcoming, cancelled or played. Everything cascades (players, chat, address,
     report, results; report photos become orphans for the storage cleanup). If the result was confirmed, the ratings of that
     game system are rebuilt by replaying the remaining confirmed games in order (`recompute_game_ratings`, internal).
@@ -423,6 +423,38 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     Tests: `tests/play/scenarios.test.ts` (counts, 9 languages everywhere, same camp placeholders in every language, ids
     resolve, finale last, valid boards). Checked in headless Chromium (desktop, mobile): create from a template, scenario and
     background on a place, same campaign read in Japanese, library, open a table from a scenario.
+26. **Unit cards and decks, database (2026-10-29)**, migration 23 **to apply** (+58 SQL tests `supabase/tests/rls_unit_cards.sql`,
+    live check `supabase/checks/cards_check.sql` = `resources/supabase/5_cards_check.sql`). App side not built yet (steps A, B, C).
+    - My pile on the account: `pile_armies`, `pile_units` (owner-only RLS, written directly; `local_id` makes the import of the
+      local armies idempotent). Unit = name, role, stage, count / painted, note, `info` (free list `[{l, t: 'n'|'t', v}]`, ≤ 40
+      lines, checked by `card_info_ok`), `photos` `[{p, at}]` (≤ 40, own folder), `card_photo` (one of them), `linked_to`
+      (same owner, one level). Sessions and painted log stay on the device. Bucket `pile` (public, random names, 3 MB,
+      500 photos per player, not in the 100-photo quota nor in the admin cleanup).
+    - `decks` (name, `groups` = scroll order with linked groups, ≤ 60 cards; the trigger drops units that are not the owner's,
+      e.g. deleted ones), `share_code` only through `deck_share`; `game_decks` + `set_game_deck` (host or accepted player,
+      own deck); `deck_view(deck, code)` = owner, share code (no account) or players of a game it is attached to.
+    - Campaigns: `campaign_decks` / `campaign_cards` (copies, readable with the campaign, removed when the player leaves);
+      `bring_deck_to_campaign` (camp member, own deck; replace / `remove_campaign_deck` only while nothing evolved),
+      `evolve_campaign_card` (owner or master; journal entry `effect = 'card'`, detail `{card, before, after, note}`, turn not
+      advanced), contest as for actions; `resolve_campaign_contest` undoes a card change only if the card has not changed since.
+
+## To do (owner list, 2026-10-29)
+
+- [ ] **Google sign-in**: free (Supabase Google provider + Google Cloud OAuth client, basic scopes need no paid verification).
+      Code is ready behind `GOOGLE_SIGN_IN` in `src/core/auth/SignInPage.tsx`; needs the OAuth client, consent screen, redirect URLs.
+- [ ] **Calendar linked to Google Calendar**: 1) "Add to Google Calendar" links + `.ics` download (free, no API); 2) personal
+      subscription feed (webcal URL, Supabase Edge Function) for games, tournaments, campaign battles; 3) two-way sync through
+      the Calendar API only if needed (sensitive scope = Google app verification, free but slow).
+- [ ] **Revenue**: study affiliate links on shopping lists (paints, kits), featured hobby stores, a premium tier (more photo
+      storage, store / league campaigns, organiser tools), donations; ads last. Needs payments (Stripe) and terms of sale.
+- [ ] **Promotion / users**: SEO of the public pages in 9 languages, shareable cards and scenario library, hobby communities
+      (Discord, Reddit, X, Japanese forums), partner stores (QR on tables, store campaigns), tournaments, painting creators.
+- [ ] **Footer button "Suggest improvements"** on every page (next to the bug report; stored like bug reports, admin list).
+- [ ] **Mobile app**: PWA first (install, offline), then Capacitor for the stores (Android, iOS) with the same code.
+- [ ] **Move to a VPS** bought by the owner: self-hosted Supabase (Docker) or plain Postgres + API, static site behind Caddy,
+      backups, monitoring; plan the data migration (database dump, storage files, auth users) and costs vs Supabase / Vercel.
+- [ ] **Cookies**: consent banner and cookie / storage policy page (local storage, sign-in session, own analytics); required
+      before any ads, affiliate tracking or third-party analytics (EU GDPR / ePrivacy, Japan APPI).
 
 ## Dev environment notes
 
