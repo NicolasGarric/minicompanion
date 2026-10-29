@@ -7,6 +7,8 @@ import {
 } from '../../lib/narrative';
 import { drawEmblem } from '../../visual/networkMap';
 import { scenarioById, tr } from '../../data/campaignTemplates';
+import { diffInfo, type InfoLine } from '../../../paint/hobby/cards';
+import { useChangeText } from './CardsPanel';
 
 /** Side panels of a narrative campaign: camps, actions, battles, victory, players, and the journal. */
 
@@ -299,6 +301,7 @@ export function VictoryPanel({ board, onEdit, turn }: { board: Board; onEdit: ((
 /** One journal line in the reader's language. */
 export function useLogText() {
   const t = useT();
+  const changeText = useChangeText();
   return (l: LogRow, board: Board) => {
     const camp = board.camps.find((c) => c.id === l.camp)?.name ?? l.camp ?? '';
     const d = l.detail as Record<string, string | number | boolean | null>;
@@ -313,6 +316,12 @@ export function useLogText() {
     else if (l.effect === 'cut') s = d.secret ? t('nc.log.cutSecret', { camp }) : t('nc.log.cut', { camp, a: String(d.a), b: String(d.b) });
     else if (l.effect === 'res') s = t(Number(d.amount) >= 0 ? 'nc.log.resGain' : 'nc.log.resLose', { camp, n: Math.abs(Number(d.amount)) });
     else if (l.effect === 'xp') s = t('nc.log.xp', { hero: String(d.hero), camp, xp: Number(d.xp) });
+    else if (l.effect === 'card') {
+      const c = l.detail as { before?: InfoLine[]; after?: InfoLine[]; note?: string };
+      s = t('nc.log.card', { camp, card: l.label ?? '', changes: diffInfo(c.before ?? [], c.after ?? []).map(changeText).join(' · ') });
+      if (c.note) s += ` (${c.note})`;
+      return s;
+    }
     else s = t('nc.log.fall', { hero: String(d.hero), camp });
     return l.label && l.effect !== 'battle' ? `★ ${l.label} — ${s}` : s;
   };
@@ -339,7 +348,7 @@ export function Journal({ log, board, myCamp, isMaster, onContest, onResolve, bu
               {l.resolution && <span className="tag">{t(k(`nc.resolution.${l.resolution}`))}</span>}
             </span>
             <span className="acts">
-              {!l.contested_by && !l.resolution && l.camp && myCamp && myCamp !== l.camp && recent(l) && l.turn > 0 && (
+              {!l.contested_by && !l.resolution && l.camp && myCamp && myCamp !== l.camp && recent(l) && (l.turn > 0 || l.effect === 'card') && (
                 <button className="btn small ghost" disabled={busy} onClick={() => onContest(l.id)}>{t('nc.contest')}</button>
               )}
               {isMaster && l.contested_by && !l.resolution && (

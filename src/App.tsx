@@ -1,5 +1,7 @@
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
 import { SuggestionsAdmin } from './core/feedback/SuggestionsAdmin';
+import { DeckPage, Decks, OnlineDeckPage } from './paint/pages/Decks';
+import { usePileSync } from './paint/components/PileSync';
 import { AdminDashboard } from './core/admin/AdminDashboard';
 import { trackPageView } from './core/admin/admin';
 import { useLang } from './core/i18n';
@@ -91,6 +93,9 @@ function Page({ route }: { route: Route }) {
     case 'paint.deck': return <SharedDeck param={route.params.data ?? ''} />;
     case 'paint.pile': return <Pile />;
     case 'paint.army': return <ArmyPage id={route.params.id ?? ''} />;
+    case 'paint.decks': return <Decks />;
+    case 'paint.deckPage': return <DeckPage id={route.params.id ?? ''} />;
+    case 'deck.online': return <OnlineDeckPage id={route.params.id ?? ''} />;
     case 'paint.sessions': return <Sessions />;
     case 'paint.shelf': return <Shelf />;
     case 'paint.challenges': return <Challenges />;
@@ -144,6 +149,7 @@ export default function App() {
     useSession.getState().init();
   }, []);
   useAutosave();
+  usePileSync();
 
   // A PAINT project cannot exist without its reference image: no project open -> PAINT home.
   useEffect(() => {

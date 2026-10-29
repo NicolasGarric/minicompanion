@@ -444,6 +444,23 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     suggestions as message bubbles, filters (to handle, new, planned, done, not for now, all; by topic), status, and an answer
     box: `answer_suggestion` sends the answer as a direct message to the author (usual message notification; the author can
     reply in Messages). `resources/supabase/2_apply_latest_migration.sql` now starts at `PENDING_FROM` (build script).
+28. **Unit cards and combat decks, app (2026-10-29)**, needs migration 23 (steps A, B, C at once). Pure helpers
+    `src/paint/hobby/cards.ts` (info list cleaning, number/text toggle, legacy rows from points/stars/note, deck total, rule
+    search, scroll-order ops: move group, link to above, unlink, member up, add with link, remove; campaign `diffInfo` /
+    `markRows`), tested in `tests/paint/cards.test.ts` (9 tests). Store: `Unit.info`, `cardPhoto`, `linkedTo`, photo `remote`;
+    `decks` (local, `remoteId` once synced); `sync` {owner, dirty keys, gone ids} marked by every action once the pile is linked.
+    `src/paint/hobby/sync.ts`: `importPile` (first time, banner "Save my pile on my account"), `pushPile` (upsert by
+    `local_id`, photos uploaded to bucket `pile`, links in a second pass, decks), `pullPile` (account wins, local photo blobs
+    kept), `usePileSync` in App (pull on open, push 2 s after a change). UI (`src/paint/components/UnitCard.tsx`): `UnitCard`
+    (rows, tinted changes, lost rows, links as chips, History button), `InfoEditor` (123 / Aa, label suggestions), `SwipeDeck`
+    (swipe / arrows / keys, linked groups on the dots, rule search with highlights). Unit dialog: card section (photo picker,
+    "Linked to", info list, preview). Pages `/paint/decks` (list), `/paint/decks/:id` (Swipe | Build: scroll order + picker,
+    share link via `deck_share`), `/deck/:id?c=code` (read-only, `deck_view`). Game page: "Decks for this game" (attach my
+    deck, open the others'). Campaign page: tab "Cards" (`CardsPanel`): bring / replace / remove my deck, every player's
+    deck in swipe mode with the campaign band, "Make a card evolve" (rows + why) -> `evolve_campaign_card`, history from the
+    journal; journal line for `card` entries, contestable from turn 0. 9 languages (+99 keys). Checked in headless Chromium
+    (desktop + mobile, mocked backend): import, card editing pushed, deck build / order / swipe / search, share link page,
+    suggestion + admin answer, campaign bring + evolve + history + journal; no errors, no overflow.
 
 ## To do (owner list, 2026-10-29)
 

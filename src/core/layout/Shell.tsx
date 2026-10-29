@@ -121,6 +121,7 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
     { href: '/paint', key: 'nav.paint.projects', active: (r) => r.name === 'paint' },
     { href: '/paint/beginner', key: 'nav.beginner', active: (r) => r.name === 'paint.beginner' },
     { href: '/paint/pile', key: 'nav.paint.pile', active: (r) => r.name === 'paint.pile' || r.name === 'paint.army' || r.name === 'paint.deck' },
+    { href: '/paint/decks', key: 'nav.paint.decks', active: (r) => r.name === 'paint.decks' || r.name === 'paint.deckPage' || r.name === 'deck.online' },
     { href: '/paint/sessions', key: 'nav.paint.sessions', active: (r) => r.name === 'paint.sessions' },
     { href: '/paint/shelf', key: 'nav.paint.shelf', active: (r) => r.name === 'paint.shelf' },
     { href: '/paint/challenges', key: 'nav.paint.challenges', active: (r) => r.name === 'paint.challenges' },

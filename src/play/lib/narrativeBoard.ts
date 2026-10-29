@@ -77,7 +77,7 @@ export interface LogRow {
   turn: number;
   camp: CampId | null;
   author_id: string | null;
-  effect: Effect | 'battle';
+  effect: Effect | 'battle' | 'card';
   label: string | null;
   detail: Record<string, unknown>;
   snapshot: Snapshot;

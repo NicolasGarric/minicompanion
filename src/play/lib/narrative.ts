@@ -94,6 +94,7 @@ export function campaignError(e: unknown): string {
   const m = (e as { message?: string })?.message ?? '';
   const known = ['not_authenticated', 'suspended', 'too_many_campaigns', 'bad_state', 'bad_invite', 'bad_camp', 'campaign_full', 'not_master', 'master_stays',
     'version_conflict', 'not_your_camp', 'not_your_place', 'bad_target', 'bad_effect', 'rate_limited', 'campaign_finished', 'not_other_camp', 'too_late',
-    'already_contested', 'not_contested', 'too_many_battles', 'already_played', 'forbidden'];
+    'already_contested', 'not_contested', 'too_many_battles', 'already_played', 'forbidden', 'deck_has_history', 'card_changed_since', 'not_your_card',
+    'no_change', 'bad_info', 'not_owner'];
   return known.find((k) => m.includes(k)) ?? 'generic';
 }

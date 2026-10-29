@@ -3,10 +3,13 @@ import { k, localeOf, useLang, useT } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { Icon, IconButton, Modal } from '../../core/ui/ui';
 import { download, shrinkPhoto } from '../../core/lib/image';
-import { ARMY_INKS, ROLES, STAGES, armyStats, photoBlob, useHobby, type Army, type Role, type Stage, type Unit } from '../hobby/store';
+import { ARMY_INKS, ROLES, STAGES, armyStats, cardPhotoOf, photoBlob, useHobby, type Army, type Role, type Stage, type Unit } from '../hobby/store';
 import { deckImage, deckLink, deckOf, type Deck } from '../hobby/deck';
 import { DeckView } from '../components/DeckCards';
 import { TimelapseDialog } from '../components/TimelapseDialog';
+import { InfoEditor, UnitCard, useInfoOf, usePhotoUrls, type CardView } from '../components/UnitCard';
+import { PileSyncBanner } from '../components/PileSync';
+import { removeRemotePhotos } from '../hobby/sync';
 
 /**
  * "My pile": every army as a big halftone gauge (painted miniatures / all miniatures), then the
@@ -45,6 +48,9 @@ export function Pile() {
           </div>
         )}
       </div>
+
+      <PileSyncBanner />
+      <p className="field-row wrap"><a className="btn" href="/paint/decks"><Icon name="layers" size={16} /> {t('cards.decks')}</a></p>
 
       <form className="card pile-new" onSubmit={create}>
         <label className="field">
@@ -155,7 +161,7 @@ export function ArmyPage({ id }: { id: string }) {
             {confirmDelete ? (
               <>
                 <span>{t('pile.deleteConfirm')}</span>
-                <button className="btn small danger-ghost" onClick={() => { removeArmy(army.id); navigate('paint/pile'); }}>{t('common.delete')}</button>
+                <button className="btn small danger-ghost" onClick={() => { void removeRemotePhotos(army.units.flatMap((u) => u.photos.map((p) => p.remote))); removeArmy(army.id); navigate('paint/pile'); }}>{t('common.delete')}</button>
                 <button className="btn small ghost" onClick={() => setConfirmDelete(false)}>{t('common.cancel')}</button>
               </>
             ) : (
@@ -210,27 +216,13 @@ function UnitDialog({ army, unit, onClose }: { army: Army; unit: Unit; onClose: 
   const lang = useLang((s) => s.lang);
   const { updateUnit, removeUnit, addPhoto, removePhoto, startSession } = useHobby.getState();
   const running = useHobby((s) => s.running);
-  const [urls, setUrls] = useState<Map<string, string>>(new Map());
+  const urls = usePhotoUrls(unit.photos);
+  const synced = useHobby((s) => !!s.sync.owner);
   const [story, setStory] = useState(false);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<Unit>) => updateUnit(army.id, unit.id, patch);
 
-  useEffect(() => {
-    let alive = true;
-    const made: string[] = [];
-    Promise.all(unit.photos.map(async (p) => {
-      const b = await photoBlob(p.id);
-      if (!b) return null;
-      const u = URL.createObjectURL(b);
-      made.push(u);
-      return [p.id, u] as const;
-    })).then((pairs) => alive && setUrls(new Map(pairs.filter((x): x is readonly [string, string] => !!x))));
-    return () => {
-      alive = false;
-      made.forEach((u) => URL.revokeObjectURL(u));
-    };
-  }, [unit.photos]);
 
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -261,30 +253,16 @@ function UnitDialog({ army, unit, onClose }: { army: Army; unit: Unit; onClose: 
             <select className="select" value={unit.stage} onChange={(e) => set({ stage: e.target.value as Stage })}>
               {STAGES.map((st) => <option key={st} value={st}>{t(k(`stage.${st}`))}</option>)}
             </select></label>
-          <label className="field"><span>{t('pile.points')}</span>
-            <input className="num-input" type="number" min={0} max={99999} value={unit.points ?? ''} onChange={(e) => set({ points: e.target.value ? Math.max(0, +e.target.value) : undefined })} /></label>
         </div>
-        <div className="field">
-          <span>{t('pile.stars')}</span>
-          <div className="stars" role="radiogroup" aria-label={t('pile.stars')}>
-            {[0, 1, 2, 3].map((n) => (
-              <button key={n} type="button" role="radio" aria-checked={(unit.stars ?? 0) === n} className={(unit.stars ?? 0) === n ? 'on' : ''} onClick={() => set({ stars: n })}>
-                {n ? '★'.repeat(n) : '—'}
-              </button>
-            ))}
-          </div>
-        </div>
-        <label className="field"><span>{t('pile.note')}</span>
-          <input className="text-input" value={unit.note ?? ''} maxLength={140} placeholder={t('pile.notePlaceholder')} onChange={(e) => set({ note: e.target.value || undefined })} /></label>
 
         <h3>{t('pile.stepPhotos')}</h3>
-        <p className="hint">{t('pile.stepPhotosHint')}</p>
+        <p className="hint">{t(synced ? 'cards.photosSynced' : 'pile.stepPhotosHint')}</p>
         <div className="photo-strip">
           {unit.photos.map((p, i) => (
             <figure key={p.id}>
               {urls.get(p.id) ? <img src={urls.get(p.id)} alt={t('pile.photoN', { n: i + 1 })} /> : <span className="spinner small" />}
               <figcaption>{fmt(p.at)}
-                <IconButton icon="trash" label={t('common.delete')} size={13} onClick={() => removePhoto(army.id, unit.id, p.id)} />
+                <IconButton icon="trash" label={t('common.delete')} size={13} onClick={() => { void removeRemotePhotos([p.remote]); void removePhoto(army.id, unit.id, p.id); }} />
               </figcaption>
             </figure>
           ))}
@@ -295,6 +273,8 @@ function UnitDialog({ army, unit, onClose }: { army: Army; unit: Unit; onClose: 
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => { void onFiles(e.target.files); e.target.value = ''; }} />
         </div>
 
+        <CardSection army={army} unit={unit} urls={urls} />
+
         <div className="field-row wrap">
           <button className="btn primary" disabled={unit.photos.length < 2} onClick={() => setStory(true)}>
             <Icon name="image" size={16} /> {t('pile.makeStory')}
@@ -303,13 +283,69 @@ function UnitDialog({ army, unit, onClose }: { army: Army; unit: Unit; onClose: 
             <Icon name="brush" size={16} /> {t('sessions.startFor')}
           </button>
           <span className="spacer" />
-          <button className="btn small danger-ghost" onClick={() => { removeUnit(army.id, unit.id); onClose(); }}>
+          <button className="btn small danger-ghost" onClick={() => { void removeRemotePhotos(unit.photos.map((p) => p.remote)); removeUnit(army.id, unit.id); onClose(); }}>
             <Icon name="trash" size={14} /> {t('pile.deleteUnit')}
           </button>
         </div>
       </div>
       {story && <TimelapseDialog army={army} unit={unit} onClose={() => setStory(false)} />}
     </Modal>
+  );
+}
+
+/** The unit's card: photo chosen among its photos, link to another unit, free info list, preview. */
+function CardSection({ army, unit, urls }: { army: Army; unit: Unit; urls: Map<string, string> }) {
+  const t = useT();
+  const armies = useHobby((s) => s.armies);
+  const { updateUnit } = useHobby.getState();
+  const infoOf = useInfoOf();
+  const lines = infoOf(unit);
+  const all = armies.flatMap((a) => a.units);
+  const linkedHere = all.some((u) => u.linkedTo === unit.id);
+  const targets = all.filter((u) => u.id !== unit.id && !u.linkedTo);
+  const labels = [...new Set(all.flatMap((u) => u.info ?? []).map((x) => x.l.trim()).filter(Boolean))].slice(0, 60);
+  const ph = cardPhotoOf(unit);
+  const target = all.find((u) => u.id === unit.linkedTo);
+  const card: CardView = {
+    id: unit.id, name: unit.name, role: unit.role, colour: army.colour, photo: ph ? urls.get(ph.id) : undefined,
+    rows: lines.filter((x) => x.l.trim()), links: target ? [[target.id, target.name]] : [],
+  };
+  return (
+    <section className="card-section">
+      <h3>{t('cards.title')}</h3>
+      <p className="hint">{t('cards.hint')}</p>
+      <div className="card-section-grid">
+        <div className="card-section-form">
+          {unit.photos.length > 0 && (
+            <div className="field">
+              <span>{t('cards.photo')}</span>
+              <div className="card-photos" role="radiogroup" aria-label={t('cards.photo')}>
+                {unit.photos.map((p, i) => (
+                  <button key={p.id} type="button" role="radio" aria-checked={ph?.id === p.id} className={ph?.id === p.id ? 'on' : ''}
+                    onClick={() => updateUnit(army.id, unit.id, { cardPhoto: p.id })} aria-label={t('pile.photoN', { n: i + 1 })}>
+                    {urls.get(p.id) ? <img src={urls.get(p.id)} alt="" /> : <span className="spinner small" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <label className="field">
+            <span>{t('cards.linkTo')}</span>
+            <select className="select" value={unit.linkedTo ?? ''} disabled={linkedHere}
+              onChange={(e) => updateUnit(army.id, unit.id, { linkedTo: e.target.value || undefined })}>
+              <option value="">{t('cards.noLink')}</option>
+              {targets.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+            {linkedHere && <small className="hint">{t('cards.othersLinked')}</small>}
+          </label>
+          <div className="field">
+            <span>{t('cards.info')}</span>
+            <InfoEditor lines={lines} suggestions={labels} onChange={(info) => updateUnit(army.id, unit.id, { info })} />
+          </div>
+        </div>
+        <UnitCard card={card} />
+      </div>
+    </section>
   );
 }
 

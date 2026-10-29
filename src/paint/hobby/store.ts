@@ -9,6 +9,7 @@ import { db } from '../storage/db';
 export const STAGES = ['box', 'built', 'primed', 'painted', 'based'] as const;
 export type Stage = (typeof STAGES)[number];
 import { ROLES, type Role } from './deckCodec';
+import { removeCard, type Groups, type InfoLine } from './cards';
 export { ROLES, type Role };
 
 export interface Unit {
@@ -21,13 +22,36 @@ export interface Unit {
   stage: Stage;
   points?: number;
   note?: string;
-  /** 0–3 stars on the collectible card */
+  /** 0–3 stars on the collectible card (older units; now a row of the info list) */
   stars?: number;
-  /** Step photos (ids in IndexedDB), oldest first */
-  photos: { id: string; at: number }[];
+  /** The card's free info list; undefined = never edited (points, stars and note are shown instead) */
+  info?: InfoLine[];
+  /** Photo shown on the card (id of one of the photos); the latest one when unset */
+  cardPhoto?: string;
+  /** Unit this one is linked to (a hero with its squad), one level only */
+  linkedTo?: string;
+  /** Step photos (ids in IndexedDB; `remote` once uploaded to the account), oldest first */
+  photos: UnitPhoto[];
   /** Painted miniatures (date) for the year in review and levels */
   doneAt?: number;
   createdAt: number;
+}
+
+export interface UnitPhoto {
+  id: string;
+  at: number;
+  /** Path in the "pile" bucket once uploaded (synced piles); the blob may then be missing on this device */
+  remote?: string;
+}
+
+/** A composed combat deck: cards from any army, in scroll order, linked cards grouped. */
+export interface LocalDeck {
+  id: string;
+  name: string;
+  groups: Groups;
+  createdAt: number;
+  /** Id on the account once synced */
+  remoteId?: string;
 }
 
 export interface Army {
@@ -54,10 +78,22 @@ interface Stored {
   running: { start: number; unitId?: string } | null;
   /** Painted miniatures log (date, count) for the stats, even when units are deleted later */
   paintedLog: { at: number; n: number }[];
+  decks: LocalDeck[];
+  /** Account the pile is synced with (after the import), and what changed since the last push */
+  sync: SyncState;
 }
 
+export interface SyncState {
+  owner: string | null;
+  /** "a:<army>", "u:<army>:<unit>", "d:<deck>" changed since the last push */
+  dirty: string[];
+  /** Removed since the last push: local ids of armies and units, account ids of decks */
+  gone: { armies: string[]; units: string[]; decks: string[] };
+}
+export const NO_SYNC: SyncState = { owner: null, dirty: [], gone: { armies: [], units: [], decks: [] } };
+
 const KEY = 'cf.hobby';
-const EMPTY: Stored = { armies: [], sessions: [], running: null, paintedLog: [] };
+const EMPTY: Stored = { armies: [], sessions: [], running: null, paintedLog: [], decks: [], sync: NO_SYNC };
 
 function load(): Stored {
   try {
@@ -90,6 +126,12 @@ interface HobbyState extends Stored {
   cancelSession: () => void;
   addSession: (s: Omit<Session, 'id'>) => void;
   removeSession: (id: string) => void;
+  addDeck: (name: string, groups?: Groups) => string;
+  updateDeck: (id: string, patch: Partial<Pick<LocalDeck, 'name' | 'groups'>>) => void;
+  removeDeck: (id: string) => void;
+  /** Sync only: replace the whole pile and decks, or record what was pushed */
+  replaceAll: (p: Pick<Stored, 'armies' | 'decks'>, sync: SyncState) => void;
+  setSync: (sync: SyncState) => void;
 }
 
 export const useHobby = create<HobbyState>((set, get) => {
@@ -97,20 +139,37 @@ export const useHobby = create<HobbyState>((set, get) => {
     set(patch);
     const s = get();
     try {
-      localStorage.setItem(KEY, JSON.stringify({ armies: s.armies, sessions: s.sessions, running: s.running, paintedLog: s.paintedLog }));
+      localStorage.setItem(KEY, JSON.stringify({ armies: s.armies, sessions: s.sessions, running: s.running, paintedLog: s.paintedLog, decks: s.decks, sync: s.sync }));
     } catch {
       /* storage full or blocked: kept for this visit only */
     }
   };
-  const mapArmy = (id: string, fn: (a: Army) => Army) => save({ armies: get().armies.map((a) => (a.id === id ? fn(a) : a)) });
+  // Changes are remembered for the next push only once the pile is synced with an account
+  const mark = (keys: string[], gone?: Partial<SyncState['gone']>) => {
+    const sy = get().sync;
+    if (!sy.owner) return {};
+    return {
+      sync: {
+        ...sy,
+        dirty: [...new Set([...sy.dirty, ...keys])],
+        gone: {
+          armies: [...sy.gone.armies, ...(gone?.armies ?? [])],
+          units: [...sy.gone.units, ...(gone?.units ?? [])],
+          decks: [...sy.gone.decks, ...(gone?.decks ?? [])],
+        },
+      },
+    };
+  };
+  const mapArmy = (id: string, fn: (a: Army) => Army, keys: string[] = [`a:${id}`]) =>
+    save({ armies: get().armies.map((a) => (a.id === id ? fn(a) : a)), ...mark(keys) });
   const mapUnit = (armyId: string, unitId: string, fn: (u: Unit) => Unit) =>
-    mapArmy(armyId, (a) => ({ ...a, units: a.units.map((u) => (u.id === unitId ? fn(u) : u)) }));
+    mapArmy(armyId, (a) => ({ ...a, units: a.units.map((u) => (u.id === unitId ? fn(u) : u)) }), [`u:${armyId}:${unitId}`]);
 
   return {
     ...load(),
     addArmy: (name, colour) => {
       const id = hid();
-      save({ armies: [...get().armies, { id, name, colour, units: [], createdAt: Date.now() }] });
+      save({ armies: [...get().armies, { id, name, colour, units: [], createdAt: Date.now() }], ...mark([`a:${id}`]) });
       return id;
     },
     addArmyWithUnits: (name, list) => {
@@ -128,19 +187,25 @@ export const useHobby = create<HobbyState>((set, get) => {
         createdAt: now,
       }));
       const armies = get().armies;
-      save({ armies: [...armies, { id, name, colour: ARMY_INKS[armies.length % ARMY_INKS.length], units, createdAt: now }] });
+      save({ armies: [...armies, { id, name, colour: ARMY_INKS[armies.length % ARMY_INKS.length], units, createdAt: now }],
+        ...mark([`a:${id}`, ...units.map((u) => `u:${id}:${u.id}`)]) });
       return id;
     },
     updateArmy: (id, patch) => mapArmy(id, (a) => ({ ...a, ...patch })),
     removeArmy: (id) => {
       const army = get().armies.find((a) => a.id === id);
       army?.units.forEach((u) => u.photos.forEach((p) => void db.setKV(`photo:${p.id}`, undefined)));
-      save({ armies: get().armies.filter((a) => a.id !== id) });
+      const ids = new Set(army?.units.map((u) => u.id));
+      save({
+        armies: get().armies.filter((a) => a.id !== id).map((a) => unlinkFrom(a, ids)),
+        decks: get().decks.map((d) => ({ ...d, groups: [...ids].reduce(removeCard, d.groups) })),
+        ...mark(get().decks.map((d) => `d:${d.id}`), { armies: [id] }),
+      });
     },
     addUnit: (armyId, u) => {
       const id = hid();
       const unit: Unit = { role: 'troop', count: 1, painted: 0, stage: 'box', photos: [], createdAt: Date.now(), ...u, id };
-      mapArmy(armyId, (a) => ({ ...a, units: [...a.units, unit] }));
+      mapArmy(armyId, (a) => ({ ...a, units: [...a.units, unit] }), [`u:${armyId}:${id}`]);
       return id;
     },
     updateUnit: (armyId, unitId, patch) =>
@@ -160,7 +225,12 @@ export const useHobby = create<HobbyState>((set, get) => {
     removeUnit: (armyId, unitId) => {
       const unit = get().armies.find((a) => a.id === armyId)?.units.find((u) => u.id === unitId);
       unit?.photos.forEach((p) => void db.setKV(`photo:${p.id}`, undefined));
-      mapArmy(armyId, (a) => ({ ...a, units: a.units.filter((u) => u.id !== unitId) }));
+      const ids = new Set([unitId]);
+      save({
+        armies: get().armies.map((a) => unlinkFrom(a.id === armyId ? { ...a, units: a.units.filter((u) => u.id !== unitId) } : a, ids)),
+        decks: get().decks.map((d) => ({ ...d, groups: removeCard(d.groups, unitId) })),
+        ...mark(get().decks.filter((d) => d.groups.flat().includes(unitId)).map((d) => `d:${d.id}`), { units: [unitId] }),
+      });
     },
     moveUnit: (armyId, unitId, dir) =>
       mapArmy(armyId, (a) => {
@@ -169,7 +239,7 @@ export const useHobby = create<HobbyState>((set, get) => {
         const units = a.units.slice();
         [units[i], units[j]] = [units[j], units[i]];
         return { ...a, units };
-      }),
+      }, [`a:${armyId}`, ...(get().armies.find((a) => a.id === armyId)?.units.map((u) => `u:${armyId}:${u.id}`) ?? [])]),
     addPhoto: async (armyId, unitId, blob) => {
       const id = hid();
       await db.setKV(`photo:${id}`, blob);
@@ -177,7 +247,7 @@ export const useHobby = create<HobbyState>((set, get) => {
     },
     removePhoto: async (armyId, unitId, photoId) => {
       await db.setKV(`photo:${photoId}`, undefined);
-      mapUnit(armyId, unitId, (u) => ({ ...u, photos: u.photos.filter((p) => p.id !== photoId) }));
+      mapUnit(armyId, unitId, (u) => ({ ...u, photos: u.photos.filter((p) => p.id !== photoId), cardPhoto: u.cardPhoto === photoId ? undefined : u.cardPhoto }));
     },
     startSession: (unitId) => save({ running: { start: Date.now(), unitId } }),
     stopSession: (note) => {
@@ -189,10 +259,32 @@ export const useHobby = create<HobbyState>((set, get) => {
     cancelSession: () => save({ running: null }),
     addSession: (s) => save({ sessions: [...get().sessions, { ...s, id: hid() }].sort((a, b) => a.start - b.start) }),
     removeSession: (id) => save({ sessions: get().sessions.filter((s) => s.id !== id) }),
+    addDeck: (name, groups = []) => {
+      const id = hid();
+      save({ decks: [...get().decks, { id, name, groups, createdAt: Date.now() }], ...mark([`d:${id}`]) });
+      return id;
+    },
+    updateDeck: (id, patch) => save({ decks: get().decks.map((d) => (d.id === id ? { ...d, ...patch } : d)), ...mark([`d:${id}`]) }),
+    removeDeck: (id) => {
+      const remote = get().decks.find((d) => d.id === id)?.remoteId;
+      save({ decks: get().decks.filter((d) => d.id !== id), ...mark([], { decks: remote ? [remote] : [] }) });
+    },
+    replaceAll: (p, sync) => save({ armies: p.armies, decks: p.decks, sync }),
+    setSync: (sync) => save({ sync }),
   };
 });
 
 export const photoBlob = (id: string) => db.getKV<Blob>(`photo:${id}`);
+
+/** Units linked to removed units lose their link. */
+function unlinkFrom(a: Army, removed: Set<string>): Army {
+  return a.units.some((u) => u.linkedTo && removed.has(u.linkedTo))
+    ? { ...a, units: a.units.map((u) => (u.linkedTo && removed.has(u.linkedTo) ? { ...u, linkedTo: undefined } : u)) }
+    : a;
+}
+
+/** The photo of the card: the chosen one, else the latest. */
+export const cardPhotoOf = (u: Unit) => u.photos.find((p) => p.id === u.cardPhoto) ?? u.photos[u.photos.length - 1];
 
 /* ---------- Derived numbers ---------- */
 

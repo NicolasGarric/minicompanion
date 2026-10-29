@@ -12,6 +12,7 @@ import {
   type BattleRow, type Board, type CampId, type CampaignRow, type Effect, type LogRow, type Member,
 } from '../lib/narrative';
 import { NetworkBoard } from '../components/campaign/NetworkBoard';
+import { CardsPanel } from '../components/campaign/CardsPanel';
 import { ActionsPanel, BattlesPanel, CampsPanel, Emblem, Journal, MembersPanel, VictoryPanel } from '../components/campaign/CampaignPanels';
 import type { Flash } from '../visual/networkMap';
 import { localizedCampaign } from '../data/campaignTemplates';
@@ -22,7 +23,7 @@ import { localizedCampaign } from '../data/campaignTemplates';
  * The master's changes are saved automatically; other changes arrive live.
  */
 type Data = { row: CampaignRow; board: Board; members: Member[]; log: LogRow[]; battles: BattleRow[] };
-type Tab = 'camps' | 'actions' | 'battles' | 'victory' | 'players' | 'settings';
+type Tab = 'camps' | 'actions' | 'battles' | 'cards' | 'victory' | 'players' | 'settings';
 
 export function CampaignPage({ id }: { id: string }) {
   const t = useT();
@@ -157,7 +158,7 @@ export function CampaignPage({ id }: { id: string }) {
     const code = await inviteCode(id).catch(() => null);
     if (code) setInvite(`${location.origin}/play/campaign/${id}?join=${code}`);
   };
-  const tabs: Tab[] = ['camps', 'actions', 'battles', 'victory', 'players', ...(isMaster ? ['settings' as Tab] : [])];
+  const tabs: Tab[] = ['camps', 'actions', 'battles', 'cards', 'victory', 'players', ...(isMaster ? ['settings' as Tab] : [])];
   const editor = isMaster && replay === null ? onEdit : null;
 
   return (
@@ -218,6 +219,9 @@ export function CampaignPage({ id }: { id: string }) {
               onPlan={(p, title, date, a, b, note) => act(() => planBattle(id, p, title, date, a, b, note))}
               onResult={(b, winnerCamp) => act(() => recordBattle(b, winnerCamp), data.battles.find((x) => x.id === b)?.place_id, board.camps.find((c) => c.id === winnerCamp)?.color)}
               onCancel={(b) => act(() => cancelBattle(b))} />
+          )}
+          {tab === 'cards' && (
+            <CardsPanel campaignId={id} title={shownText.title} board={board} members={members} myCamp={myCamp} isMaster={isMaster} me={me} log={data.log} onChanged={load} />
           )}
           {tab === 'victory' && <VictoryPanel board={board} onEdit={editor} turn={turn} />}
           {tab === 'players' && (

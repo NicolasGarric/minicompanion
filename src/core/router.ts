@@ -16,6 +16,9 @@ export type RouteName =
   | 'paint.deck'
   | 'paint.pile'
   | 'paint.army'
+  | 'paint.decks'
+  | 'paint.deckPage'
+  | 'deck.online'
   | 'paint.sessions'
   | 'paint.shelf'
   | 'paint.challenges'
@@ -73,6 +76,9 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'd/*data', name: 'paint.deck', section: 'paint' },
   { pattern: 'paint/pile', name: 'paint.pile', section: 'paint' },
   { pattern: 'paint/pile/:id', name: 'paint.army', section: 'paint' },
+  { pattern: 'paint/decks', name: 'paint.decks', section: 'paint' },
+  { pattern: 'paint/decks/:id', name: 'paint.deckPage', section: 'paint' },
+  { pattern: 'deck/:id', name: 'deck.online', section: 'paint' },
   { pattern: 'paint/sessions', name: 'paint.sessions', section: 'paint' },
   { pattern: 'paint/shelf', name: 'paint.shelf', section: 'paint' },
   { pattern: 'paint/challenges', name: 'paint.challenges', section: 'paint' },

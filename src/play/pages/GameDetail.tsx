@@ -15,6 +15,8 @@ import { formatWhen } from '../components/GameCard';
 import { ReportSection } from '../components/ReportSection';
 import { GameChat } from '../components/GameChat';
 import { downloadIcs } from '../lib/ics';
+import { useHobby } from '../../paint/hobby/store';
+import { gameDecks, setGameDeck } from '../../paint/hobby/sync';
 
 /** One game: details, players, and the actions of the viewer (host, player or visitor). */
 export function GameDetail({ id }: { id: string }) {
@@ -180,6 +182,9 @@ export function GameDetail({ id }: { id: string }) {
       </section>
 
       <GameMap game={game} isHost={isHost} onChanged={load} />
+      {me && (isHost || mine?.status === 'accepted') && game.status !== 'cancelled' && (
+        <GameDecks gameId={game.id} me={me} names={new Map([[game.host_id, game.host?.display_name ?? '?'], ...accepted.map((p) => [p.player_id, p.profile?.display_name ?? '?'] as [string, string])])} />
+      )}
 
       {!past && game.status !== 'cancelled' && (
         <section className="card game-actions" id="join">
@@ -294,6 +299,52 @@ function GameMap({ game, isHost, onChanged }: { game: Game; isHost: boolean; onC
         {isHost && <a className="btn small primary" href={editor}><Icon name="hand" size={14} /> {t(table ? 'games.map.change' : 'games.map.choose')}</a>}
         {isHost && table && <button className="btn small danger-ghost" disabled={busy} onClick={remove}><Icon name="trash" size={14} /> {t('games.map.remove')}</button>}
       </div>
+    </section>
+  );
+}
+
+/** Each player can attach one of his combat decks; the others swipe it during the game. */
+function GameDecks({ gameId, me, names }: { gameId: string; me: string; names: Map<string, string> }) {
+  const t = useT();
+  const decks = useHobby((s) => s.decks.filter((d) => d.remoteId));
+  const synced = useHobby((s) => s.sync.owner === me);
+  const [rows, setRows] = useState<{ player_id: string; deck_id: string }[] | null>(null);
+  const [error, setError] = useState(false);
+  const load = () => gameDecks(gameId).then(setRows, () => setError(true));
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId]);
+  const mineRow = rows?.find((r) => r.player_id === me);
+  return (
+    <section className="card game-decks">
+      <h2><Icon name="layers" size={18} /> {t('cards.gameDecks')}</h2>
+      {error && <p className="error">{t('error.generic')}</p>}
+      <ul className="game-deck-list">
+        {rows?.filter((r) => r.player_id !== me).map((r) => (
+          <li key={r.player_id}><a className="btn small" href={`/deck/${r.deck_id}`}><Icon name="eye" size={14} /> {t('cards.deckOf', { name: names.get(r.player_id) ?? '?' })}</a></li>
+        ))}
+      </ul>
+      {rows && !rows.some((r) => r.player_id !== me) && <p className="hint">{t('cards.noGameDecks')}</p>}
+      {synced && decks.length > 0 ? (
+        <label className="field">
+          <span>{t('cards.myGameDeck')}</span>
+          <select className="select" value={mineRow?.deck_id ?? ''} onChange={async (e) => {
+            try {
+              await setGameDeck(gameId, e.target.value || null);
+              load();
+            } catch {
+              setError(true);
+            }
+          }}>
+            <option value="">{t('cards.noDeck')}</option>
+            {decks.map((d) => <option key={d.id} value={d.remoteId}>{d.name}</option>)}
+          </select>
+        </label>
+      ) : (
+        <p className="hint">{t('cards.gameDeckHow')} <a href="/paint/decks">{t('cards.decks')}</a></p>
+      )}
+      {mineRow && <a className="small" href={`/deck/${mineRow.deck_id}`}>{t('cards.seeMine')}</a>}
     </section>
   );
 }
