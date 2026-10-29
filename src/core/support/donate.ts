@@ -14,4 +14,7 @@ export const DONATE = {
   monthly: stripeLink(import.meta.env.VITE_STRIPE_DONATE_MONTHLY_URL),
   portal: stripeLink(import.meta.env.VITE_STRIPE_PORTAL_URL),
 };
+/** Amount suggested by default (euros); set the same preset on the Stripe payment links. */
+export const DEFAULT_DONATION = 5;
+
 export const donationsOpen = !!(DONATE.once || DONATE.monthly);

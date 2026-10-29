@@ -1,7 +1,7 @@
-import { useT } from '../i18n';
+import { localeOf, useLang, useT } from '../i18n';
 import { Icon } from '../ui/ui';
 import { APP_NAME } from '../brand';
-import { DONATE, donationsOpen } from './donate';
+import { DEFAULT_DONATION, DONATE, donationsOpen } from './donate';
 
 /** Footer link to the support page. */
 export function SupportLink() {
@@ -16,6 +16,8 @@ export function SupportLink() {
 /** /support: why donations help, then the Stripe pages (new tab). */
 export function SupportPage() {
   const t = useT();
+  const lang = useLang((s) => s.lang);
+  const amount = new Intl.NumberFormat(localeOf(lang), { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(DEFAULT_DONATION);
   return (
     <div className="narrow support-page">
       <h1>{t('support.title', { app: APP_NAME })}</h1>
@@ -42,6 +44,8 @@ export function SupportPage() {
               </a>
             )}
           </div>
+          {DONATE.once && <p><strong>{t('support.amount', { amount })}</strong></p>}
+          {DONATE.monthly && <p className="hint">{t('support.monthlyAmount', { amount })}</p>}
           <p className="hint">{t('support.stripe')}</p>
           {DONATE.portal && (
             <p className="hint"><a href={DONATE.portal} target="_blank" rel="noopener noreferrer">{t('support.manage')}</a></p>
