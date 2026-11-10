@@ -13,6 +13,8 @@ export const ja: Record<MessageKey, string> = {
   'home.measureHint': '動かして計測・ユニットをクリック',
   'home.inRange': '射程内',
   'home.outOfRange': '射程外',
+  'beta.badge': 'ベータ版',
+  'beta.note': 'ベータ版・無料で開発中です。改善してほしいことを教えてください。',
 
   'legal.short':
     '非公式のファンプロジェクトです。いかなるブランド・販売店とも提携・承認関係はありません。商標は各権利者に帰属し、識別目的でのみ使用しています。',

@@ -14,6 +14,7 @@ import { useUnread } from '../social/unread';
 import { onInsert } from '../../play/lib/social';
 
 export function Logo() {
+  const t = useT();
   return (
     <span className="logo">
       {/* Original mark, not derived from any brand */}
@@ -28,6 +29,7 @@ export function Logo() {
         <circle cx="32" cy="30" r="8" fill="#14161c" />
       </svg>
       <span>{APP_NAME}</span>
+      <b className="beta-badge">{t('beta.badge')}</b>
     </span>
   );
 }

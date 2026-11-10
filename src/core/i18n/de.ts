@@ -13,6 +13,8 @@ export const de: Record<MessageKey, string> = {
   "home.measureHint": "Bewegen zum Messen · Klicken für die Einheit",
   "home.inRange": "In Reichweite",
   "home.outOfRange": "Außer Reichweite",
+  "beta.badge": "Beta",
+  "beta.note": "Beta · kostenlos und im Aufbau: Sag uns, was besser werden soll.",
 
   "legal.short": "Unabhängiges Fanprojekt. Nicht mit Marken oder Händlern verbunden und nicht von ihnen unterstützt. Marken gehören ihren Inhabern und dienen nur der Identifikation.",
   "legal.full": "Diese Website und ihre Inhalte sind ein unabhängiges Fanprojekt. Sie sind weder mit einem Unternehmen, einer Marke, einer Organisation oder einem Händler verbunden noch von diesen unterstützt, gesponsert oder anderweitig mit ihnen verknüpft. Alle genannten Marken und Produktnamen gehören ihren jeweiligen Inhabern und werden nur zur Identifikation verwendet. Die App soll Hobbyisten helfen, ihr eigenes Hobby zu erkunden, zu planen und zu organisieren.",

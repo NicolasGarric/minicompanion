@@ -13,6 +13,8 @@ export const it: Record<MessageKey, string> = {
   "home.measureHint": "Muovi per misurare · Clicca per cambiare unità",
   "home.inRange": "A gittata",
   "home.outOfRange": "Fuori gittata",
+  "beta.badge": "Beta",
+  "beta.note": "Beta · gratis e in costruzione: dicci cosa migliorare.",
 
   "legal.short": "Progetto indipendente di appassionati. Non affiliato né approvato da alcun marchio o rivenditore. I marchi appartengono ai rispettivi proprietari e sono usati solo per identificazione.",
   "legal.full": "Questo sito e i suoi contenuti sono un progetto indipendente di appassionati. Non è affiliato, approvato, sponsorizzato né collegato in alcun modo ad aziende, marchi, organizzazioni o rivenditori. Tutti i marchi e i nomi di prodotto citati appartengono ai rispettivi proprietari e sono usati solo a scopo di identificazione. L’app serve ad aiutare gli hobbisti a esplorare, pianificare e organizzare il proprio hobby.",

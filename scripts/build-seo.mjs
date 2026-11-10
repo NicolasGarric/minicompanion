@@ -55,7 +55,8 @@ const template = readFileSync(join(DIST, 'index.html'), 'utf8');
 
 /** One page in one language: tailored head and readable body, written to dist/<lang>/<path>/index.html. */
 function page(path, lang, { title, description, body, head = '' }) {
-  const full = `${title} · MiniCompanion`;
+  const name = 'MiniCompanion Beta';
+  const full = title === 'MiniCompanion' ? name : `${title} · ${name}`;
   const url = `${SITE}/${langPath(path, lang)}`;
   let html = template
     .replace(/<html lang="[^"]*"/, `<html lang="${localeOf(lang)}"`)

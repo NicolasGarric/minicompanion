@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { k, useT } from '../i18n';
 import { Icon } from '../ui/ui';
 import { APP_NAME } from '../brand';
+import { SuggestButton } from '../feedback/Suggest';
 import { startRisoTable } from '../visual/risoTable';
 
 /**
@@ -39,6 +40,7 @@ export function Home() {
           <p className="sr-only">{APP_NAME}</p>
           <h1>{t('platform.title')}</h1>
           <p className="lead">{t('platform.lead')}</p>
+          <p className="beta-note">{t('beta.note')} <SuggestButton /></p>
           <div className="hero-secondary">
           <a className="btn primary" href="/paint/beginner"><Icon name="sparkle" size={16} /> {t('platform.ctaBeginner')}</a>
           <a className="btn" href="/paint"><Icon name="brush" size={16} /> {t('nav.paint')}</a>

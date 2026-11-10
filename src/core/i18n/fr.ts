@@ -13,6 +13,8 @@ export const fr: Record<MessageKey, string> = {
   "home.measureHint": "Bouge pour mesurer · clique sur une unité",
   "home.inRange": "à portée",
   "home.outOfRange": "hors de portée",
+  "beta.badge": "Bêta",
+  "beta.note": "Bêta · gratuit et en construction : dis-nous quoi améliorer.",
 
   "legal.short": "Projet de fan indépendant. Non affilié à aucune marque ni aucun revendeur, ni approuvé par eux. Les marques appartiennent à leurs propriétaires et ne sont citées qu’à titre d’identification.",
   "legal.full": "Ce site et son contenu sont un projet de fan indépendant. Ils ne sont ni affiliés, ni approuvés, ni sponsorisés par une entreprise, une marque, une organisation ou un revendeur, ni liés à eux. Toutes les marques et tous les noms de produits cités appartiennent à leurs propriétaires respectifs et ne sont utilisés qu’à des fins d’identification. Cette application aide les passionnés à rechercher, planifier et organiser leurs activités de loisir.",

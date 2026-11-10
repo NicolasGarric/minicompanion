@@ -14,6 +14,8 @@ export const en = {
   'home.outOfRange': 'out of range',
 
   // Legal
+  'beta.badge': 'Beta',
+  'beta.note': 'Beta · free and still growing: tell us what to improve.',
   'legal.short':
     'Independent fan project. Not affiliated with or endorsed by any brand or retailer. Trademarks belong to their owners and are used for identification only.',
   'legal.full':

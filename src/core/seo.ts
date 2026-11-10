@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { APP_NAME } from './brand';
+import { APP_NAME, APP_STAGE } from './brand';
 import { HREFLANG, LANGS, localizedPath, splitLangPath, translate, useLang, type MessageKey } from './i18n';
 import { parsePath, PUBLIC_ROUTES, type Route, type RouteName } from './router';
 
@@ -44,7 +44,8 @@ function setMeta(attr: 'name' | 'property', key: string, value: string) {
 }
 
 export function setPageMeta({ title, description, noindex = false }: { title: string; description?: string; noindex?: boolean }) {
-  const full = title === APP_NAME ? title : `${title} · ${APP_NAME}`;
+  const name = `${APP_NAME} ${APP_STAGE}`;
+  const full = title === APP_NAME ? name : `${title} · ${name}`;
   document.title = full;
   setMeta('property', 'og:title', full);
   if (description) {

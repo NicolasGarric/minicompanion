@@ -508,6 +508,9 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 36. **Rules index fix (2026-11-10)**: mission deck cards were shifted by one section in `public/data/wahapedia-11.json`
     (the missing deployment card, a primary mission under deployments, duplicates); rebuilt: 6 deployments, 25 primary,
     18 secondary, 6 twists, 5 force dispositions; "'S" capitals fixed.
+37. **Beta stage (2026-11-10, owner request)**: `APP_STAGE` in `src/core/brand.ts`; "Beta" badge next to the name in the
+    header (`beta.badge`, 9 languages), page titles "… · MiniCompanion Beta" (`seo.ts`, `scripts/build-seo.mjs`,
+    `index.html`), home hero line `beta.note` + Suggest button. To remove at launch: badge, note, the three titles.
 
 ## To do (owner list, 2026-10-29)
 
