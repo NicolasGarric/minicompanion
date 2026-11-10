@@ -487,8 +487,18 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     D6 = 6: two central points 6" either side along the territory line) stored in the map code (`o: [x, y, kind]`).
     Competitive generation: random card, a non-blocking terrain feature covers every objective point (no L shapes),
     the rest mirrored. Editor: kind of an objective, "Place the objective points of this card" (+ two central points).
-    Not done: the 45 recommended terrain layouts (A/B/C per pair of primary missions) and mission scoring text (rules
-    text stays a link, owner decision of 2026-11-09).
+    Mission scoring text is not copied (rules text stays a link, owner decision of 2026-11-09).
+33. **Recommended competitive layouts (2026-11-10, owner request)**: the 45 layouts (A/B/C for each pair of force
+    dispositions) of the 2026-27 deck, measured from the published images by an image-analysis script (footprints,
+    objective icons, deployment card recognised from the zone colours; layouts are point-symmetric, pairs averaged,
+    missed twins and objectives completed by symmetry). Precision about 0.5". Data: `src/play/lib/layouts2026.ts`
+    (GENERATED, do not edit), helpers `src/play/lib/layouts.ts` (pairing table -> primary missions, `layoutTable`),
+    4 tests. New terrain shape `wedge` (right triangle, the "AB" ruin base), appended to SHAPES (codes stay valid).
+    Table page, Roll a table, competitive: "Recommended layout" (player 1 / 2 disposition, A/B/C/random) opens the
+    layout in the editor (our ruins, light / dense cover, objective kinds, links to the layout, card and primary
+    missions). Owner choices: neutral names for deployment cards, published names only as link labels; disposition and
+    mission names shown (link labels / picker). Not kept: the "single / separate terrain area" icons (no field yet).
+    The extraction scripts are not in the repo (scratch tools); rerun them if the deck changes.
 
 ## To do (owner list, 2026-10-29)
 

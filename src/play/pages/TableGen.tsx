@@ -8,6 +8,7 @@ import { backendConfigured } from '../../core/auth/supabase';
 import { Icon } from '../../core/ui/ui';
 import { ShareSheet } from '../../core/ui/ShareSheet';
 import { DENSITY_COUNT, MAX_PIECES, SIZES, SIZE_ORDER, THEMES, generate, newSeed, zonesFor, type Density, type Mode, type Table, type Theme } from '../lib/tableGen';
+import { DISPOSITIONS, DISPOSITION_NAME, VARIANTS, layoutTable, primaryMission, type Disposition, type Variant } from '../lib/layouts';
 import { decodeTable, encodeTable, MAX_CODE } from '../lib/tableCodec';
 import { myGames, playError, setGameMap, type Game } from '../lib/games';
 import { formatWhen } from '../components/GameCard';
@@ -173,6 +174,7 @@ export function TableGen() {
               <span className="tag">#{seed}</span>
             </div>
           </section>
+          {mode === 'competitive' && <RecommendedLayout onOpen={(tb) => { setCustom(tb); setTab('build'); }} />}
           <TableView table={generated} marks={marks} />
         </>
       ) : custom ? (
@@ -192,6 +194,7 @@ export function TableGen() {
           <LinkToGame table={table} preset={gameId} />
           {table.mission && table.objectives.length > 0 && <MissionCard table={table} />}
           {!(table.mission && table.objectives.length > 0) && !!table.refs?.length && <RefChips links={table.refs} />}
+          {!table.mission && table.objectives.some((o) => o.kind) && <p className="hint">{t('table.cardObjectivesHint')}</p>}
         </>
       )}
 
@@ -235,6 +238,42 @@ function TableView({ table, marks }: { table: Table; marks: boolean }) {
     <div ref={box} className="table-canvas">
       <canvas ref={canvas} role="img" aria-label={t('table.aria', { w: table.width, h: table.height, n: table.pieces.length })} />
     </div>
+  );
+}
+
+/** The recommended layouts of the published competitive deck, opened in the editor (our drawing). */
+function RecommendedLayout({ onOpen }: { onOpen: (t: Table) => void }) {
+  const t = useT();
+  const [a, setA] = useState<Disposition>('take');
+  const [b, setB] = useState<Disposition>('purge');
+  const [v, setV] = useState<Variant | 'random'>('A');
+  const open = () => {
+    const variant = v === 'random' ? VARIANTS[Math.floor(Math.random() * 3)] : v;
+    const tb = layoutTable(a, b, variant);
+    if (tb) onOpen(tb);
+  };
+  return (
+    <section className="card table-controls">
+      <h2><Icon name="map" size={18} /> {t('table.layoutTitle')}</h2>
+      <div className="field-grid">
+        <label className="field"><span>{t('table.layoutP1')}</span>
+          <select className="select" value={a} onChange={(e) => setA(e.target.value as Disposition)}>
+            {DISPOSITIONS.map((d) => <option key={d} value={d}>{DISPOSITION_NAME[d]}</option>)}
+          </select></label>
+        <label className="field"><span>{t('table.layoutP2')}</span>
+          <select className="select" value={b} onChange={(e) => setB(e.target.value as Disposition)}>
+            {DISPOSITIONS.map((d) => <option key={d} value={d}>{DISPOSITION_NAME[d]}</option>)}
+          </select></label>
+        <label className="field"><span>{t('table.layoutVariant')}</span>
+          <select className="select" value={v} onChange={(e) => setV(e.target.value as Variant | 'random')}>
+            {VARIANTS.map((x) => <option key={x} value={x}>{x}</option>)}
+            <option value="random">{t('table.layoutRandom')}</option>
+          </select></label>
+      </div>
+      <p className="hint">{t('table.layoutPrimary', { a: primaryMission(a, b), b: primaryMission(b, a) })}</p>
+      <button className="btn primary" onClick={open}><Icon name="hand" size={16} /> {t('table.layoutOpen')}</button>
+      <p className="hint">{t('table.layoutHint')}</p>
+    </section>
   );
 }
 

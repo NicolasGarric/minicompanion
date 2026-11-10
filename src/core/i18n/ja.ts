@@ -1462,6 +1462,14 @@ export const ja: Record<MessageKey, string> = {
   'table.deploymentLabel': '配置',
   'table.objectiveLabel': '目標',
   'table.cardObjectivesHint': '44″×60″の競技カード：各目標ポイントを地形が覆います。陣営色の輪＝ホーム目標、ひし形＝拡張、二重の輪＝中央。寸法は展開の説明に、公開カードはリンクにあります。',
+  'table.layoutTitle': '推奨レイアウト（公開デッキ）',
+  'table.layoutP1': 'プレイヤー1のフォース・ディスポジション',
+  'table.layoutP2': 'プレイヤー2のフォース・ディスポジション',
+  'table.layoutVariant': 'レイアウト',
+  'table.layoutRandom': 'ランダム',
+  'table.layoutPrimary': 'プライマリーミッション：{a}（プレイヤー1）、{b}（プレイヤー2）。',
+  'table.layoutOpen': 'このレイアウトをエディターで開く',
+  'table.layoutHint': '公開された2026-27ミッションデッキの45レイアウト（各組み合わせにA・B・C）。公開画像から約0.5″の精度で計測し、当サイトのスタイルで描いています。大会の前には公開レイアウト（マップ下のリンク）で確認してください。',
   'table.objKind': '目標の種類',
   'table.objKind.plain': '目標',
   'table.objKind.homeA': 'ホーム目標（A側）',
@@ -1928,6 +1936,7 @@ export const ja: Record<MessageKey, string> = {
   'terrain.shape.triangle': '三角形',
   'terrain.shape.hex': '六角形',
   'terrain.shape.blob': '不定形',
+  'terrain.shape.wedge': '直角三角形',
   'terrain.cover.none': '遮蔽なし',
   'terrain.cover.light': '軽遮蔽',  // CHECK: hobby wording
   'terrain.cover.heavy': '重遮蔽',  // CHECK: hobby wording

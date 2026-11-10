@@ -9,12 +9,13 @@
  * All sizes are in inches, x / y is the centre of the piece, rot is in degrees clockwise.
  */
 export type TerrainKind = 'ruin' | 'building' | 'woods' | 'hill' | 'crater' | 'wall' | 'rocks' | 'crystal' | 'container' | 'pond' | 'tower' | 'custom';
-export type Shape = 'rect' | 'L' | 'oval' | 'triangle' | 'hex' | 'blob';
+export type Shape = 'rect' | 'L' | 'oval' | 'triangle' | 'hex' | 'blob' | 'wedge';
 export type Cover = 'none' | 'light' | 'heavy' | 'blocking';
 export type Trait = 'difficult' | 'elevated' | 'hazardous' | 'impassable';
 
 export const KINDS: TerrainKind[] = ['ruin', 'building', 'woods', 'hill', 'crater', 'wall', 'rocks', 'crystal', 'container', 'pond', 'tower', 'custom'];
-export const SHAPES: Shape[] = ['rect', 'L', 'oval', 'triangle', 'hex', 'blob'];
+/** Order matters: map codes store the index (new shapes go at the end). */
+export const SHAPES: Shape[] = ['rect', 'L', 'oval', 'triangle', 'hex', 'blob', 'wedge'];
 export const COVERS: Cover[] = ['none', 'light', 'heavy', 'blocking'];
 export const TRAITS: Trait[] = ['difficult', 'elevated', 'hazardous', 'impassable'];
 
@@ -84,6 +85,9 @@ export function localOutline(p: Piece): Pt[] {
       return Array.from({ length: 24 }, (_, i) => [Math.cos((i / 24) * Math.PI * 2) * a, Math.sin((i / 24) * Math.PI * 2) * b] as Pt);
     case 'triangle':
       return [[0, -b], [a, b], [-a, b]];
+    case 'wedge':
+      // Right triangle: the right angle at the bottom left, legs along the left and bottom edges
+      return [[-a, -b], [a, b], [-a, b]];
     case 'hex':
       return Array.from({ length: 6 }, (_, i) => [Math.cos((i / 6) * Math.PI * 2) * a, Math.sin((i / 6) * Math.PI * 2) * b] as Pt);
     case 'blob': {
