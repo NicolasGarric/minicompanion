@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { k, useT } from '../../core/i18n';
 import { Icon } from '../../core/ui/ui';
-import { DEPLOYMENTS, MAX_PIECES, SIZES, SIZE_ORDER, generate, newSeed, zonesFor, type Deployment, type Table } from '../lib/tableGen';
+import { RefLinksEditor } from '../../core/ui/RefLinks';
+import { DEPLOYMENTS, MAX_PIECES, SIZES, SIZE_ORDER, generate, newSeed, zonesFor, type Deployment, type ObjectiveKind, type Table } from '../lib/tableGen';
+import { cardObjectives, cardRef, isCard } from '../lib/deployCards';
 import { MAX_OBJECTIVES, MAX_TABLE, MIN_TABLE } from '../lib/tableCodec';
 import {
   COVERS, KINDS, KIND_DEFAULTS, MAX_SIZE, MIN_SIZE, SHAPES, TRAITS, analyse, footprint, gapBetween, inPolygon, makePiece, mirrorPiece, rotateHandle,
@@ -27,6 +29,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
   const [snap, setSnap] = useState(true);
   const [newKind, setNewKind] = useState<TerrainKind>('ruin');
   const [fill, setFill] = useState(10);
+  const [twoCentral, setTwoCentral] = useState(false);
   const past = useRef<Table[]>([]);
   const future = useRef<Table[]>([]);
   const grab = useRef<Grab | null>(null);
@@ -154,7 +157,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
     const first = !g.moved;
     g.moved = true;
     if (g.what === 'objective') {
-      const objectives = table.objectives.map((o, i) => (i === g.index ? { x: clampX(snapTo(x + g.dx)), y: clampY(snapTo(y + g.dy)) } : o));
+      const objectives = table.objectives.map((o, i) => (i === g.index ? { ...o, x: clampX(snapTo(x + g.dx)), y: clampY(snapTo(y + g.dy)) } : o));
       commit({ ...table, objectives }, first);
     } else if (g.what === 'piece') {
       setPiece(g.index, { x: clampX(snapTo(x + g.dx)), y: clampY(snapTo(y + g.dy)) }, first);
@@ -226,10 +229,24 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
       height: H,
       zones: zonesFor(table.deployment, W, H),
       pieces: table.pieces.map((p) => ({ ...p, x: snapTo(p.x * fx), y: snapTo(p.y * fy) })),
-      objectives: table.objectives.map((o) => ({ x: snapTo(o.x * fx), y: snapTo(o.y * fy) })),
+      objectives: table.objectives.map((o) => ({ ...o, x: snapTo(o.x * fx), y: snapTo(o.y * fy) })),
     });
   };
   const setDeployment = (d: Deployment) => commit({ ...table, deployment: d, zones: zonesFor(d, table.width, table.height) });
+  // Competitive card: its objective points (kinds included) and the link to the published card.
+  const placeCardObjectives = () => {
+    if (!isCard(table.deployment)) return;
+    const ref = cardRef(table.deployment);
+    const refs = table.refs ?? [];
+    commit({
+      ...table,
+      objectives: cardObjectives(table.deployment, table.width, table.height, twoCentral),
+      refs: refs.some((r) => r.l === ref.l) ? refs : [...refs, ref].slice(-4),
+    });
+    setObjective(null);
+  };
+  const setObjectiveKind = (i: number, kind: ObjectiveKind | '') =>
+    commit({ ...table, objectives: table.objectives.map((o, j) => (j === i ? (kind ? { x: o.x, y: o.y, kind } : { x: o.x, y: o.y }) : o)) });
   const randomFill = () => {
     const g = generate({ mode: 'casual', size: 0, density: 'standard', theme: 'city', seed: newSeed(), count: fill, dims: [table.width, table.height] });
     commit({ ...table, pieces: g.pieces });
@@ -309,6 +326,10 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
       {objective != null && table.objectives[objective] && (
         <section className="card piece-panel">
           <h2>{t('tableEd.objectiveN', { n: objective + 1 })}</h2>
+          <label className="field"><span>{t('table.objKind')}</span>
+            <select className="select" value={table.objectives[objective].kind ?? ''} onChange={(e) => setObjectiveKind(objective, e.target.value as ObjectiveKind | '')}>
+              {(['', 'homeA', 'homeB', 'expansion', 'central'] as const).map((x) => <option key={x} value={x}>{t(k(`table.objKind.${x || 'plain'}`))}</option>)}
+            </select></label>
           <button className="btn small danger-ghost" onClick={() => removeObjective(objective)}><Icon name="trash" size={14} /> {t('common.delete')}</button>
         </section>
       )}
@@ -340,6 +361,9 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
         <label className="field"><span>{t('tableEd.name')}</span>
           <input className="text-input" maxLength={60} value={table.name ?? ''} placeholder={t('tableEd.namePlaceholder')}
             onChange={(e) => commit({ ...table, name: e.target.value }, false)} /></label>
+        <div className="field"><span>{t('refs.title')}</span>
+          <RefLinksEditor links={table.refs ?? []} onChange={(refs) => commit({ ...table, refs }, false)} hint={t('refs.mapHint')}
+            kinds={['missions', 'narrative', 'boarding', 'rules']} max={4} /></div>
         <div className="field-grid">
           <label className="field"><span>{t('table.size')}</span>
             <select className="select" value={sizeIndex} onChange={(e) => {
@@ -359,6 +383,12 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
               {DEPLOYMENTS.map((d) => <option key={d} value={d}>{t(k(`table.deploy.${d}`))}</option>)}
             </select></label>
         </div>
+        {isCard(table.deployment) && (
+          <div className="field-row wrap">
+            <button className="btn small" onClick={placeCardObjectives}><Icon name="target" size={14} /> {t('tableEd.cardObjectives')}</button>
+            <label className="check"><input type="checkbox" checked={twoCentral} onChange={(e) => setTwoCentral(e.target.checked)} /> {t('tableEd.twoCentral')}</label>
+          </div>
+        )}
       </section>
 
       <section className="card table-check">

@@ -8,6 +8,7 @@ import { useHobby, type Army, type LocalDeck } from '../hobby/store';
 import { deckShareCode, deckUrl, shareDeck, viewDeck, type OnlineDeck } from '../hobby/sync';
 import { SwipeDeck, pileUrl, useInfoOf, useLocalCards, type CardView } from '../components/UnitCard';
 import { PileSyncBanner } from '../components/PileSync';
+import { RefChips, RefLinksEditor } from '../../core/ui/RefLinks';
 
 /** Names a number row may have to count as the points of a card (deck total). */
 export function usePointsLabels() {
@@ -102,6 +103,11 @@ export function DeckPage({ id }: { id: string }) {
           <DeckPicker armies={armies} groups={deck.groups} onChange={(groups) => updateDeck(deck.id, { groups })} />
         </div>
       )}
+      <section className="card deck-refs">
+        <h2>{t('refs.title')}</h2>
+        <RefLinksEditor links={deck.refs ?? []} onChange={(refs) => updateDeck(deck.id, { refs })} hint={t('refs.deckHint')}
+          kinds={['missions', 'rules', 'factions', 'narrative', 'boarding']} />
+      </section>
       <DeckShare deck={deck} />
       <div className="field-row wrap danger-zone">
         {confirm ? (
@@ -269,6 +275,7 @@ export function OnlineDeckPage({ id }: { id: string }) {
     <div className="narrow decks">
       <p className="hint">{deck.owner ? t('cards.deckBy', { name: deck.owner }) : ''}</p>
       <SwipeDeck cards={cards} groups={deck.groups} title={deck.name} total={total ? `${total} ${t('pile.pts')}` : undefined} />
+      {!!deck.refs?.length && <section className="card deck-refs"><h2>{t('refs.title')}</h2><RefChips links={deck.refs} /></section>}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { cleanRefs, type RefLink } from '../../core/lib/refLinks';
 import { supabase } from '../../core/auth/supabase';
 import type { Lang } from '../../core/i18n';
 
@@ -29,6 +30,8 @@ export interface Game {
   league_id: string | null;
   /** Table map code (see tableCodec.ts), set by the host */
   table_map?: string | null;
+  /** Reference links: mission pack, rules (migration 25; missing before it) */
+  refs?: RefLink[] | null;
   host?: { display_name: string; handle: string } | null;
   store?: { name: string } | null;
 }
@@ -158,6 +161,7 @@ export const cancelGame = (id: string) => call('cancel_game', { p_game: id });
 export const deleteGame = (id: string) => call('delete_game', { p_game: id });
 /** Host only: attach a table map to the game, or remove it with null. */
 export const setGameMap = (id: string, map: string | null) => call('set_game_map', { p_game: id, p_map: map });
+export const setGameRefs = (id: string, refs: RefLink[]) => call('set_game_refs', { p_game: id, p_refs: cleanRefs(refs) });
 
 /** What players typed most (games, or formats of one game), for the form suggestions. */
 export async function popularTexts(game?: string): Promise<{ game_system: string; format: string | null; games: number }[]> {

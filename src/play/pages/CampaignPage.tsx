@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
+import { RefChips, RefLinksEditor } from '../../core/ui/RefLinks';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
@@ -169,6 +170,7 @@ export function CampaignPage({ id }: { id: string }) {
           <h1>{shownText.title}</h1>
           <p className="lead">{[row.sector, t('nc.turn', { n: turn }), row.status === 'finished' ? t('nc.finished') : null].filter(Boolean).join(' · ')}</p>
           {shownText.description && <p className="nc-desc">{shownText.description}</p>}
+          <RefChips links={board.refs ?? []} />
         </div>
         <div className="nc-camps-strip">
           {board.camps.map((c) => <span key={c.id} className="nc-chip" style={{ borderColor: c.color }}><Emblem camp={c} size={11} /> {c.name}</span>)}
@@ -229,7 +231,7 @@ export function CampaignPage({ id }: { id: string }) {
               onSet={(u, camp, remove) => act(() => setMember(id, u, camp, remove))}
               onLeave={() => act(async () => { await leaveCampaign(id); navigate('play/campaigns'); })} />
           )}
-          {tab === 'settings' && isMaster && <Settings row={row} board={board} version={version} onSaved={load} onError={setError} />}
+          {tab === 'settings' && isMaster && <Settings row={row} board={board} version={version} onSaved={load} onError={setError} onEdit={onEdit} />}
         </div>
       </div>
       {invite && <ShareSheet title={t('nc.inviteTitle')} text={t('nc.inviteText', { title: shownText.title })} url={invite} onClose={() => setInvite(null)} />}
@@ -258,8 +260,8 @@ function JoinCard({ board, signedIn, onJoin, busy }: { board: Board; signedIn: b
   );
 }
 
-function Settings({ row, board, version, onSaved, onError }: {
-  row: CampaignRow; board: Board; version: React.MutableRefObject<number>; onSaved: () => void; onError: (e: string) => void;
+function Settings({ row, board, version, onSaved, onError, onEdit }: {
+  row: CampaignRow; board: Board; version: React.MutableRefObject<number>; onSaved: () => void; onError: (e: string) => void; onEdit: (b: Board) => void;
 }) {
   const t = useT();
   const [f, setF] = useState({ title: row.title, sector: row.sector ?? '', description: row.description ?? '', isPublic: row.is_public, finished: row.status === 'finished' });
@@ -282,6 +284,11 @@ function Settings({ row, board, version, onSaved, onError }: {
         <p className="hint">{t('nc.publicHint')}</p>
         <label className="check"><input type="checkbox" checked={f.finished} onChange={(e) => setF({ ...f, finished: e.target.checked })} /> {t('nc.finishedLabel')}</label>
         <button className="btn primary" disabled={f.title.trim().length < 2} onClick={save}>{t('common.save')}</button>
+      </div>
+      <div className="card">
+        <h3>{t('refs.title')}</h3>
+        <RefLinksEditor links={board.refs ?? []} onChange={(refs) => onEdit({ ...board, refs })} hint={t('refs.campaignHint')}
+          kinds={['narrative', 'rules', 'missions', 'boarding']} />
       </div>
       <div className="card">
         {!confirmDelete ? (

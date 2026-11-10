@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { k, useLang, useT } from '../../../core/i18n';
+import { RefChips, RefLinksEditor } from '../../../core/ui/RefLinks';
 import { Icon } from '../../../core/ui/ui';
 import { decodeTable } from '../../lib/tableCodec';
 import type { Table } from '../../lib/tableGen';
@@ -275,6 +276,7 @@ function Selection({ board, sel, onEdit, onClose, onPlanBattle, canPlan }: {
           <>
             {!sc && p.scenario && <p><span className="tag on">{t('nc.scenario')}</span> {p.scenario}</p>}
             {p.notes ? <p className="nc-notes">{p.notes}</p> : !lore && <p className="hint">{t('nc.noNotes')}</p>}
+            <RefChips links={p.refs ?? []} />
           </>
         ) : (
           <>
@@ -292,6 +294,9 @@ function Selection({ board, sel, onEdit, onClose, onPlanBattle, canPlan }: {
               </select></label>
             {!sc && <label className="field"><span>{t('nc.sc.own')}</span><input className="text-input" maxLength={LIMITS.scenario} value={p.scenario} placeholder={t('nc.scenarioNone')} onChange={(e) => set({ scenario: e.target.value })} /></label>}
             <label className="field"><span>{t('nc.notes')}</span><textarea className="text-input" rows={3} maxLength={LIMITS.notes} value={p.notes} placeholder={t('nc.notesPlaceholder')} onChange={(e) => set({ notes: e.target.value })} /></label>
+            <div className="field"><span>{t('refs.title')}</span>
+              <RefLinksEditor links={p.refs ?? []} onChange={(refs) => set({ refs })} hint={t('refs.placeHint')} max={4}
+                kinds={['missions', 'narrative', 'boarding', 'rules']} /></div>
           </>
         )}
         {sc && <ScenarioCard refd={sc} campA={board.camps[0]?.name ?? 'A'} campB={board.camps[1]?.name ?? 'B'} />}
@@ -393,7 +398,7 @@ function PlaceMap({ place, onSet }: { place: Place; onSet: ((map: string | null)
           <a href={editor} className="nc-thumb" aria-label={t('nc.openMap')}><canvas ref={thumb} /></a>
         )}
         <div className="nc-map-actions">
-          {table ? <p className="hint">{t('games.map.facts', { w: table.width, h: table.height, n: table.pieces.length, o: table.objectives.length })}</p>
+          {table ? <><p className="hint">{t('games.map.facts', { w: table.width, h: table.height, n: table.pieces.length, o: table.objectives.length })}</p><RefChips links={table.refs ?? []} compact /></>
             : <p className="hint">{onSet ? t('nc.noMapMaster') : t('nc.noMap')}</p>}
           <div className="field-row wrap">
             {editor && <a className="btn small" href={editor}><Icon name="map" size={14} /> {t('nc.openMap')}</a>}

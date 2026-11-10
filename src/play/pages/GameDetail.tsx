@@ -7,8 +7,9 @@ import { navigate } from '../../core/router';
 import { Icon } from '../../core/ui/ui';
 import { ShareSheet } from '../../core/ui/ShareSheet';
 import { countryName } from '../lib/countries';
-import { cancelGame, deleteGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameMap, type Game, type GamePlayer } from '../lib/games';
+import { cancelGame, deleteGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameMap, setGameRefs, type Game, type GamePlayer } from '../lib/games';
 import { decodeTable } from '../lib/tableCodec';
+import { RefChips, RefLinksEditor } from '../../core/ui/RefLinks';
 import type { Table } from '../lib/tableGen';
 import { drawTable } from '../visual/tableMap';
 import { formatWhen } from '../components/GameCard';
@@ -182,6 +183,7 @@ export function GameDetail({ id }: { id: string }) {
       </section>
 
       <GameMap game={game} isHost={isHost} onChanged={load} />
+      <GameRefs game={game} isHost={isHost} onChanged={load} />
       {me && (isHost || mine?.status === 'accepted') && game.status !== 'cancelled' && (
         <GameDecks gameId={game.id} me={me} names={new Map([[game.host_id, game.host?.display_name ?? '?'], ...accepted.map((p) => [p.player_id, p.profile?.display_name ?? '?'] as [string, string])])} />
       )}
@@ -237,6 +239,33 @@ export function GameDetail({ id }: { id: string }) {
 }
 
 /** The table map the host attached (drawn from its code), with the host's buttons to set or remove it. */
+/** Rules and mission pack of the game, as links to where they are published (host edits). */
+function GameRefs({ game, isHost, onChanged }: { game: Game; isHost: boolean; onChanged: () => void }) {
+  const t = useT();
+  const [busy, setBusy] = useState(false);
+  if (game.refs === undefined || (!isHost && !game.refs?.length)) return null;
+  return (
+    <section className="card game-refs">
+      <h2><Icon name="book" size={18} /> {t('refs.gameTitle')}</h2>
+      {isHost && game.status !== 'cancelled' ? (
+        <fieldset disabled={busy} className="plain">
+          <RefLinksEditor links={game.refs ?? []} hint={t('refs.gameHint')} kinds={['missions', 'rules', 'narrative', 'boarding']}
+            onChange={async (refs) => {
+              setBusy(true);
+              try {
+                await setGameRefs(game.id, refs);
+                onChanged();
+              } catch (e) {
+                playError(e);
+              }
+              setBusy(false);
+            }} />
+        </fieldset>
+      ) : <RefChips links={game.refs ?? []} />}
+    </section>
+  );
+}
+
 function GameMap({ game, isHost, onChanged }: { game: Game; isHost: boolean; onChanged: () => void }) {
   const t = useT();
   const [table, setTable] = useState<Table | null>(null);
@@ -290,6 +319,7 @@ function GameMap({ game, isHost, onChanged }: { game: Game; isHost: boolean; onC
             <canvas ref={canvas} role="img" aria-label={t('table.aria', { w: table.width, h: table.height, n: table.pieces.length })} />
           </a>
           <p className="hint">{t('games.map.facts', { w: table.width, h: table.height, n: table.pieces.length, o: table.objectives.length })}</p>
+          <RefChips links={table.refs ?? []} />
         </>
       ) : (
         <p className="hint">{t('games.map.none')}</p>

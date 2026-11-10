@@ -38,6 +38,15 @@ export interface GameReport {
   created_at: string;
   confirmed_at: string | null;
   results: GameResult[];
+  /** Players without an account, typed by the host (migration 26; empty before it). */
+  guests: GuestResult[];
+}
+
+export interface GuestResult {
+  name: string;
+  score: number | null;
+  placement: number;
+  army: string | null;
 }
 
 export async function getReport(gameId: string): Promise<GameReport | null> {
@@ -50,7 +59,10 @@ export async function getReport(gameId: string): Promise<GameReport | null> {
       .eq('game_id', gameId)
       .order('placement'),
   ) as unknown as GameResult[];
-  return { ...(rep as Omit<GameReport, 'results'>), results };
+  // Older database without migration 26: no guests.
+  const g = await db().from('game_guest_results').select('name, score, placement, army').eq('game_id', gameId).order('slot');
+  const guests = (g.error ? [] : g.data ?? []) as GuestResult[];
+  return { ...(rep as Omit<GameReport, 'results' | 'guests'>), results, guests };
 }
 
 export interface ResultInput {
@@ -61,8 +73,9 @@ export interface ResultInput {
   army: string | null;
 }
 
-export async function submitReport(gameId: string, results: ResultInput[], summary: string, photos: string[]) {
-  return must(await db().rpc('submit_game_report', { p_game: gameId, p_results: results, p_summary: summary, p_photos: photos }));
+/** `guests` (host only) is sent when given, so the call still works on a database without migration 26. */
+export async function submitReport(gameId: string, results: ResultInput[], summary: string, photos: string[], guests?: GuestResult[]) {
+  return must(await db().rpc('submit_game_report', { p_game: gameId, p_results: results, p_summary: summary, p_photos: photos, ...(guests ? { p_guests: guests } : {}) }));
 }
 export async function answerReport(gameId: string, agree: boolean) {
   return must(await db().rpc('answer_game_report', { p_game: gameId, p_agree: agree }));

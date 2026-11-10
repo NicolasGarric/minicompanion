@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
+import { RefChips } from '../../core/ui/RefLinks';
 import { download } from '../../core/lib/image';
 import { navigate } from '../../core/router';
 import { useSession } from '../../core/auth/session';
@@ -190,6 +191,7 @@ export function TableGen() {
           {marks && <TerrainLegend />}
           <LinkToGame table={table} preset={gameId} />
           {table.mission && table.objectives.length > 0 && <MissionCard table={table} />}
+          {!(table.mission && table.objectives.length > 0) && !!table.refs?.length && <RefChips links={table.refs} />}
         </>
       )}
 
@@ -246,16 +248,18 @@ function MissionCard({ table }: { table: Table }) {
         <h2>{t(k(`${missionKey}.name`))}</h2>
         {table.deployment !== 'none' && <p><span className="tag on">{t('table.deploymentLabel')}</span> {t(k(`table.deploy.${table.deployment}`))}</p>}
         <p><span className="tag on">{t('table.objectiveLabel')}</span> {t(k(`${missionKey}.goal`), { n: table.objectives.length, rounds: table.rounds })}</p>
+        {table.objectives.some((o) => o.kind) && <p className="hint">{t('table.cardObjectivesHint')}</p>}
         {table.extra !== 'none' && (
           <p><span className="tag pk">{t(k(table.mode === 'narrative' ? 'table.twistLabel' : 'table.eventLabel'))}</span> {t(k(`table.extra.${table.extra}`))}</p>
         )}
         <p className="hint">{t('table.footer', { rounds: table.rounds, pieces: table.pieces.length })}</p>
+        <RefChips links={table.refs ?? []} />
       </div>
     </section>
   );
 }
 
-/** Attach the table shown to one of my upcoming games (the code is stored on the game). */
+/** Attach the table shown to one of my games, upcoming or already played (the code is stored on the game). */
 function LinkToGame({ table, preset }: { table: Table; preset: string | null }) {
   const t = useT();
   const session = useSession((s) => s.session);
@@ -268,9 +272,10 @@ function LinkToGame({ table, preset }: { table: Table; preset: string | null }) 
     if (!backendConfigured || !session) return;
     myGames(session.user.id).then(
       ({ hosted }) => {
-        const upcoming = hosted.filter((g) => g.status !== 'cancelled' && new Date(g.starts_at) > new Date());
-        setGames(upcoming);
-        setChosen((c) => c || (upcoming.length === 1 ? upcoming[0].id : ''));
+        // Played games too: a map can be added afterwards to keep the record of the game.
+        const usable = hosted.filter((g) => g.status !== 'cancelled');
+        setGames(usable);
+        setChosen((c) => c || (usable.length === 1 ? usable[0].id : ''));
       },
       (e) => {
         playError(e);
@@ -280,6 +285,9 @@ function LinkToGame({ table, preset }: { table: Table; preset: string | null }) 
   }, [session]);
 
   if (!backendConfigured) return null;
+  const now = Date.now();
+  const upcoming = (games ?? []).filter((g) => Date.parse(g.starts_at) > now).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const played = (games ?? []).filter((g) => Date.parse(g.starts_at) <= now).sort((a, b) => b.starts_at.localeCompare(a.starts_at));
   const link = async () => {
     if (!chosen) return;
     setState('busy');
@@ -306,7 +314,11 @@ function LinkToGame({ table, preset }: { table: Table; preset: string | null }) 
         <div className="field-row wrap">
           <select className="select" value={chosen} onChange={(e) => setChosen(e.target.value)} aria-label={t('tableEd.linkTitle')}>
             <option value="">{t('tableEd.linkPick')}</option>
-            {games.map((g) => <option key={g.id} value={g.id}>{g.game_system} · {formatWhen(g.starts_at, lang)}{g.table_map ? ' ★' : ''}</option>)}
+            {([['tableEd.linkUpcoming', upcoming], ['tableEd.linkPlayed', played]] as const).map(([label, list]) => list.length > 0 && (
+              <optgroup key={label} label={t(label)}>
+                {list.map((g) => <option key={g.id} value={g.id}>{g.game_system} · {formatWhen(g.starts_at, lang)}{g.table_map ? ' ★' : ''}</option>)}
+              </optgroup>
+            ))}
           </select>
           <button className="btn primary" disabled={!chosen || state === 'busy'} onClick={link}><Icon name="map" size={15} /> {t('tableEd.linkCta')}</button>
         </div>

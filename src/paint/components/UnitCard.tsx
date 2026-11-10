@@ -6,6 +6,8 @@ import { thumbOf } from '../../core/lib/photoPaths';
 import { cleanInfo, legacyInfo, searchCards, toggleType, MAX_LINES, LABEL_MAX, TEXT_MAX, type Groups, type InfoLine } from '../hobby/cards';
 import { ROLE_INK } from '../hobby/deck';
 import { cardPhotoOf, photoBlob, type Army, type Role, type Unit, type UnitPhoto } from '../hobby/store';
+import { addRefRow, isRefRow, refsOfRows, type RefLink } from '../../core/lib/refLinks';
+import { RefChips, RefLinksEditor } from '../../core/ui/RefLinks';
 
 /** A card as every screen shows it (My pile, decks, shared decks, games, campaigns). */
 export interface CardView {
@@ -94,6 +96,8 @@ function Hl({ text, q }: { text: string; q: string }) {
 export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: string; band?: [string, string]; onGo?: (id: string) => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const refs = refsOfRows(card.rows);
+  const rows = card.rows.filter((x) => !isRefRow(x));
   return (
     <article className="ucard" style={{ ['--army' as string]: card.colour, ['--role' as string]: ROLE_INK[card.role] }}>
       {band && <div className="ucard-band"><span>{band[0]}</span><b>{band[1]}</b></div>}
@@ -111,9 +115,9 @@ export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: str
           ))}
         </div>
       </div>
-      {card.rows.length + (card.lost?.length ?? 0) === 0 ? <p className="hint ucard-empty">{t('cards.noInfo')}</p> : (
+      {rows.length + (card.lost?.length ?? 0) === 0 ? (!refs.length && <p className="hint ucard-empty">{t('cards.noInfo')}</p>) : (
         <ul className="ucard-rows">
-          {card.rows.map((x, i) => (
+          {rows.map((x, i) => (
             <li key={i} className={`ucard-row ${x.t === 'n' ? 'n' : 't'} ${x.changed ? 'changed' : ''}`}>
               <span className="l"><Hl text={x.l} q={q} /></span>
               <span className="v">
@@ -129,6 +133,7 @@ export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: str
           ))}
         </ul>
       )}
+      {refs.length > 0 && <div className="ucard-refs"><RefChips links={refs} compact /></div>}
       {!!card.history?.length && (
         <div className="ucard-foot">
           <button type="button" className="ucard-histbtn" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -159,7 +164,7 @@ export function InfoEditor({ lines, onChange, suggestions = [] }: { lines: InfoL
   return (
     <div className="info-editor">
       <datalist id={listId}>{suggestions.map((s) => <option key={s} value={s} />)}</datalist>
-      {lines.map((x, i) => (
+      {lines.map((x, i) => isRefRow(x) ? null : (
         <div key={i} className="info-row">
           <button type="button" className={`info-type ${x.t}`} onClick={() => set(i, toggleType(x))}
             aria-label={t(x.t === 'n' ? 'cards.typeNumber' : 'cards.typeText')} title={t('cards.toggleType')}>
@@ -187,6 +192,22 @@ export function InfoEditor({ lines, onChange, suggestions = [] }: { lines: InfoL
       </div>
     </div>
   );
+}
+
+/**
+ * Reference links of a card (rules pages, e.g. Wahapedia): kept as rows of its info list, so they
+ * follow the card into decks, share links, games and campaign copies.
+ */
+export function CardRefsEditor({ lines, onChange }: { lines: InfoLine[]; onChange: (l: InfoLine[]) => void }) {
+  const t = useT();
+  const refs = refsOfRows(lines);
+  const set = (next: RefLink[]) => {
+    let out: InfoLine[] = lines.filter((x) => !isRefRow(x));
+    for (const r of next) out = addRefRow(out, r, LABEL_MAX) as InfoLine[];
+    onChange(out.slice(0, MAX_LINES));
+  };
+  return <RefLinksEditor links={refs} onChange={set} kinds={['factions', 'rules', 'boarding']} hint={t('refs.cardHint')}
+    max={Math.min(8, MAX_LINES - (lines.length - refs.length))} />;
 }
 
 /** Saves the rows the database accepts (empty labels dropped). */

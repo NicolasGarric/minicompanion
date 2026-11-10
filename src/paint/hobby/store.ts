@@ -10,6 +10,7 @@ export const STAGES = ['box', 'built', 'primed', 'painted', 'based'] as const;
 export type Stage = (typeof STAGES)[number];
 import { ROLES, type Role } from './deckCodec';
 import { removeCard, type Groups, type InfoLine } from './cards';
+import type { RefLink } from '../../core/lib/refLinks';
 export { ROLES, type Role };
 
 export interface Unit {
@@ -52,6 +53,8 @@ export interface LocalDeck {
   createdAt: number;
   /** Id on the account once synced */
   remoteId?: string;
+  /** Reference links: rules, mission pack, faction pages (migration 25) */
+  refs?: RefLink[];
 }
 
 export interface Army {
@@ -127,7 +130,7 @@ interface HobbyState extends Stored {
   addSession: (s: Omit<Session, 'id'>) => void;
   removeSession: (id: string) => void;
   addDeck: (name: string, groups?: Groups) => string;
-  updateDeck: (id: string, patch: Partial<Pick<LocalDeck, 'name' | 'groups'>>) => void;
+  updateDeck: (id: string, patch: Partial<Pick<LocalDeck, 'name' | 'groups' | 'refs'>>) => void;
   removeDeck: (id: string) => void;
   /** Sync only: replace the whole pile and decks, or record what was pushed */
   replaceAll: (p: Pick<Stored, 'armies' | 'decks'>, sync: SyncState) => void;

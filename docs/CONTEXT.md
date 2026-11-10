@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-10-28 (narrative campaigns step 1; migration 21)
+> Last update: 2026-11-10 (guest players in reports, maps on played games, competitive deployment cards; migration 26)
 
 ## What it is
 
@@ -468,6 +468,27 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     public page `/support` (route, SEO meta, static page in build-seo), "Donations" section on the legal page (voluntary, no
     counterpart, not refundable except obvious mistake, declared as the publisher's income, Stripe sees the card, the owner gets
     name / email / amount). Without the env vars the page says donations open soon. CSP unchanged (plain links).
+
+30. **Guest players in battle reports (2026-11-10, owner request)**, migration 26 **to apply** (+25 SQL tests
+    `supabase/tests/rls_guest_results.sql`): `game_guest_results` (name ≤ 40, placement, score, army; public like the
+    report). `submit_game_report(..., p_guests)`: the host adds players without an account; others resubmit them unchanged
+    or leave them out (kept), changing them = `not_host`. Players with an account + guests = 2 to 8. Host alone with
+    guests: confirmed at once and still editable by the host. Games with guests never change ratings (so: "played" on the
+    profile, not "wins"). App: `src/play/lib/reportRows.ts` (merge + clean, 3 tests), report form "Add a player without an
+    account", "No account" tag, result card includes guests. The client sends `p_guests` only when there are guests, so it
+    works before the migration. Guards for migrations 25 and 26 added to `scripts/copy-setup-sql.sh`.
+31. **Maps on played games (2026-11-10)**: the "Use this table for a game" picker of the table page lists upcoming and
+    played games (optgroups); `set_game_map` already accepted past games. The game page link `?game=<id>` preselects it.
+32. **Competitive deployment cards (2026-11-10, owner request)**: `src/play/lib/deployCards.ts` holds the measures of the
+    6 deployment cards of the 2026-27 competitive mission deck as published on Wahapedia (read from the card images; not
+    on the Core Rules page, which has no maps). Neutral names (`cp_strips`, `cp_wedges`, `cp_bands`, `cp_quarters`,
+    `cp_stagger`, `cp_step`), our drawing; the published name only appears as the label of the reference link to the deck
+    page. 44" × 60" portrait, other sizes scaled, landscape turned. Objective kinds (home A / B, expansion, central;
+    D6 = 6: two central points 6" either side along the territory line) stored in the map code (`o: [x, y, kind]`).
+    Competitive generation: random card, a non-blocking terrain feature covers every objective point (no L shapes),
+    the rest mirrored. Editor: kind of an objective, "Place the objective points of this card" (+ two central points).
+    Not done: the 45 recommended terrain layouts (A/B/C per pair of primary missions) and mission scoring text (rules
+    text stays a link, owner decision of 2026-11-09).
 
 ## To do (owner list, 2026-10-29)
 

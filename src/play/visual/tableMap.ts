@@ -246,12 +246,29 @@ export function drawTable(ctx: CanvasRenderingContext2D, t: Table, px: number, o
     ctx.stroke();
     ctx.setLineDash([]);
     const r = Math.max(9, s * 1.1);
+    // Kind of objective point (competitive cards): home = ring in the side's colour, expansion = diamond,
+    // central = double ring; plain objectives stay a yellow disc.
     ctx.beginPath();
-    ctx.arc(o.x * s, o.y * s, r, 0, Math.PI * 2);
+    if (o.kind === 'expansion') {
+      const d = r * 1.3;
+      ctx.moveTo(o.x * s, o.y * s - d);
+      ctx.lineTo(o.x * s + d, o.y * s);
+      ctx.lineTo(o.x * s, o.y * s + d);
+      ctx.lineTo(o.x * s - d, o.y * s);
+      ctx.closePath();
+    } else ctx.arc(o.x * s, o.y * s, r, 0, Math.PI * 2);
     ctx.fillStyle = YELLOW;
     ctx.fill();
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = o.kind === 'homeA' ? PINK : NAVY;
+    ctx.lineWidth = o.kind === 'homeA' || o.kind === 'homeB' ? 4 : 2;
     ctx.stroke();
+    if (o.kind === 'central') {
+      ctx.beginPath();
+      ctx.arc(o.x * s, o.y * s, r + 3.5, 0, Math.PI * 2);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = NAVY;
     ctx.fillStyle = NAVY;
     ctx.font = `700 ${r * 1.1}px system-ui, sans-serif`;
     ctx.textAlign = 'center';

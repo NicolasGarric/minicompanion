@@ -18,6 +18,7 @@ import {
   type GameReport,
 } from '../lib/social';
 import { resultCard } from '../lib/resultCard';
+import { cleanGuests, reportRows } from '../lib/reportRows';
 
 interface Participant {
   id: string;
@@ -43,6 +44,9 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
     [game, players],
   );
   const isParticipant = !!me && participants.some((p) => p.id === me);
+  const isHost = me === game.host_id;
+  // Only the host has an account: the report needs nobody's confirmation and stays editable.
+  const solo = participants.length === 1;
 
   const load = () =>
     getReport(game.id).then(async (r) => {
@@ -60,6 +64,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
 
   if (report === undefined) return null;
   const mine = report?.results.find((r) => r.player_id === me);
+  const rows = report ? reportRows(report) : [];
 
   const answer = async (agree: boolean) => {
     setBusy(true);
@@ -110,6 +115,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
           game={game}
           participants={participants}
           me={me!}
+          isHost={isHost}
           initial={report}
           onDone={async () => {
             setEditing(false);
@@ -122,22 +128,23 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
       ) : (
         <>
           <ol className="results">
-            {report.results.map((r) => (
-              <li key={r.player_id} className={r.placement === report.results[0].placement ? 'winner' : ''}>
-                {r.item && images.get(r.item.image_path) && <img src={images.get(thumbOf(r.item.image_path)) ?? images.get(r.item.image_path)} alt={r.item.title} loading="lazy" />}
+            {rows.map((r) => (
+              <li key={r.key} className={r.placement === rows[0].placement ? 'winner' : ''}>
+                {r.result?.item && images.get(r.result.item.image_path) && <img src={images.get(thumbOf(r.result.item.image_path)) ?? images.get(r.result.item.image_path)} alt={r.result.item.title} loading="lazy" />}
                 <span className="result-text">
-                  <strong>{r.profile?.display_name ?? '?'}</strong>
+                  <strong>{r.name}</strong> {r.guest && <span className="tag">{t('report.guestTag')}</span>}
                   <small className="muted">
-                    {[t('report.place', { n: r.placement }), r.army, r.item ? t('report.paintedArmy') : null].filter(Boolean).join(' · ')}
+                    {[t('report.place', { n: r.placement }), r.army, r.result?.item ? t('report.paintedArmy') : null].filter(Boolean).join(' · ')}
                   </small>
                 </span>
                 {r.score !== null && <span className="result-score">{r.score}</span>}
-                {report.status !== 'confirmed' && (
-                  <span className="muted small">{r.agreed === true ? '✓' : r.agreed === false ? '✗' : '…'}</span>
+                {report.status !== 'confirmed' && r.result && (
+                  <span className="muted small">{r.result.agreed === true ? '✓' : r.result.agreed === false ? '✗' : '…'}</span>
                 )}
               </li>
             ))}
           </ol>
+          {report.guests.length > 0 && <p className="hint">{t(solo ? 'report.guestSoloHint' : 'report.guestRatingHint')}</p>}
           {report.summary && <p className="game-note">{report.summary}</p>}
           {photos.size > 0 && (
             <div className="report-photos">
@@ -155,7 +162,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
                 <button className="btn danger-ghost" disabled={busy} onClick={() => answer(false)}>{t('report.dispute')}</button>
               </>
             )}
-            {isParticipant && report.status !== 'confirmed' && (
+            {isParticipant && (report.status !== 'confirmed' || (isHost && solo)) && (
               <button className="btn ghost" onClick={() => setEditing(true)}>{t('report.edit')}</button>
             )}
             {report.status === 'confirmed' && (
@@ -177,6 +184,7 @@ function ReportForm({
   game,
   participants,
   me,
+  isHost,
   initial,
   onDone,
   onCancel,
@@ -184,6 +192,7 @@ function ReportForm({
   game: Game;
   participants: Participant[];
   me: string;
+  isHost: boolean;
   initial: GameReport | null;
   onDone: () => void;
   onCancel?: () => void;
@@ -202,6 +211,15 @@ function ReportForm({
       };
     }),
   );
+  // Players without an account: the host types their name and result (alone, one line ready to fill).
+  const [guests, setGuests] = useState(() =>
+    initial
+      ? initial.guests.map((g) => ({ name: g.name, placement: g.placement, score: g.score?.toString() ?? '', army: g.army ?? '' }))
+      : participants.length === 1 && isHost ? [{ name: '', placement: 2, score: '', army: '' }] : [],
+  );
+  const room = 8 - participants.length;
+  const total = rows.length + guests.length;
+  const setGuest = (i: number, p: Partial<(typeof guests)[number]>) => setGuests((g) => g.map((x, j) => (j === i ? { ...x, ...p } : x)));
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [files, setFiles] = useState<File[]>([]);
   const [items, setItems] = useState<{ id: string; title: string }[]>([]);
@@ -233,6 +251,8 @@ function ReportForm({
         })),
         summary,
         photos,
+        // Sent only when there are guests (or were), so the form works before migration 26.
+        isHost && (guests.length || initial?.guests.length) ? cleanGuests(guests, room) : undefined,
       );
       onDone();
     } catch (err) {
@@ -250,7 +270,7 @@ function ReportForm({
           <label className="field">
             <span>{t('report.placement')}</span>
             <select className="select" value={r.placement} onChange={(e) => set(i, { placement: Number(e.target.value) })}>
-              {rows.map((_, n) => <option key={n} value={n + 1}>{n === 0 ? t('report.winner') : t('report.place', { n: n + 1 })}</option>)}
+              <PlaceOptions total={total} />
             </select>
           </label>
           <label className="field">
@@ -273,6 +293,42 @@ function ReportForm({
           )}
         </fieldset>
       ))}
+      {isHost ? (
+        <>
+          {guests.map((g, i) => (
+            <fieldset key={i} className="result-row">
+              <legend>{t('report.guestTag')}</legend>
+              <label className="field">
+                <span>{t('report.guestName')}</span>
+                <input className="text-input" maxLength={40} required value={g.name} placeholder={t('report.guestNamePlaceholder')} onChange={(e) => setGuest(i, { name: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>{t('report.placement')}</span>
+                <select className="select" value={g.placement} onChange={(e) => setGuest(i, { placement: Number(e.target.value) })}><PlaceOptions total={total} /></select>
+              </label>
+              <label className="field">
+                <span>{t('report.score')}</span>
+                <input className="text-input" type="number" value={g.score} onChange={(e) => setGuest(i, { score: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>{t('report.army')}</span>
+                <input className="text-input" maxLength={80} value={g.army} onChange={(e) => setGuest(i, { army: e.target.value })} />
+              </label>
+              <button type="button" className="btn small danger-ghost" onClick={() => setGuests((x) => x.filter((_, j) => j !== i))}>
+                <Icon name="trash" size={14} /> {t('report.removeGuest')}
+              </button>
+            </fieldset>
+          ))}
+          {guests.length < room && (
+            <button type="button" className="btn small" onClick={() => setGuests((x) => [...x, { name: '', placement: total + 1, score: '', army: '' }])}>
+              <Icon name="plus" size={14} /> {t('report.addGuest')}
+            </button>
+          )}
+          <small className="hint">{t('report.guestHint')}</small>
+        </>
+      ) : guests.length > 0 && (
+        <p className="hint">{t('report.guestsByHost', { names: guests.map((g) => g.name).join(', ') })}</p>
+      )}
       <label className="field">
         <span>{t('report.summary')}</span>
         <textarea className="text-input" rows={3} maxLength={1000} value={summary} onChange={(e) => setSummary(e.target.value)} />
@@ -289,4 +345,9 @@ function ReportForm({
       </div>
     </form>
   );
+}
+
+function PlaceOptions({ total }: { total: number }) {
+  const t = useT();
+  return <>{Array.from({ length: total }, (_, n) => <option key={n} value={n + 1}>{n === 0 ? t('report.winner') : t('report.place', { n: n + 1 })}</option>)}</>;
 }

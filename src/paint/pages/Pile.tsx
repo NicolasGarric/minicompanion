@@ -7,7 +7,8 @@ import { ARMY_INKS, ROLES, STAGES, armyStats, cardPhotoOf, photoBlob, useHobby, 
 import { deckImage, deckLink, deckOf, type Deck } from '../hobby/deck';
 import { DeckView } from '../components/DeckCards';
 import { TimelapseDialog } from '../components/TimelapseDialog';
-import { InfoEditor, UnitCard, useInfoOf, usePhotoUrls, type CardView } from '../components/UnitCard';
+import { isRefRow } from '../../core/lib/refLinks';
+import { CardRefsEditor, InfoEditor, UnitCard, useInfoOf, usePhotoUrls, type CardView } from '../components/UnitCard';
 import { PileSyncBanner } from '../components/PileSync';
 import { removeRemotePhotos } from '../hobby/sync';
 
@@ -303,7 +304,7 @@ function CardSection({ army, unit, urls }: { army: Army; unit: Unit; urls: Map<s
   const all = armies.flatMap((a) => a.units);
   const linkedHere = all.some((u) => u.linkedTo === unit.id);
   const targets = all.filter((u) => u.id !== unit.id && !u.linkedTo);
-  const labels = [...new Set(all.flatMap((u) => u.info ?? []).map((x) => x.l.trim()).filter(Boolean))].slice(0, 60);
+  const labels = [...new Set(all.flatMap((u) => u.info ?? []).filter((x) => !isRefRow(x)).map((x) => x.l.trim()).filter(Boolean))].slice(0, 60);
   const ph = cardPhotoOf(unit);
   const target = all.find((u) => u.id === unit.linkedTo);
   const card: CardView = {
@@ -341,6 +342,10 @@ function CardSection({ army, unit, urls }: { army: Army; unit: Unit; urls: Map<s
           <div className="field">
             <span>{t('cards.info')}</span>
             <InfoEditor lines={lines} suggestions={labels} onChange={(info) => updateUnit(army.id, unit.id, { info })} />
+          </div>
+          <div className="field">
+            <span>{t('refs.title')}</span>
+            <CardRefsEditor lines={lines} onChange={(info) => updateUnit(army.id, unit.id, { info })} />
           </div>
         </div>
         <UnitCard card={card} />

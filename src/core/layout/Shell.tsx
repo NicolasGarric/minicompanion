@@ -135,6 +135,7 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
     { href: '/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
     { href: '/play/campaigns', key: 'nav.play.campaigns', active: (r) => r.name === 'play.campaigns' || r.name === 'play.campaign' },
     { href: '/play/table-generator', key: 'nav.play.tablegen', active: (r) => r.name === 'play.tablegen' },
+    { href: '/play/rules', key: 'nav.play.rules', active: (r) => r.name === 'play.rules' },
     { href: '/play/mentors', key: 'nav.play.mentors', active: (r) => r.name === 'play.mentors' },
     { href: '/play/swap', key: 'nav.play.swap', active: (r) => r.name === 'play.swap' },
   ],

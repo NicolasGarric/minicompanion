@@ -30,7 +30,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
 const PRIVATE: RouteName[] = [
   'paint.editor', 'paint.shared', 'play.game', 'play.campaign', 'play.mine', 'play.new', 'play.tournament.new', 'play.tournament.tables', 'play.table',
   'messages', 'messages.thread', 'notifications', 'account', 'signin', 'stats', 'admin.bugs', 'admin.suggestions', 'admin', 'notFound',
-  'paint.deck', 'paint.pile', 'paint.army', 'paint.decks', 'paint.deckPage', 'deck.online', 'paint.sessions', 'paint.shelf', 'me.level', 'me.card', 'me.year',
+  'paint.deck', 'paint.pile', 'paint.army', 'paint.decks', 'paint.deckPage', 'deck.online', 'paint.sessions', 'paint.shelf', 'me.level', 'me.card', 'me.year', 'play.rules',
 ];
 
 function setMeta(attr: 'name' | 'property', key: string, value: string) {

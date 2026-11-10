@@ -3,6 +3,7 @@ import { removePhotos, uploadPhoto } from '../../core/lib/photo';
 import { cleanGroups, cleanInfo, legacyInfo, type Groups, type InfoLine } from './cards';
 import { hid, NO_SYNC, photoBlob, useHobby, type Army, type LocalDeck, type Unit, type UnitPhoto } from './store';
 import type { Role } from './deckCodec';
+import { cleanRefs, type RefLink } from '../../core/lib/refLinks';
 
 /**
  * My pile on the account (migration 23). The device keeps working copy and photos; once the player
@@ -17,7 +18,7 @@ interface UnitRow {
   note: string | null; info: InfoLine[]; photos: { p: string; at: number }[]; card_photo: string | null; linked_to: string | null;
   position: number; done_at: string | null; created_at: string;
 }
-interface DeckRow { id: string; name: string; groups: Groups; created_at: string }
+interface DeckRow { id: string; name: string; groups: Groups; refs?: RefLink[]; created_at: string }
 
 const db = () => {
   if (!supabase) throw new Error('backend');
@@ -27,6 +28,31 @@ const must = <T>(r: { data: T | null; error: unknown }): T => {
   if (r.error) throw r.error;
   return r.data as T;
 };
+
+/** Before migration 25 the decks have no `refs` column: the links then stay on this device. */
+let deckRefs = true;
+const noColumn = (e: unknown) => (e as { code?: string })?.code === '42703' || /refs/.test(String((e as { message?: string })?.message ?? ''));
+async function writeDeck(row: { name: string; groups: string[][]; refs: RefLink[] }, remoteId?: string): Promise<string> {
+  const send = async (r: Partial<typeof row>) => remoteId
+    ? (await db().from('decks').update(r).eq('id', remoteId)).error
+    : await db().from('decks').insert(r).select('id').single().then((x) => (x.error ? x.error : ((remoteId = (x.data as { id: string }).id), null)));
+  let err = await send(deckRefs ? row : { name: row.name, groups: row.groups });
+  if (err && deckRefs && noColumn(err)) {
+    deckRefs = false;
+    err = await send({ name: row.name, groups: row.groups });
+  }
+  if (err) throw err;
+  return remoteId!;
+}
+async function readDecks(): Promise<DeckRow[]> {
+  if (deckRefs) {
+    const r = await db().from('decks').select('id, name, groups, refs, created_at').order('created_at');
+    if (!r.error) return r.data as DeckRow[];
+    if (!noColumn(r.error)) throw r.error;
+    deckRefs = false;
+  }
+  return must(await db().from('decks').select('id, name, groups, created_at').order('created_at')) as DeckRow[];
+}
 
 async function serverIds() {
   const armies = must(await db().from('pile_armies').select('id, local_id')) as Pick<ArmyRow, 'id' | 'local_id'>[];
@@ -129,9 +155,9 @@ export async function pushPile(uid: string, labels: Labels) {
   for (const d of decks) {
     if (!keys.has(`d:${d.id}`) && d.remoteId) continue;
     const groups = d.groups.map((g) => g.map((id) => ids.unit.get(id)).filter(Boolean) as string[]).filter((g) => g.length);
-    const row = { name: d.name.trim().slice(0, 60) || '—', groups };
-    if (d.remoteId) must(await db().from('decks').update(row).eq('id', d.remoteId));
-    else remoteIds.set(d.id, (must(await db().from('decks').insert(row).select('id').single()) as { id: string }).id);
+    const row = { name: d.name.trim().slice(0, 60) || '—', groups, refs: cleanRefs(d.refs) };
+    if (d.remoteId) await writeDeck(row, d.remoteId);
+    else remoteIds.set(d.id, await writeDeck(row));
   }
 
   // Changes made while pushing stay for the next push
@@ -154,7 +180,7 @@ export async function pushPile(uid: string, labels: Labels) {
 export async function pullPile(uid: string) {
   const armies = must(await db().from('pile_armies').select('id, local_id, name, colour, position').order('position')) as ArmyRow[];
   const units = must(await db().from('pile_units').select('*').order('position')) as UnitRow[];
-  const decks = must(await db().from('decks').select('id, name, groups, created_at').order('created_at')) as DeckRow[];
+  const decks = await readDecks();
   const st = useHobby.getState();
   if (st.sync.dirty.length) return; // a change happened meanwhile: push it first
   const localUnits = new Map(st.armies.flatMap((a) => a.units).map((u) => [u.id, u]));
@@ -198,6 +224,7 @@ export async function pullPile(uid: string) {
       id: old?.id ?? hid(),
       name: d.name,
       remoteId: d.id,
+      refs: deckRefs ? cleanRefs(d.refs) : old?.refs,
       createdAt: old?.createdAt ?? Date.parse(d.created_at),
       groups: cleanGroups(d.groups.map((g) => g.map((x) => localOf.get(x) ?? x)), known),
     };
@@ -227,6 +254,7 @@ export interface OnlineDeck {
   name: string;
   owner: string | null;
   groups: Groups;
+  refs?: RefLink[];
   cards: { id: string; name: string; role: Role; info: InfoLine[]; linked_to: string | null; photo: string | null; army: string; colour: string }[];
 }
 

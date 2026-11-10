@@ -3,16 +3,21 @@
  * in three modes. Generic wording only, no rules of any published game.
  *  - narrative: terrain themed after the chosen scenario, asymmetric, a story twist;
  *  - casual: balanced but lively, one fun event;
- *  - competitive: point-symmetric terrain (the same for both sides), chosen density.
+ *  - competitive: one of the competitive deployment cards (deployCards.ts: exact zones and objective
+ *    points), a terrain feature on every objective point, point-symmetric terrain, chosen density.
  */
+import type { RefLink } from '../../core/lib/refLinks.ts';
 import { KIND_DEFAULTS, inPolygon, makePiece, mirrorPiece, type Piece, type TerrainKind } from './terrain.ts';
+import { CARD_IDS, cardObjectives, cardRef, cardZones, isCard, type CardId, type Objective } from './deployCards.ts';
 
 export type { Piece, TerrainKind } from './terrain.ts';
 export type Mode = 'narrative' | 'casual' | 'competitive';
 export type Density = 'light' | 'standard' | 'dense';
 export type Theme = 'city' | 'forest' | 'desert' | 'frozen' | 'outpost';
-export type Deployment = 'long' | 'short' | 'diagonal' | 'corners' | 'hammer' | 'none';
-export const DEPLOYMENTS: Deployment[] = ['long', 'short', 'diagonal', 'corners', 'hammer', 'none'];
+export type Deployment = 'long' | 'short' | 'diagonal' | 'corners' | 'hammer' | 'none' | CardId;
+/** Order matters: the map codes store the index (new ones are added at the end). */
+export const DEPLOYMENTS: Deployment[] = ['long', 'short', 'diagonal', 'corners', 'hammer', 'none', ...CARD_IDS];
+export type { CardId, Objective, ObjectiveKind } from './deployCards.ts';
 
 /** Usual table sizes in inches (index kept in links: new sizes go at the end). */
 export const SIZES = [[44, 30], [44, 60], [48, 48], [72, 48], [30, 22], [30, 30], [36, 36], [60, 44]] as const;
@@ -46,12 +51,15 @@ export interface Table {
   /** Polygons in inches, side A then side B */
   zones: [number, number][][];
   pieces: Piece[];
-  objectives: { x: number; y: number }[];
+  /** Kind set for the objective points of a competitive card (home A / B, expansion, central) */
+  objectives: Objective[];
   /** Mission key, '' when there is none */
   mission: string;
   /** Narrative twist or casual event key ('none' = nothing) */
   extra: string;
   rounds: number;
+  /** Reference links: mission pack, deployment or terrain rules where they are published */
+  refs?: RefLink[];
 }
 
 export interface GenOptions {
@@ -78,6 +86,7 @@ function rng(seed: number) {
 const pick = <T,>(r: () => number, list: readonly T[]) => list[Math.floor(r() * list.length)];
 
 export function zonesFor(d: Deployment, W: number, H: number): [number, number][][] {
+  if (isCard(d)) return cardZones(d, W, H);
   const depth = Math.min(W, H) * 0.22;
   switch (d) {
     case 'none': return [];
@@ -96,17 +105,17 @@ export function generate(o: GenOptions): Table {
   const [W, H] = o.dims ?? SIZES[o.size] ?? SIZES[1];
   const theme = o.mode === 'narrative' ? o.theme : pick(r, THEMES);
   const kinds = THEME_TERRAIN[theme];
-  const deployment: Deployment = o.mode === 'competitive' ? pick(r, ['long', 'short', 'diagonal', 'hammer'] as const)
+  const deployment: Deployment = o.mode === 'competitive' ? pick(r, CARD_IDS)
     : o.mode === 'narrative' ? pick(r, ['long', 'corners', 'diagonal', 'short'] as const) : pick(r, ['long', 'short', 'diagonal'] as const);
   const zones = zonesFor(deployment, W, H);
   const auto = o.mode === 'competitive' ? DENSITY_COUNT[o.density] : o.mode === 'casual' ? 8 + Math.floor(r() * 4) : 7 + Math.floor(r() * 6);
   const count = o.count !== undefined ? Math.max(0, Math.min(MAX_PIECES, Math.round(o.count))) : auto;
   const pieces: Piece[] = [];
-  const fits = (p: Piece) => {
+  const fits = (p: Piece, gap = 3) => {
     const m = 1.5;
     if (p.x - p.w / 2 < m || p.y - p.h / 2 < m || p.x + p.w / 2 > W - m || p.y + p.h / 2 > H - m) return false;
     // Keep 3" between pieces so models can move between them
-    return pieces.every((q) => Math.abs(q.x - p.x) > (q.w + p.w) / 2 + 3 || Math.abs(q.y - p.y) > (q.h + p.h) / 2 + 3);
+    return pieces.every((q) => Math.abs(q.x - p.x) > (q.w + p.w) / 2 + gap || Math.abs(q.y - p.y) > (q.h + p.h) / 2 + gap);
   };
   const make = (kind: TerrainKind): Piece => {
     const d = KIND_DEFAULTS[kind];
@@ -116,7 +125,40 @@ export function generate(o: GenOptions): Table {
     const shape = kind === 'ruin' && r() < 0.35 ? 'rect' : d.shape;
     return { ...makePiece(kind, 0, 0, Math.floor(r() * 1e6)), shape, w: d.w * s, h: d.h * s, rot };
   };
-  const target = o.mode === 'competitive' ? Math.ceil(count / 2) : count;
+  // Competitive: the objective points of the card (a 6 on a D6: two central points), each covered by a
+  // terrain feature that does not block sight (a terrain objective), mirrored like the rest.
+  const cardObjs = o.mode === 'competitive' && isCard(deployment) ? cardObjectives(deployment, W, H, r() < 1 / 6) : [];
+  const onObjective = kinds.filter((k) => KIND_DEFAULTS[k].cover !== 'blocking' && k !== 'wall');
+  let objectivePieces = 0;
+  for (const ob of cardObjs) {
+    const twinOf = cardObjs.findIndex((q) => Math.abs(q.x - (W - ob.x)) < 0.01 && Math.abs(q.y - (H - ob.y)) < 0.01);
+    if (twinOf < cardObjs.indexOf(ob) && twinOf !== -1) continue; // placed with its twin
+    const self = twinOf === cardObjs.indexOf(ob);
+    // Smaller and smaller; last try (objective points close together) with a 1" gap only.
+    for (let scale = 1; scale >= 0.25; scale -= 0.15) {
+      const gap = scale < 0.4 ? 1 : 3;
+      const p = make(onObjective.length ? pick(r, onObjective) : 'ruin');
+      if (p.shape === 'L') p.shape = 'rect'; // the corner of an L is empty: it would not cover the point
+      p.w = Math.max(3, p.w * scale * 0.85);
+      p.h = Math.max(3, p.h * scale * 0.85);
+      p.x = ob.x;
+      p.y = ob.y;
+      if (self) p.rot = p.rot % 180;
+      if (!fits(p, gap)) continue;
+      pieces.push(p);
+      if (!self) {
+        const twin = mirrorPiece(p, W, H, p.seed + 1);
+        if (!fits(twin, gap)) {
+          pieces.pop();
+          continue;
+        }
+        pieces.push(twin);
+      }
+      objectivePieces += self ? 1 : 2;
+      break;
+    }
+  }
+  const target = o.mode === 'competitive' ? Math.ceil(Math.max(0, count - objectivePieces) / 2) : count;
   for (let n = 0, tries = 0; n < target && tries < 600 + count * 40; tries++) {
     const p = make(o.mode === 'narrative' && n === 0 ? kinds[0] : pick(r, kinds));
     if (o.mode === 'competitive') {
@@ -149,14 +191,8 @@ export function generate(o: GenOptions): Table {
     }
   }
   // Objectives: centre + symmetric pairs (competitive), spread out otherwise
-  const objectives: { x: number; y: number }[] = [{ x: W / 2, y: H / 2 }];
-  if (o.mode === 'competitive') {
-    const pairs = W >= 60 || H >= 60 ? 2 : 2;
-    for (let i = 0; i < pairs; i++) {
-      const x = W * (i === 0 ? 0.25 : 0.75), y = H * (0.3 + r() * 0.1);
-      objectives.push({ x, y }, { x: W - x, y: H - y });
-    }
-  } else {
+  const objectives: Objective[] = cardObjs.length ? cardObjs : [{ x: W / 2, y: H / 2 }];
+  if (!cardObjs.length) {
     const n = o.mode === 'narrative' ? 2 + Math.floor(r() * 3) : 3 + Math.floor(r() * 2);
     for (let tries = 0; objectives.length <= n && tries < 200; tries++) {
       const p = { x: W * (0.12 + r() * 0.76), y: H * (0.2 + r() * 0.6) };
@@ -167,7 +203,10 @@ export function generate(o: GenOptions): Table {
   }
   const mission = o.mode === 'narrative' ? pick(r, NARRATIVE) : o.mode === 'casual' ? pick(r, CASUAL) : pick(r, COMPETITIVE);
   const extra = o.mode === 'narrative' ? pick(r, TWISTS) : o.mode === 'casual' ? pick(r, EVENTS) : 'none';
-  return { seed: o.seed, mode: o.mode, width: W, height: H, deployment, zones, pieces, objectives, mission, extra, rounds: o.mode === 'casual' ? 4 : 5 };
+  return {
+    seed: o.seed, mode: o.mode, width: W, height: H, deployment, zones, pieces, objectives, mission, extra, rounds: o.mode === 'casual' ? 4 : 5,
+    ...(isCard(deployment) ? { refs: [cardRef(deployment)] } : {}),
+  };
 }
 
 export const MAX_PIECES = 40;

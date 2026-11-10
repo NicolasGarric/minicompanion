@@ -3,6 +3,7 @@ import { DISPLAY, drawCover, fitText, FONT, halftoneBand, wrap } from '../../cor
 import { translate, type Lang } from '../../core/i18n';
 import type { Game } from './games';
 import type { GameReport } from './social';
+import { reportRows } from './reportRows';
 
 /** Square result card (1080²) of a confirmed battle report, to share on social networks. */
 export async function resultCard(o: { game: Game; report: GameReport; lang: Lang; when: string; place: string; images: string[] }): Promise<Blob> {
@@ -54,9 +55,10 @@ export async function resultCard(o: { game: Game; report: GameReport; lang: Lang
 
   // Results: winner first, with score
   y += 30;
-  const best = Math.min(...report.results.map((r) => r.placement));
-  const winners = report.results.filter((r) => r.placement === best).length;
-  for (const r of report.results.slice(0, 6)) {
+  const rows = reportRows(report);
+  const best = Math.min(...rows.map((r) => r.placement));
+  const winners = rows.filter((r) => r.placement === best).length;
+  for (const r of rows.slice(0, 6)) {
     const win = r.placement === best;
     ctx.fillStyle = win ? '#ffd23f' : '#fffaf0';
     ctx.beginPath();
@@ -68,7 +70,7 @@ export async function resultCard(o: { game: Game; report: GameReport; lang: Lang
     ctx.stroke();
     ctx.fillStyle = win ? '#1d2a5b' : '#1d2a5b';
     ctx.font = `700 34px ${FONT}`;
-    ctx.fillText(fitText(ctx, r.profile?.display_name ?? '?', textW - 200), pad + 24, y + 40);
+    ctx.fillText(fitText(ctx, r.name, textW - 200), pad + 24, y + 40);
     ctx.font = `500 22px ${FONT}`;
     ctx.fillText(win ? (winners > 1 ? t('report.draw') : t('report.winner')) : t('report.place', { n: r.placement }), pad + 24, y + 70);
     if (r.score !== null) {

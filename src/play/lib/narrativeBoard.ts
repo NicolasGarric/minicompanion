@@ -2,6 +2,8 @@
  * Narrative campaign board: types and pure helpers (no import, unit-tested with plain Node).
  * Server calls live in narrative.ts, which re-exports everything here.
  */
+import type { RefLink } from '../../core/lib/refLinks.ts';
+
 export type CampId = 'A' | 'B' | 'C' | 'D';
 export const CAMP_IDS: CampId[] = ['A', 'B', 'C', 'D'];
 export type PlaceType = 'planet' | 'moon' | 'station' | 'belt' | 'nebula' | 'wreck';
@@ -41,6 +43,8 @@ export interface Place {
   sc?: string | null;
   /** Background text of a ready-made campaign ("amber_veil.4") */
   lore?: string | null;
+  /** Reference links: mission or rules played here where they are published */
+  refs?: RefLink[];
 }
 export interface Route { a: number; b: number; type: RouteType; owner: CampId | null; cut: boolean }
 export interface Zone { x: number; y: number; r: number; type: ZoneType }
@@ -55,6 +59,8 @@ export interface Board {
   camps: Camp[];
   custom: CustomAction[];
   victory: { rule: VictoryRule; n: number };
+  /** Reference links of the whole campaign: campaign pack, crusade rules */
+  refs?: RefLink[];
 }
 
 export interface CampaignRow {
