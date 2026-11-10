@@ -102,6 +102,64 @@ export async function myGalleryItems(userId: string): Promise<{ id: string; titl
   return (must(await db().from('gallery_items').select('id, title, image_path').eq('owner_id', userId).order('created_at', { ascending: false }).limit(50)) ?? []) as { id: string; title: string; image_path: string }[];
 }
 
+// --- Comments on played games (migration 27) ----------------------------------------------------
+export interface GameComment {
+  id: string;
+  game_id: string;
+  author_id: string;
+  body: string;
+  is_hidden: boolean;
+  created_at: string;
+  author?: { display_name: string; handle: string } | null;
+}
+
+/** Comments of a game, oldest first (RLS: public game, or its players). Empty on a database without migration 27. */
+export async function gameComments(gameId: string): Promise<GameComment[]> {
+  const r = await db()
+    .from('game_comments')
+    .select('id, game_id, author_id, body, is_hidden, created_at, author:profiles!game_comments_author_id_fkey(display_name, handle)')
+    .eq('game_id', gameId)
+    .order('created_at')
+    .limit(200);
+  if (r.error) {
+    if (playError(r.error) === 'not_installed') return [];
+    throw r.error;
+  }
+  return (r.data ?? []) as unknown as GameComment[];
+}
+export const addComment = async (gameId: string, body: string) => must(await db().rpc('add_game_comment', { p_game: gameId, p_body: body }));
+export const deleteComment = async (id: string) => must(await db().rpc('delete_game_comment', { p_comment: id }));
+export const reportComment = async (id: string, reason: string) => must(await db().rpc('report_game_comment', { p_comment: id, p_reason: reason }));
+
+export interface RecentResult {
+  game: Game;
+  /** Players by placement (accounts and guests) */
+  rows: { name: string; placement: number; score: number | null }[];
+}
+
+/** Latest confirmed results of public games, for the "recent results" list. Empty without migration 27. */
+export async function recentResults(limit = 8): Promise<RecentResult[]> {
+  const reps = await db().from('game_reports').select('game_id').eq('status', 'confirmed').order('confirmed_at', { ascending: false }).limit(40);
+  if (reps.error || !reps.data?.length) return [];
+  const ids = reps.data.map((r) => r.game_id as string);
+  const games = await db().from('games').select('*').in('id', ids).eq('is_public', true).neq('status', 'cancelled');
+  if (games.error || !games.data?.length) return [];
+  const shown = ids.filter((id) => games.data.some((g) => g.id === id)).slice(0, limit);
+  const [res, guests] = await Promise.all([
+    db().from('game_results').select('game_id, placement, score, profile:profiles!game_results_player_id_fkey(display_name)').in('game_id', shown),
+    db().from('game_guest_results').select('game_id, name, placement, score').in('game_id', shown),
+  ]);
+  type Row = { game_id: string; placement: number; score: number | null; name?: string; profile?: { display_name: string } | null };
+  const all = [...((res.data ?? []) as unknown as Row[]), ...((guests.data ?? []) as Row[])];
+  return shown.map((id) => ({
+    game: games.data.find((g) => g.id === id) as Game,
+    rows: all
+      .filter((r) => r.game_id === id)
+      .map((r) => ({ name: r.profile?.display_name ?? r.name ?? '?', placement: r.placement, score: r.score }))
+      .sort((a, b) => a.placement - b.placement),
+  }));
+}
+
 // --- Profiles, ratings, stats, badges -----------------------------------------------------------
 export interface PublicProfile {
   id: string;

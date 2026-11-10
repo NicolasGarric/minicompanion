@@ -125,7 +125,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
           onCancel={report ? () => setEditing(false) : undefined}
         />
       ) : !report ? (
-        <p className="hint">{t('report.none')}</p>
+        <p className="hint">{t(game.is_public === false && !isParticipant ? 'report.private' : 'report.none')}</p>
       ) : (
         <>
           <ol className="results">
@@ -166,7 +166,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
             {isParticipant && (report.status !== 'confirmed' || (isHost && solo)) && (
               <button className="btn ghost" onClick={() => setEditing(true)}>{t('report.edit')}</button>
             )}
-            <ShareButton className="btn" title={game.game_system} text={t('share.page.result', { game: game.game_system })} url={`${location.origin}/play/game/${game.id}`} />
+            {game.is_public !== false && <ShareButton className="btn" title={game.game_system} text={t('share.page.result', { game: game.game_system })} url={`${location.origin}/play/game/${game.id}`} />}
             {report.status === 'confirmed' && (
               <button className="btn primary" disabled={busy} onClick={share}>
                 <Icon name="share" size={16} /> {t('report.share')}

@@ -30,6 +30,7 @@ export function GameCard({ game, myStatus }: { game: Game; myStatus?: JoinStatus
           <span className={`tag ${game.status === 'open' ? 'ok' : ''}`}>
             {game.status === 'cancelled' ? t('games.status.cancelled') : t('games.seats', { taken: game.players_count, max: game.max_players })}
           </span>
+          {game.finished_at && game.status !== 'cancelled' && <span className="tag ok">{t('games.status.finished')}</span>}
           {myStatus && <span className={`tag mine-${myStatus}`}>{t(k(`games.join.${myStatus}`))}</span>}
           {game.host && <span className="muted small">{t('games.hostedBy', { name: game.host.display_name })}</span>}
         </span>

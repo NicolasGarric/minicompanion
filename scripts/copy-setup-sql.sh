@@ -50,6 +50,7 @@ declare -A GUARD=(
   [20261112000024_suggestions.sql]="to_regclass('public.suggestions') is null"
   [20261113000025_reference_links.sql]="to_regproc('public.set_game_refs') is null"
   [20261114000026_guest_results.sql]="to_regclass('public.game_guest_results') is null"
+  [20261115000027_game_visibility_comments.sql]="to_regclass('public.game_comments') is null"
 )
 seq_of() { local n="${1%%_*}"; echo $((10#${n: -6})); } # 20261104000016_x.sql -> 16
 

@@ -32,6 +32,10 @@ export interface Game {
   table_map?: string | null;
   /** Reference links: mission pack, rules (migration 25; missing before it) */
   refs?: RefLink[] | null;
+  /** Result, report, photos and comments visible to everyone (migration 27; missing before it = public) */
+  is_public?: boolean;
+  /** Set by the host after the start (migration 27) */
+  finished_at?: string | null;
   host?: { display_name: string; handle: string } | null;
   store?: { name: string } | null;
 }
@@ -161,6 +165,10 @@ export const cancelGame = (id: string) => call('cancel_game', { p_game: id });
 export const deleteGame = (id: string) => call('delete_game', { p_game: id });
 /** Host only: attach a table map to the game, or remove it with null. */
 export const setGameMap = (id: string, map: string | null) => call('set_game_map', { p_game: id, p_map: map });
+/** Host only: show the result, report and comments to everyone, or to the players only. */
+export const setGamePublic = (id: string, isPublic: boolean) => call('set_game_public', { p_game: id, p_public: isPublic });
+/** Host only, after the start: mark the game finished (players are told to add the result), or undo. */
+export const setGameFinished = (id: string, finished: boolean) => call('set_game_finished', { p_game: id, p_finished: finished });
 export const setGameRefs = (id: string, refs: RefLink[]) => call('set_game_refs', { p_game: id, p_refs: cleanRefs(refs) });
 
 /** What players typed most (games, or formats of one game), for the form suggestions. */
@@ -195,7 +203,7 @@ export function playError(e: unknown): string | null {
     'contest_closed', 'own_entry', 'email_not_confirmed', 'no_entry', 'rights_required',
     'challenge_closed', 'own_mentor', 'no_mentor', 'already_mentored', 'bad_step', 'campaign_exists', 'not_member',
     'no_conquest', 'no_territory', 'already_yours', 'bad_pick', 'own_match', 'prediction_closed', 'no_post', 'suspended',
-    'photo_quota',
+    'photo_quota', 'bad_comment', 'no_comment',
   ];
   return known.find((k) => m.includes(k)) ?? null;
 }

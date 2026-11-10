@@ -7,7 +7,7 @@ import { navigate } from '../../core/router';
 import { Icon } from '../../core/ui/ui';
 import { ShareSheet } from '../../core/ui/ShareSheet';
 import { countryName } from '../lib/countries';
-import { cancelGame, deleteGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameMap, setGameRefs, type Game, type GamePlayer } from '../lib/games';
+import { cancelGame, deleteGame, gameError, getGame, playError, leaveGame, requestJoin, respondJoin, setGameFinished, setGameMap, setGamePublic, setGameRefs, type Game, type GamePlayer } from '../lib/games';
 import { decodeTable } from '../lib/tableCodec';
 import { RefChips, RefLinksEditor } from '../../core/ui/RefLinks';
 import type { Table } from '../lib/tableGen';
@@ -15,6 +15,7 @@ import { drawTable } from '../visual/tableMap';
 import { formatWhen } from '../components/GameCard';
 import { ReportSection } from '../components/ReportSection';
 import { GameChat } from '../components/GameChat';
+import { GameComments } from '../components/GameComments';
 import { downloadIcs } from '../lib/ics';
 import { useHobby } from '../../paint/hobby/store';
 import { gameDecks, setGameDeck } from '../../paint/hobby/sync';
@@ -104,6 +105,8 @@ export function GameDetail({ id }: { id: string }) {
         <span className="game-tags">
           <span className="tag">{t(k(`games.level.${game.level}`))}</span>
           <span className="tag">{game.status === 'cancelled' ? t('games.status.cancelled') : t('games.seats', { taken: game.players_count, max: game.max_players })}</span>
+          {game.finished_at && game.status !== 'cancelled' && <span className="tag ok"><Icon name="check" size={12} /> {t('games.status.finished')}</span>}
+          {game.is_public === false && <span className="tag"><Icon name="eyeOff" size={12} /> {t('games.private')}</span>}
         </span>
       </div>
 
@@ -216,7 +219,34 @@ export function GameDetail({ id }: { id: string }) {
         </section>
       )}
 
+      {past && game.status !== 'cancelled' && isHost && game.is_public !== undefined && (
+        <section className="card after-game">
+          <h2>{t('games.after.title')}</h2>
+          <div className="field-row wrap">
+            {game.finished_at ? (
+              <>
+                <span className="tag ok"><Icon name="check" size={12} /> {t('games.status.finished')}</span>
+                <button className="btn small ghost" disabled={busy} onClick={() => act(() => setGameFinished(game.id, false))}>{t('games.after.unfinish')}</button>
+              </>
+            ) : (
+              <button className="btn small primary" disabled={busy} onClick={() => act(() => setGameFinished(game.id, true))}>
+                <Icon name="check" size={14} /> {t('games.after.finish')}
+              </button>
+            )}
+          </div>
+          {!game.finished_at && <p className="hint">{t('games.after.finishHint')}</p>}
+          <label className="check">
+            <input type="checkbox" checked={game.is_public !== false} disabled={busy} onChange={(e) => act(() => setGamePublic(game.id, e.target.checked))} />
+            {' '}{t('games.after.public')}
+          </label>
+          <p className="hint">{t(game.is_public !== false ? 'games.after.publicHint' : 'games.after.privateHint')}</p>
+          {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
+        </section>
+      )}
       {past && game.status !== 'cancelled' && <ReportSection game={game} players={players} me={me} />}
+      {past && game.status !== 'cancelled' && game.is_public !== undefined && (game.is_public || isHost || mine?.status === 'accepted' || profile?.is_admin) && (
+        <GameComments gameId={game.id} me={me} isHost={isHost} isAdmin={!!profile?.is_admin} isPublic={game.is_public} />
+      )}
       {me && (isHost || mine?.status === 'accepted') && game.status !== 'cancelled' && <GameChat gameId={game.id} me={me} />}
       {(isHost || profile?.is_admin) && (
         <section className="card game-delete">

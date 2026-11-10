@@ -6,8 +6,10 @@ import { useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
 import { GameCard } from '../components/GameCard';
 import { listGames, playError, popularTexts, type Game, type GameFilters } from '../lib/games';
-import { sortedCountries } from '../lib/countries';
+import { countryName, sortedCountries } from '../lib/countries';
 import { LfgPanel } from '../components/LfgPanel';
+import { formatWhen } from '../components/GameCard';
+import { recentResults, type RecentResult } from '../lib/social';
 
 /** Quick play: upcoming casual games, filtered by game, format and place. */
 export function QuickPlay() {
@@ -98,8 +100,40 @@ export function QuickPlay() {
           {!games && !error && <span className="spinner" />}
           {games?.length === 0 && <p className="hint">{t('quick.none')}</p>}
           {!!games?.length && <ul className="game-list">{games.map((g) => <GameCard key={g.id} game={g} />)}</ul>}
+          <RecentResults />
         </>
       )}
     </div>
+  );
+}
+
+/** Latest confirmed results of public games: what people play nearby, and a door to their pages. */
+function RecentResults() {
+  const t = useT();
+  const lang = useLang((s) => s.lang);
+  const [items, setItems] = useState<RecentResult[]>([]);
+  useEffect(() => {
+    recentResults().then(setItems, () => undefined);
+  }, []);
+  if (!items.length) return null;
+  return (
+    <section className="recent-results">
+      <h2>{t('quick.recent')}</h2>
+      <ul className="game-list">
+        {items.map(({ game, rows }) => (
+          <li key={game.id}>
+            <a className="game-card past" href={`/play/game/${game.id}`}>
+              <span className="game-what">
+                <strong>{game.game_system}</strong>
+                <small className="muted">{rows.map((r) => (r.score !== null ? `${r.name} ${r.score}` : r.name)).join(' · ')}</small>
+              </span>
+              <span className="game-when">{formatWhen(game.starts_at, lang)}</span>
+              <span className="game-where muted">{[game.city, countryName(game.country, lang)].filter(Boolean).join(', ')}</span>
+              {rows[0] && rows[1]?.placement !== rows[0].placement && <span className="game-tags"><span className="tag ok"><Icon name="trophy" size={12} /> {rows[0].name}</span></span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

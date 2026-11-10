@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-11-10 (guest players in reports, maps on played games, competitive deployment cards; migration 26)
+> Last update: 2026-11-10 (played games public / private, finished mark, comments; migration 27 to apply)
 
 ## What it is
 
@@ -514,6 +514,14 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 38. **Shop list refresh (2026-11-10)**: `scripts/fetch-osm-shops.mjs` also keeps the brand stores (name or brand
     "Warhammer" / "Games Workshop") that mappers tagged toys, collector, video_games…; 5665 shops, every
     such store on OpenStreetMap included (388). Stores not mapped on OSM stay missing: shops add themselves on OSM.
+39. **Played games: public / private, finished, comments (2026-11-10, owner choices)**, migration 27 **to apply**
+    (+36 SQL tests `supabase/tests/rls_game_visibility.sql`): `games.is_public` (default true: result, report, photos and
+    comments visible to all; false: players and admins only, the game itself stays listed) set by the host
+    (`set_game_public`); `games.finished_at` set by the host after the start (`set_game_finished`, undoable, notifies the
+    players `game_finished`); `game_comments` (500 chars, 20/hour, `add_game_comment` / `delete_game_comment` by author,
+    host or admin / `report_game_comment`: 3 reports hide; `game_comment` notification once per unread game). App:
+    "After the game" card for the host, Finished / Private tags, `GameComments.tsx`, "Recent results" on Quick play
+    (public confirmed games). Without migration 27 the new parts stay hidden (`is_public` undefined).
 
 ## To do (owner list, 2026-10-29)
 
