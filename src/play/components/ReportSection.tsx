@@ -1,3 +1,4 @@
+import { ShareButton } from '../../core/ui/ShareButton';
 import { useEffect, useMemo, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
 import { Icon } from '../../core/ui/ui';
@@ -165,6 +166,7 @@ export function ReportSection({ game, players, me }: { game: Game; players: Game
             {isParticipant && (report.status !== 'confirmed' || (isHost && solo)) && (
               <button className="btn ghost" onClick={() => setEditing(true)}>{t('report.edit')}</button>
             )}
+            <ShareButton className="btn" title={game.game_system} text={t('share.page.result', { game: game.game_system })} url={`${location.origin}/play/game/${game.id}`} />
             {report.status === 'confirmed' && (
               <button className="btn primary" disabled={busy} onClick={share}>
                 <Icon name="share" size={16} /> {t('report.share')}

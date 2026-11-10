@@ -497,8 +497,17 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     Table page, Roll a table, competitive: "Recommended layout" (player 1 / 2 disposition, A/B/C/random) opens the
     layout in the editor (our ruins, light / dense cover, objective kinds, links to the layout, card and primary
     missions). Owner choices: neutral names for deployment cards, published names only as link labels; disposition and
-    mission names shown (link labels / picker). Not kept: the "single / separate terrain area" icons (no field yet).
+    mission names shown (link labels / picker). Dense terrain = blocks sight (owner choice).
     The extraction scripts are not in the repo (scratch tools); rerun them if the deck changes.
+34. **Terrain-area marks (2026-11-10, owner choice)**: `Table.areas` [{x, y, kind: single | separate}] (eye / crossed eye
+    between touching pieces), map code field `a` (max 16), drawn on the map, legend, editor (add, drag, kind, delete).
+    The 45 layouts carry theirs (detected icons, completed by symmetry).
+35. **Share buttons (2026-11-10, owner choice)**: `src/core/ui/ShareButton.tsx` opens the share sheet (phone menu, copy,
+    LINE / WhatsApp / X / e-mail, QR code) on public profiles, tournaments, leagues, stores, battle reports (link to the
+    game) and decks (share link). Already there before: upcoming games, tables, campaign invites, player card.
+36. **Rules index fix (2026-11-10)**: mission deck cards were shifted by one section in `public/data/wahapedia-11.json`
+    (the missing deployment card, a primary mission under deployments, duplicates); rebuilt: 6 deployments, 25 primary,
+    18 secondary, 6 twists, 5 force dispositions; "'S" capitals fixed.
 
 ## To do (owner list, 2026-10-29)
 

@@ -1,3 +1,4 @@
+import { ShareButton } from '../../core/ui/ShareButton';
 import { useEffect, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
 import { setPageMeta } from '../../core/seo';
@@ -75,6 +76,9 @@ export function PlayerProfile({ handle }: { handle: string }) {
         </div>
         {me && !mine && (
           <a className="btn small" href={`/messages/${p.id}`}><Icon name="chat" size={14} /> {t('profile.message')}</a>
+        )}
+        {p.is_public && (
+          <ShareButton title={p.display_name} text={t('share.page.profile', { name: p.display_name })} url={`${location.origin}/u/${p.handle}`} />
         )}
       </div>
       {!p.is_public && !mine ? (

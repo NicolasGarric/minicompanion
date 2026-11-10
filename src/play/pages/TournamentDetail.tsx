@@ -1,3 +1,4 @@
+import { ShareButton } from '../../core/ui/ShareButton';
 import { Predictions } from '../components/Predictions';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { k, langName, useLang, useT } from '../../core/i18n';
@@ -133,6 +134,7 @@ export function TournamentDetail({ slug }: { slug: string }) {
       <div className="page-head">
         <div>
           <h1>{tour.name}</h1>
+          <ShareButton title={tour.name} text={t('share.page.tournament', { name: tour.name })} url={`${location.origin}${location.pathname}`} />
           <p className="lead">
             {(tour.type === 'painting_contest'
               ? [tour.game_system, t(k(`tour.type.${tour.type}`))]

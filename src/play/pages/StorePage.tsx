@@ -1,3 +1,4 @@
+import { ShareButton } from '../../core/ui/ShareButton';
 import { safeHref } from '../../core/lib/url';
 import { useEffect, useState } from 'react';
 import { setPageMeta } from '../../core/seo';
@@ -73,6 +74,7 @@ export function StorePage({ id }: { id: string }) {
   return (
     <div className="narrow game-detail">
       <h1>{store.name}</h1>
+      <ShareButton title={store.name} text={t('share.page.store', { name: store.name })} url={`${location.origin}${location.pathname}`} />
       <section className="card game-facts">
         <p><Icon name="map" size={16} /> {store.address}</p>
         {safeHref(store.website) && <p><Icon name="link" size={16} /> <a href={safeHref(store.website)} target="_blank" rel="noopener noreferrer">{store.website}</a></p>}

@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { k, useT } from '../../core/i18n';
 import { Icon } from '../../core/ui/ui';
 import { RefLinksEditor } from '../../core/ui/RefLinks';
-import { DEPLOYMENTS, MAX_PIECES, SIZES, SIZE_ORDER, generate, newSeed, zonesFor, type Deployment, type ObjectiveKind, type Table } from '../lib/tableGen';
+import { DEPLOYMENTS, MAX_PIECES, SIZES, SIZE_ORDER, generate, newSeed, zonesFor, type AreaKind, type Deployment, type ObjectiveKind, type Table } from '../lib/tableGen';
 import { cardObjectives, cardRef, isCard } from '../lib/deployCards';
-import { MAX_OBJECTIVES, MAX_TABLE, MIN_TABLE } from '../lib/tableCodec';
+import { MAX_AREAS, MAX_OBJECTIVES, MAX_TABLE, MIN_TABLE } from '../lib/tableCodec';
 import {
   COVERS, KINDS, KIND_DEFAULTS, MAX_SIZE, MIN_SIZE, SHAPES, TRAITS, analyse, footprint, gapBetween, inPolygon, makePiece, mirrorPiece, rotateHandle,
   type Cover, type Piece, type Shape, type TerrainKind, type Trait,
@@ -16,7 +16,7 @@ import { COVER_SIGN, TRAIT_SIGN, drawTable } from '../visual/tableMap';
  * want, turn them with the round handle (or the slider), set cover and traits, and see at once
  * how the layout compares with common table-building habits.
  */
-type Grab = { what: 'piece' | 'rotate' | 'objective'; index: number; dx: number; dy: number; moved: boolean };
+type Grab = { what: 'piece' | 'rotate' | 'objective' | 'area'; index: number; dx: number; dy: number; moved: boolean };
 
 const HISTORY = 60;
 
@@ -30,6 +30,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
   const [newKind, setNewKind] = useState<TerrainKind>('ruin');
   const [fill, setFill] = useState(10);
   const [twoCentral, setTwoCentral] = useState(false);
+  const [area, setArea] = useState<number | null>(null);
   const past = useRef<Table[]>([]);
   const future = useRef<Table[]>([]);
   const grab = useRef<Grab | null>(null);
@@ -75,7 +76,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
       canvas.current.style.height = `${h}px`;
       const ctx = canvas.current.getContext('2d')!;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawTable(ctx, table, w, { marks, selected, selectedObjective: objective });
+      drawTable(ctx, table, w, { marks, selected, selectedObjective: objective, selectedArea: area });
     };
     draw();
     const ro = new ResizeObserver(draw);
@@ -128,6 +129,16 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
         return;
       }
     }
+    const ar = (table.areas ?? []).findIndex((m) => Math.hypot(m.x - x, m.y - y) < reach * 0.8);
+    if (ar >= 0) {
+      setArea(ar);
+      setSelected(null);
+      setObjective(null);
+      grab.current = { what: 'area', index: ar, dx: table.areas![ar].x - x, dy: table.areas![ar].y - y, moved: false };
+      e.currentTarget.setPointerCapture(e.pointerId);
+      return;
+    }
+    setArea(null);
     const o = table.objectives.findIndex((ob) => Math.hypot(ob.x - x, ob.y - y) < reach);
     if (o >= 0) {
       setObjective(o);
@@ -159,6 +170,9 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
     if (g.what === 'objective') {
       const objectives = table.objectives.map((o, i) => (i === g.index ? { ...o, x: clampX(snapTo(x + g.dx)), y: clampY(snapTo(y + g.dy)) } : o));
       commit({ ...table, objectives }, first);
+    } else if (g.what === 'area') {
+      const areas = (table.areas ?? []).map((m, i) => (i === g.index ? { ...m, x: clampX(snapTo(x + g.dx)), y: clampY(snapTo(y + g.dy)) } : m));
+      commit({ ...table, areas }, first);
     } else if (g.what === 'piece') {
       setPiece(g.index, { x: clampX(snapTo(x + g.dx)), y: clampY(snapTo(y + g.dy)) }, first);
     } else {
@@ -230,6 +244,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
       zones: zonesFor(table.deployment, W, H),
       pieces: table.pieces.map((p) => ({ ...p, x: snapTo(p.x * fx), y: snapTo(p.y * fy) })),
       objectives: table.objectives.map((o) => ({ ...o, x: snapTo(o.x * fx), y: snapTo(o.y * fy) })),
+      areas: (table.areas ?? []).map((m) => ({ ...m, x: snapTo(m.x * fx), y: snapTo(m.y * fy) })),
     });
   };
   const setDeployment = (d: Deployment) => commit({ ...table, deployment: d, zones: zonesFor(d, table.width, table.height) });
@@ -245,6 +260,19 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
     });
     setObjective(null);
   };
+  const addArea = () => {
+    const areas = table.areas ?? [];
+    if (areas.length >= MAX_AREAS) return;
+    commit({ ...table, areas: [...areas, { x: table.width / 2, y: table.height / 2, kind: 'single' }] });
+    setArea(areas.length);
+    setSelected(null);
+    setObjective(null);
+  };
+  const setAreaKind = (i: number, kind: AreaKind) => commit({ ...table, areas: (table.areas ?? []).map((m, j) => (j === i ? { ...m, kind } : m)) });
+  const removeArea = (i: number) => {
+    commit({ ...table, areas: (table.areas ?? []).filter((_, j) => j !== i) });
+    setArea(null);
+  };
   const setObjectiveKind = (i: number, kind: ObjectiveKind | '') =>
     commit({ ...table, objectives: table.objectives.map((o, j) => (j === i ? (kind ? { x: o.x, y: o.y, kind } : { x: o.x, y: o.y }) : o)) });
   const randomFill = () => {
@@ -253,7 +281,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
     setSelected(null);
   };
   const clear = () => {
-    commit({ ...table, pieces: [], objectives: [], mission: '', extra: 'none', mode: 'custom' });
+    commit({ ...table, pieces: [], objectives: [], areas: [], mission: '', extra: 'none', mode: 'custom' });
     setSelected(null);
     setObjective(null);
   };
@@ -334,6 +362,18 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
         </section>
       )}
 
+      {area != null && table.areas?.[area] && (
+        <section className="card piece-panel">
+          <h2>{t('tableEd.areaTitle')}</h2>
+          <label className="field"><span>{t('tableEd.areaKind')}</span>
+            <select className="select" value={table.areas[area].kind} onChange={(e) => setAreaKind(area, e.target.value as AreaKind)}>
+              <option value="single">{t('terrain.area.single')}</option>
+              <option value="separate">{t('terrain.area.separate')}</option>
+            </select></label>
+          <button className="btn small danger-ghost" onClick={() => removeArea(area)}><Icon name="trash" size={14} /> {t('common.delete')}</button>
+        </section>
+      )}
+
       <section className="card table-controls">
         <div className="field-row wrap">
           <select className="select" value={newKind} onChange={(e) => setNewKind(e.target.value as TerrainKind)} aria-label={t('tableEd.kind')}>
@@ -341,6 +381,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
           </select>
           <button className="btn primary" onClick={addPiece} disabled={table.pieces.length >= MAX_PIECES}><Icon name="plus" size={15} /> {t('tableEd.addPiece')}</button>
           <button className="btn" onClick={addObjective} disabled={table.objectives.length >= MAX_OBJECTIVES}><Icon name="target" size={15} /> {t('tableEd.addObjective')}</button>
+          <button className="btn" onClick={addArea} disabled={(table.areas?.length ?? 0) >= MAX_AREAS}><Icon name="eye" size={15} /> {t('tableEd.addArea')}</button>
         </div>
         <div className="field-row wrap">
           <label className="field inline"><span>{t('tableEd.fillCount')}</span>
@@ -416,6 +457,8 @@ export function TerrainLegend() {
     <ul className="terrain-legend">
       {COVERS.filter((c) => c !== 'none').map((c) => <li key={c}><span className="sign">{COVER_SIGN[c]}</span> {t(k(`terrain.cover.${c}`))}</li>)}
       {TRAITS.map((tr) => <li key={tr}><span className="sign">{TRAIT_SIGN[tr]}</span> {t(k(`terrain.trait.${tr}`))}</li>)}
+      <li><span className="sign">◉</span> {t('terrain.area.single')}</li>
+      <li><span className="sign">⊘</span> {t('terrain.area.separate')}</li>
     </ul>
   );
 }

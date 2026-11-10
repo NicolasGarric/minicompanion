@@ -24,11 +24,14 @@ type Compact = {
   r?: number;
   n?: string;
   g?: string;
+  /** Terrain-area marks [x, y, 0 single | 1 separate] */
+  a?: [number, number, number][];
   /** Reference links [address, label?] */
   l?: [string, string?][];
 };
 
 export const MAX_OBJECTIVES = 12;
+export const MAX_AREAS = 16;
 export const MIN_TABLE = 12;
 export const MAX_TABLE = 96;
 /** Longest code the database accepts for a game map */
@@ -54,6 +57,7 @@ export function encodeTable(t: Table): Promise<string> {
   };
   if (t.mission) Object.assign(c, { m: t.mission, e: t.extra, r: t.rounds, g: t.mode });
   if (t.name) c.n = t.name.slice(0, 60);
+  if (t.areas?.length) c.a = t.areas.slice(0, MAX_AREAS).map((m) => [half(m.x), half(m.y), m.kind === 'separate' ? 1 : 0]);
   const refs = cleanRefs(t.refs);
   if (refs.length) c.l = refs.map((r) => (r.l ? [r.u, r.l] : [r.u]));
   return pack(c);
@@ -98,6 +102,9 @@ export async function decodeTable(code: string): Promise<Table> {
     mission,
     extra: mission && typeof c.e === 'string' && EXTRAS.includes(c.e) ? c.e : 'none',
     rounds: mission ? Math.round(clamp(c.r, 1, 10, 5)) : 5,
+    areas: Array.isArray(c.a)
+      ? c.a.slice(0, MAX_AREAS).filter(Array.isArray).map(([x, y, k]) => ({ x: clamp(x, 0, W * 2) / 2, y: clamp(y, 0, H * 2) / 2, kind: Number(k) === 1 ? 'separate' as const : 'single' as const }))
+      : [],
     refs: Array.isArray(c.l) ? cleanRefs(c.l.filter(Array.isArray).map(([u, l]) => ({ u, l }))) : [],
   };
 }

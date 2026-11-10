@@ -1488,6 +1488,12 @@ export const ja: Record<MessageKey, string> = {
   'share.sheet.messageCopied': 'メッセージとリンクをコピーしました。',
   'share.sheet.qrAlt': 'リンクのQRコード',
   'share.sheet.qrHint': 'このコードを相手に見せると同じページが開きます。',  // CHECK: hobby wording
+  'share.page.profile': 'MiniCompanionの{name}',
+  'share.page.tournament': '{name}：MiniCompanionで大会に参加しよう',
+  'share.page.league': '{name}：MiniCompanionでリーグに参加しよう',
+  'share.page.store': '{name}のゲームナイト',
+  'share.page.result': '{game}の対戦結果',
+  'share.page.deck': '私のデッキ「{name}」',
   'games.invite.cta': 'プレイヤーを招待',
   'games.invite.title': 'このゲームに招待',
   'games.invite.text': '{when}、{place}で{game}のゲームをします。空き：{seats}席。一緒に遊びましょう！',
@@ -1937,6 +1943,11 @@ export const ja: Record<MessageKey, string> = {
   'terrain.shape.hex': '六角形',
   'terrain.shape.blob': '不定形',
   'terrain.shape.wedge': '直角三角形',
+  'tableEd.areaTitle': '地形エリア',
+  'tableEd.areaKind': 'マークの種類',
+  'tableEd.addArea': '地形エリアのマーク',
+  'terrain.area.single': '単一の地形エリア（接する地形を1つとして扱う）',
+  'terrain.area.separate': '別々の地形エリア（接する地形を別々に扱う）',
   'terrain.cover.none': '遮蔽なし',
   'terrain.cover.light': '軽遮蔽',  // CHECK: hobby wording
   'terrain.cover.heavy': '重遮蔽',  // CHECK: hobby wording

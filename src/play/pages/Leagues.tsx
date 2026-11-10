@@ -1,3 +1,4 @@
+import { ShareButton } from '../../core/ui/ShareButton';
 import { CampaignSection } from '../components/CampaignMap';
 import { useEffect, useState } from 'react';
 import { useLang, useT } from '../../core/i18n';
@@ -199,6 +200,7 @@ export function LeagueDetail({ id }: { id: string }) {
         <div>
           <h1>{league.name}</h1>
           <p className="lead">{league.game_system} · {day(league.starts_on, lang)} → {day(league.ends_on, lang)}</p>
+          <ShareButton title={league.name} text={t('share.page.league', { name: league.name })} url={`${location.origin}${location.pathname}`} />
         </div>
         {open && (
           <button className={`btn ${member ? 'ghost' : 'primary'}`} onClick={toggle}>{t(member ? 'league.leave' : 'league.join')}</button>

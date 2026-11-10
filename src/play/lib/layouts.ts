@@ -42,7 +42,7 @@ export function layoutTable(a: Disposition, b: Disposition, v: Variant): Table |
   const row = findLayout(a, b, v);
   if (!row) return null;
   const pieces: Piece[] = row.p.map(([shape, x, y, w, h, rot, dense], i) => ({
-    kind: 'ruin', shape: shape ? 'wedge' : 'rect', x, y, w, h, rot, cover: dense ? 'heavy' : 'light', traits: [], seed: 1000 + i,
+    kind: 'ruin', shape: shape ? 'wedge' : 'rect', x, y, w, h, rot, cover: dense ? 'blocking' : 'light', traits: [], seed: 1000 + i,
   }));
   const refs: RefLink[] = [
     { u: `${PAGE}#Mission-Generator`, l: `${DISPOSITION_NAME[row.a]} vs ${DISPOSITION_NAME[row.b]} · Layout ${v}`.slice(0, 60) },
@@ -60,6 +60,7 @@ export function layoutTable(a: Disposition, b: Disposition, v: Variant): Table |
     zones: zonesFor(row.card, 44, 60),
     pieces,
     objectives: row.o.map(([x, y, k]) => ({ x, y, kind: KINDS[k] })),
+    areas: row.m.map(([x, y, k]) => ({ x, y, kind: k ? 'separate' : 'single' })),
     mission: '',
     extra: 'none',
     rounds: 5,

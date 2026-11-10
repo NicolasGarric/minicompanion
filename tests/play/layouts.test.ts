@@ -45,3 +45,12 @@ test('primary missions follow the published pairing table', () => {
   assert.equal(t.refs?.length, 3);
   assert.match(t.refs![2].l!, /Destroyer.s Wrath \/ Vital Link/);
 });
+
+test('terrain-area marks: in the layouts and kept by the map code', async () => {
+  const total = LAYOUT_ROWS.reduce((n, r) => n + r.m.length, 0);
+  assert.ok(total > 100, `${total} marks`);
+  const t = layoutTable('take', 'purge', 'A')!;
+  const back = await decodeTable(await encodeTable(t));
+  assert.deepEqual(back.areas, t.areas);
+  assert.ok(t.pieces.some((p) => p.cover === 'blocking'), 'dense terrain blocks sight');
+});

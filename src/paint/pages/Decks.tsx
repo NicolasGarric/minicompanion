@@ -1,3 +1,4 @@
+import { ShareButton } from '../../core/ui/ShareButton';
 import { useEffect, useMemo, useState } from 'react';
 import { k, useT } from '../../core/i18n';
 import { navigate } from '../../core/router';
@@ -207,7 +208,6 @@ function DeckShare({ deck }: { deck: LocalDeck }) {
   const signedIn = useSession((s) => !!s.session);
   const synced = useHobby((s) => !!s.sync.owner);
   const [code, setCode] = useState<string | null | undefined>(undefined);
-  const [msg, setMsg] = useState('');
   useEffect(() => {
     if (deck.remoteId && signedIn) deckShareCode(deck.remoteId).then(setCode, () => setCode(null));
   }, [deck.remoteId, signedIn]);
@@ -222,14 +222,7 @@ function DeckShare({ deck }: { deck: LocalDeck }) {
         {code ? (
           <>
             <input className="text-input" readOnly value={link} aria-label={t('cards.share')} onFocus={(e) => e.target.select()} />
-            <button className="btn primary" onClick={async () => {
-              try {
-                if (navigator.share) await navigator.share({ title: deck.name, url: link });
-                else (await navigator.clipboard.writeText(link), setMsg(t('pile.linkCopied')));
-              } catch {
-                /* closed */
-              }
-            }}><Icon name="share" size={16} /> {t('cards.shareSend')}</button>
+            <ShareButton className="btn primary" title={deck.name} text={t('share.page.deck', { name: deck.name })} url={link} />
             <button className="btn ghost" onClick={async () => setCode(await shareDeck(deck.remoteId!, false))}>{t('cards.shareStop')}</button>
           </>
         ) : (
@@ -237,7 +230,6 @@ function DeckShare({ deck }: { deck: LocalDeck }) {
             <Icon name="link" size={16} /> {t('cards.shareStart')}
           </button>
         )}
-        {msg && <span className="hint" role="status">{msg}</span>}
       </div>
     </section>
   );

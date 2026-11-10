@@ -18,6 +18,12 @@ export type Deployment = 'long' | 'short' | 'diagonal' | 'corners' | 'hammer' | 
 /** Order matters: the map codes store the index (new ones are added at the end). */
 export const DEPLOYMENTS: Deployment[] = ['long', 'short', 'diagonal', 'corners', 'hammer', 'none', ...CARD_IDS];
 export type { CardId, Objective, ObjectiveKind } from './deployCards.ts';
+export type AreaKind = 'single' | 'separate';
+export interface AreaMark {
+  x: number;
+  y: number;
+  kind: AreaKind;
+}
 
 /** Usual table sizes in inches (index kept in links: new sizes go at the end). */
 export const SIZES = [[44, 30], [44, 60], [48, 48], [72, 48], [30, 22], [30, 30], [36, 36], [60, 44]] as const;
@@ -53,6 +59,8 @@ export interface Table {
   pieces: Piece[];
   /** Kind set for the objective points of a competitive card (home A / B, expansion, central) */
   objectives: Objective[];
+  /** Terrain-area marks between touching pieces: one area (single) or two separate areas (separate) */
+  areas?: AreaMark[];
   /** Mission key, '' when there is none */
   mission: string;
   /** Narrative twist or casual event key ('none' = nothing) */

@@ -197,6 +197,39 @@ function drawMarks(ctx: CanvasRenderingContext2D, p: Piece, s: number) {
   ctx.restore();
 }
 
+/** Terrain-area mark: an eye (the touching pieces are one area) or a crossed eye (two separate areas). */
+export function drawArea(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, crossed: boolean, selected = false) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = SURFACE;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = selected ? PINK : NAVY;
+  ctx.stroke();
+  // Eye: two arcs and a pupil
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.65, y);
+  ctx.quadraticCurveTo(x, y - r * 0.75, x + r * 0.65, y);
+  ctx.quadraticCurveTo(x, y + r * 0.75, x - r * 0.65, y);
+  ctx.strokeStyle = NAVY;
+  ctx.lineWidth = Math.max(1.2, r * 0.12);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = NAVY;
+  ctx.fill();
+  if (crossed) {
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.6, y - r * 0.6);
+    ctx.lineTo(x + r * 0.6, y + r * 0.6);
+    ctx.strokeStyle = PINK;
+    ctx.lineWidth = Math.max(1.5, r * 0.16);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** Signs shared by the map and its legend */
 export const COVER_SIGN: Record<Cover, string> = { none: '', light: '◐', heavy: '●', blocking: '■' };
 export const TRAIT_SIGN: Record<Trait, string> = { difficult: '≈', elevated: '▲', hazardous: '!', impassable: '✕' };
@@ -208,6 +241,8 @@ export interface DrawOptions {
   selected?: number | null;
   /** Editor: index of the selected objective */
   selectedObjective?: number | null;
+  /** Editor: index of the selected terrain-area mark */
+  selectedArea?: number | null;
 }
 
 export function drawTable(ctx: CanvasRenderingContext2D, t: Table, px: number, opts: DrawOptions = {}) {
@@ -236,6 +271,7 @@ export function drawTable(ctx: CanvasRenderingContext2D, t: Table, px: number, o
   });
   t.pieces.forEach((p) => drawPiece(ctx, p, s));
   if (opts.marks) t.pieces.forEach((p) => drawMarks(ctx, p, s));
+  (t.areas ?? []).forEach((m, i) => drawArea(ctx, m.x * s, m.y * s, Math.max(8, s * 0.95), m.kind === 'separate', opts.selectedArea === i));
   // Objectives
   t.objectives.forEach((o, i) => {
     ctx.beginPath();
