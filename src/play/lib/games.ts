@@ -186,10 +186,9 @@ export async function listStores(): Promise<{ id: string; name: string; city: st
 
 /**
  * Error code for the UI: a code raised by the SQL functions (e.g. "game_full"), "not_installed"
- * when the database misses the PLAY migrations, or null. Every error is also logged to the console.
+ * when the database misses the PLAY migrations, or null. Nothing is written to the console: the UI shows the message.
  */
 export function playError(e: unknown): string | null {
-  console.error('[play]', e);
   const err = e as { message?: string; code?: string };
   const m = err?.message ?? '';
   // PostgREST: unknown table / function (schema cache), Postgres: undefined table / function

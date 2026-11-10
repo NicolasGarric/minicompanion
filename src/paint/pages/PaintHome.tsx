@@ -28,8 +28,7 @@ export function PaintHome() {
     try {
       await fn();
       navigate('paint/editor');
-    } catch (e) {
-      console.error(e);
+    } catch {
       toast(t('error.generic'), 'error');
     } finally {
       setBusy(false);
