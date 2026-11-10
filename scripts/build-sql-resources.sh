@@ -25,7 +25,7 @@ ascii <(bash "$SETUP" --print --status) > "$OUT/0_check_status.sql"
 ascii <(bash "$SETUP" --print --no-seed) > "$OUT/1_apply_all_migrations.sql"
 # First migration not yet applied on the live database: 2_apply_latest_migration.sql holds it and every
 # later one. Update it when the owner reports the live status.
-PENDING_FROM=27
+PENDING_FROM=28
 ascii <(bash "$SETUP" --print --no-seed --from "$PENDING_FROM") > "$OUT/2_apply_latest_migration.sql"
 
 i=1
