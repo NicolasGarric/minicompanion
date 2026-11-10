@@ -511,6 +511,9 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 37. **Beta stage (2026-11-10, owner request)**: `APP_STAGE` in `src/core/brand.ts`; "Beta" badge next to the name in the
     header (`beta.badge`, 9 languages), page titles "… · MiniCompanion Beta" (`seo.ts`, `scripts/build-seo.mjs`,
     `index.html`), home hero line `beta.note` + Suggest button. To remove at launch: badge, note, the three titles.
+38. **Shop list refresh (2026-11-10)**: `scripts/fetch-osm-shops.mjs` also keeps the brand stores (name or brand
+    "Warhammer" / "Games Workshop") that mappers tagged toys, collector, video_games…; 5665 shops, every
+    such store on OpenStreetMap included (388). Stores not mapped on OSM stay missing: shops add themselves on OSM.
 
 ## To do (owner list, 2026-10-29)
 

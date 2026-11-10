@@ -24,7 +24,9 @@ const REGIONS = [
 async function region([name, s, w, n, e]) {
   const cached = CACHE && join(CACHE, `${name}.json`);
   if (cached && existsSync(cached)) return JSON.parse(readFileSync(cached, 'utf8'));
-  const query = `[out:json][timeout:250];nwr["shop"~"^(games|model|hobby)$"](${s},${w},${n},${e});out center tags;`;
+  // Plus the brand stores of the main miniature wargame, whatever shop type mappers gave them (toys, collector…)
+  const bb = `(${s},${w},${n},${e})`;
+  const query = `[out:json][timeout:250];(nwr["shop"~"^(games|model|hobby)$"]${bb};nwr["shop"~"^(${BRAND_SHOPS})$"]["name"~"${BRAND}",i]${bb};nwr["shop"~"^(${BRAND_SHOPS})$"]["brand"~"${BRAND}",i]${bb};);out center tags;`;
   for (let attempt = 1; attempt <= 4; attempt++) {
     const res = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
@@ -42,12 +44,18 @@ async function region([name, s, w, n, e]) {
   throw new Error(`${name}: Overpass unavailable`);
 }
 
+// Brand stores (any of these shop types), named or branded after the game or its publisher
+const BRAND = 'warhammer|games ?workshop|ウォーハンマー';
+const BRAND_SHOPS = 'toys|collector|fantasy|tabletop|video_games|books|yes|anime|comics|gift|variety_store';
+const BRAND_RE = new RegExp(BRAND, 'i');
+
 // shop=hobby mixes many things: keep it only when it looks like models / miniatures / tabletop.
 const OFF_TOPIC = /anim(e|ate)|アニメ|らしんばん|ゲーマーズ|駿河屋|まんだらけ|ポケモン|pok[eé]mon|k-books|jump ?shop|ジャンプ|キャラ|プリキュア|トレカ|カードラボ|card ?(shop|lab)|manga|comic|コミック|wild birds|pipas|bastel|panduro|knit|wool|yarn|scrapbook|craft|bead|sewing|fabric|stamp|coin|bird|fish|aquar|brew|kite|dance|music|手芸|ユザワヤ|reef|cosplay|コスプレ|仮面ライダー|スニダン|sneaker/i;
 const OFF_TOPIC_TAGS = /knitting|dance|birds|homebrewing|stamps|comics|trading_cards|anime|crafts?|sewing|mahjong|pub_games|video_games/i;
 
 function keep(t) {
   if (!t.name) return null;
+  if (!['games', 'model', 'hobby'].includes(t.shop)) return BRAND_RE.test(`${t.name} ${t.brand ?? ''}`) ? 'games' : null;
   const sub = [t.hobby, t.games, t.model].filter(Boolean).join(';');
   if (OFF_TOPIC_TAGS.test(sub) && !/war|miniature|tabletop|board|model/i.test(sub)) return null;
   if (t.shop === 'hobby' && OFF_TOPIC.test(t.name)) return null;
