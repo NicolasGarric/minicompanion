@@ -47,6 +47,7 @@ export type RouteName =
   | 'stores'
   | 'dice'
   | 'account'
+  | 'password'
   | 'signin'
   | 'legal'
   | 'support'
@@ -109,6 +110,7 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'stores', name: 'stores', section: 'none' },
   { pattern: 'dice', name: 'dice', section: 'none' },
   { pattern: 'account', name: 'account', section: 'none' },
+  { pattern: 'password', name: 'password', section: 'none' },
   { pattern: 'signin', name: 'signin', section: 'none' },
   { pattern: 'legal', name: 'legal', section: 'none' },
   { pattern: 'support', name: 'support', section: 'none' },

@@ -4,15 +4,18 @@ import { navigate } from '../router';
 import { backendConfigured } from './supabase';
 import { useSession } from './session';
 import { BackendNotice } from './BackendNotice';
+import { DELETED_KEY } from './accountDeletion';
 
-type Mode = 'signin' | 'signup';
+type Mode = 'signin' | 'signup' | 'reset';
 
 /** Google sign-in is switched off for now (owner, 2026-10-28); set to true to show the button again. */
 const GOOGLE_SIGN_IN = false;
 
 export function SignInPage() {
   const t = useT();
-  const { session, signIn, signUp, signInWithGoogle } = useSession();
+  const { session, signIn, signUp, signInWithGoogle, requestPasswordReset } = useSession();
+  // Read once; kept for this visit of the page (React may mount twice in development).
+  const [deleted] = useState(() => sessionStorage.getItem(DELETED_KEY) === '1');
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +24,7 @@ export function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
+  useEffect(() => sessionStorage.removeItem(DELETED_KEY), []);
   useEffect(() => {
     if (session) navigate('account', { replace: true });
   }, [session]);
@@ -31,7 +35,11 @@ export function SignInPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    if (mode === 'signin') {
+    if (mode === 'reset') {
+      const r = await requestPasswordReset(email.trim());
+      if (r.error) setError(t('error.generic'));
+      else setSent(true);
+    } else if (mode === 'signin') {
       const r = await signIn(email.trim(), password);
       if (r.error) setError(t('auth.error.signin'));
     } else {
@@ -46,13 +54,32 @@ export function SignInPage() {
     return (
       <div className="narrow auth-page">
         <h1>{t('auth.checkEmail.title')}</h1>
-        <p>{t('auth.checkEmail.text', { email })}</p>
+        <p>{t(mode === 'reset' ? 'auth.reset.sent' : 'auth.checkEmail.text', { email })}</p>
+      </div>
+    );
+  }
+
+  if (mode === 'reset') {
+    return (
+      <div className="narrow auth-page">
+        <h1>{t('auth.reset.title')}</h1>
+        <p className="lead">{t('auth.reset.lead')}</p>
+        <form className="field-col" onSubmit={submit}>
+          <label className="field">
+            <span>{t('auth.email')}</span>
+            <input className="text-input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+          </label>
+          {error && <p className="error" role="alert">{error}</p>}
+          <button className="btn primary" disabled={busy}>{t('auth.reset.cta')}</button>
+        </form>
+        <p className="hint"><button type="button" className="link" onClick={() => { setMode('signin'); setError(null); }}>{t('auth.reset.back')}</button></p>
       </div>
     );
   }
 
   return (
     <div className="narrow auth-page">
+      {deleted && <p className="success" role="status">{t('account.del.done')}</p>}
       <h1>{t(mode === 'signin' ? 'auth.signin.title' : 'auth.signup.title')}</h1>
       <p className="lead">{t('auth.lead')}</p>
 
@@ -94,6 +121,9 @@ export function SignInPage() {
         </button>
       </form>
 
+      {mode === 'signin' && (
+        <p className="hint"><button type="button" className="link" onClick={() => { setMode('reset'); setError(null); }}>{t('auth.forgot')}</button></p>
+      )}
       <p className="hint">
         {t(mode === 'signin' ? 'auth.noAccount' : 'auth.haveAccount')}{' '}
         <button type="button" className="link" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>

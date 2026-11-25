@@ -5,6 +5,7 @@ import { requireSignIn, useSession } from './session';
 import { backendConfigured } from './supabase';
 import { BackendNotice } from './BackendNotice';
 import { Avatar } from '../ui/Avatar';
+import { DeleteAccount } from './DeleteAccount';
 import { GallerySection } from '../gallery/GallerySection';
 import { setProfilePublic } from '../../play/lib/social';
 import { Toggle } from '../ui/ui';
@@ -124,6 +125,7 @@ export function AccountPage() {
         </div>
       </section>
       <GallerySection />
+      <DeleteAccount />
     </div>
   );
 }

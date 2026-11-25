@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-11-10 (played games public / private, finished mark, comments; migration 27 applied)
+> Last update: 2026-11-25 (audit fixes: password reset, account deletion, privacy text, storage ceilings; migration 28 to apply)
 
 ## What it is
 
@@ -522,6 +522,23 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     host or admin / `report_game_comment`: 3 reports hide; `game_comment` notification once per unread game). App:
     "After the game" card for the host, Finished / Private tags, `GameComments.tsx`, "Recent results" on Quick play
     (public confirmed games). Without migration 27 the new parts stay hidden (`is_public` undefined).
+
+40. **Audit fixes (2026-11-25, owner request)**, migration 28 **to apply** (34 SQL tests `supabase/tests/zz_account.sql`, run last because
+    they delete every demo player; live check `supabase/checks/account_check.sql` = `resources/supabase/6_account_check.sql`):
+    - **Password**: "Forgot your password?" on the sign-in page (link by e-mail to the site root, a mark in localStorage tells the app
+      the returning `?code=` is a reset), page `/password` (also "Change my password" in My account, current password asked); the
+      other devices are signed out.
+    - **Account deletion** (My account, password asked again): the app removes the player's files through the Storage API (`my_files()`),
+      then `delete_my_account()` erases personal data and closes the sign-in (recent sign-in required). Shared records (played games,
+      finished tournaments, campaign journals) stay under "Deleted player"; leagues and campaigns go to the oldest other member; drafts
+      are deleted, published tournaments cancelled, a running one must be finished first; admin accounts are refused.
+    - **Storage**: pile thumbnails only next to their own image, 150 MB per player over all buckets, 60 bug screenshots; players can read
+      and delete their own files (public buckets had no read policy, which the Storage API needs to delete).
+    - **Rights**: no TRUNCATE / TRIGGER / REFERENCES for `anon` and `authenticated`, no write grant for `anon`, also on later tables;
+      `tournament_players()` internal.
+    - Privacy section of the legal page, `upload.hint` and `home.privacy` now match what the app does (9 languages); "Page not found"
+      page for unknown addresses. Not done: splitting the 1.4 MB main bundle.
+    - The password and deletion screens were checked in headless Chromium with a simulated backend, not against the live project.
 
 ## To do (owner list, 2026-10-29)
 

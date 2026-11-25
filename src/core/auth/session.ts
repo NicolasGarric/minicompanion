@@ -30,12 +30,31 @@ interface SessionState {
   signUp: (email: string, password: string, displayName: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
+  /** True after opening a "reset your password" link: the new password needs no current one. */
+  recovering: boolean;
+  requestPasswordReset: (email: string) => Promise<{ error?: string }>;
+  /** Checks the current password (unless recovering), sets the new one and signs the other devices out. */
+  changePassword: (current: string, next: string) => Promise<{ error?: 'wrong' | 'failed' }>;
   signOut: () => Promise<void>;
   updateProfile: (patch: ProfileUpdate) => Promise<{ error?: string }>;
 }
 
 /** Where to go back after an OAuth or email-confirmation round trip. */
 const RETURN_KEY = 'cf.auth.return';
+
+/** Set when a reset link is asked for (localStorage: the e-mail link opens a new tab), valid one hour. */
+const RECOVERY_KEY = 'cf.auth.recovery';
+const RECOVERY_MS = 3600_000;
+
+function takeRecovery(): boolean {
+  try {
+    const at = Number(localStorage.getItem(RECOVERY_KEY));
+    localStorage.removeItem(RECOVERY_KEY);
+    return at > 0 && Date.now() - at < RECOVERY_MS;
+  } catch {
+    return false;
+  }
+}
 
 // Always the site root (the address allowed in Supabase); the page to return to is kept in sessionStorage.
 const redirectUrl = () => `${location.origin}/`;
@@ -47,6 +66,7 @@ export const useSession = create<SessionState>((set, get) => ({
   ready: !supabase,
   session: null,
   profile: null,
+  recovering: false,
 
   init: () => {
     if (!supabase) return;
@@ -58,7 +78,10 @@ export const useSession = create<SessionState>((set, get) => ({
       set({ session });
       if (!session) return set({ profile: null });
       get().refreshProfile();
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+        // A reset link comes back with `?code=` like any other: the request left a mark on this browser.
+        const fromLink = new URLSearchParams(location.search).has('code');
+        const recovery = event === 'PASSWORD_RECOVERY' || (fromLink && takeRecovery());
         // Remove `?code=` left by the PKCE redirect and return to the page the user came from.
         const params = new URLSearchParams(location.search);
         if (params.has('code')) {
@@ -67,7 +90,12 @@ export const useSession = create<SessionState>((set, get) => ({
           history.replaceState(null, '', `${location.pathname}${rest ? `?${rest}` : ''}${location.hash}`);
         }
         const back = sessionStorage.getItem(RETURN_KEY);
-        if (back) {
+        if (recovery) {
+          takeRecovery();
+          sessionStorage.removeItem(RETURN_KEY);
+          set({ recovering: true });
+          navigate('password', { replace: true });
+        } else if (back) {
           sessionStorage.removeItem(RETURN_KEY);
           navigate(back);
         }
@@ -118,9 +146,35 @@ export const useSession = create<SessionState>((set, get) => ({
     return error ? { error: error.message } : {};
   },
 
+  requestPasswordReset: async (email) => {
+    if (!supabase) return { error: 'backend' };
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() });
+    if (error) return { error: error.message };
+    try {
+      localStorage.setItem(RECOVERY_KEY, String(Date.now()));
+    } catch {
+      // Private window: the link still signs in, the password is then changed from the account page.
+    }
+    return {};
+  },
+
+  changePassword: async (current, next) => {
+    const email = get().session?.user.email;
+    if (!supabase || !email) return { error: 'failed' };
+    if (!get().recovering) {
+      const check = await supabase.auth.signInWithPassword({ email, password: current });
+      if (check.error) return { error: 'wrong' };
+    }
+    const { error } = await supabase.auth.updateUser({ password: next });
+    if (error) return { error: 'failed' };
+    set({ recovering: false });
+    await supabase.auth.signOut({ scope: 'others' });
+    return {};
+  },
+
   signOut: async () => {
     await supabase?.auth.signOut();
-    set({ session: null, profile: null });
+    set({ session: null, profile: null, recovering: false });
   },
 
   updateProfile: async (patch) => {

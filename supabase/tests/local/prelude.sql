@@ -18,8 +18,11 @@ create table auth.users (
   created_at timestamptz, updated_at timestamptz,
   confirmation_token text, recovery_token text, email_change_token_new text, email_change text,
   email_change_token_current text, phone_change text, phone_change_token text, reauthentication_token text,
-  last_sign_in_at timestamptz
+  last_sign_in_at timestamptz, phone text unique, banned_until timestamptz
 );
+create table auth.sessions (id uuid primary key, user_id uuid references auth.users on delete cascade);
+create table auth.one_time_tokens (id uuid primary key, user_id uuid references auth.users on delete cascade);
+create table auth.mfa_factors (id uuid primary key, user_id uuid references auth.users on delete cascade);
 create table auth.identities (
   id uuid primary key, user_id uuid references auth.users, provider_id text, identity_data jsonb,
   provider text, last_sign_in_at timestamptz, created_at timestamptz, updated_at timestamptz

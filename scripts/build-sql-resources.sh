@@ -38,6 +38,7 @@ ascii "$ROOT/supabase/cleanup_demo_data.sql" > "$OUT/demo/cleanup_demo_data.sql"
 ascii "$ROOT/supabase/checks/security_check.sql" > "$OUT/3_security_check.sql"
 ascii "$ROOT/supabase/checks/campaign_check.sql" > "$OUT/4_campaign_check.sql"
 ascii "$ROOT/supabase/checks/cards_check.sql" > "$OUT/5_cards_check.sql"
+ascii "$ROOT/supabase/checks/account_check.sql" > "$OUT/6_account_check.sql"
 
 for f in "$OUT"/*.sql "$OUT"/migrations/*.sql "$OUT"/demo/*.sql; do check_ascii "$f"; done
 echo "Written to ${OUT#$ROOT/}: $(ls "$OUT"/migrations | wc -l) migrations, $(ls "$OUT"/demo | wc -l) demo files."

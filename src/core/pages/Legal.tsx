@@ -38,6 +38,9 @@ export function Legal() {
           <li>{t('legal.privacy1')}</li>
           <li>{t('legal.privacy2')}</li>
           <li>{t('legal.privacy3')}</li>
+          <li>{t('legal.privacy4')}</li>
+          <li>{t('legal.privacy5')}</li>
+          <li>{t('legal.privacy6')}</li>
         </ul>
       </section>
 

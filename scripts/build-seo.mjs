@@ -179,7 +179,7 @@ writeFileSync(
 > Free, independent web companion for miniature and tabletop wargaming hobbyists: plan painting schemes on a photo of your own model, find tournaments, casual games, leagues, painting contests and real hobby stores, and share your work. Available in English, Japanese, French, Spanish, German, Italian, Brazilian Portuguese, Simplified Chinese and Korean. Not affiliated with any brand.
 
 ## Paint
-- [Paint scheme planner](${SITE}/paint): upload a photo; the palette is extracted, closest paints suggested; try base coats, washes, drybrushing and edge highlights on the model itself; export or share the scheme. Images stay in the browser.
+- [Paint scheme planner](${SITE}/paint): upload a photo; the palette is extracted, closest paints suggested; try base coats, washes, drybrushing and edge highlights on the model itself; export or share the scheme. Images stay in the browser unless the player saves or publishes them.
 - [Beginner guide](${SITE}/paint/beginner): one photo, five classic steps, a shopping list and a store nearby.
 
 ## Play

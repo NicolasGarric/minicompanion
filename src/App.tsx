@@ -18,6 +18,8 @@ import { Stats } from './core/pages/Stats';
 import { Stores } from './core/stores/StoresPage';
 import { SignInPage } from './core/auth/SignInPage';
 import { AccountPage } from './core/auth/AccountPage';
+import { PasswordPage } from './core/auth/PasswordPage';
+import { NotFound } from './core/pages/NotFound';
 import { PaintHome } from './paint/pages/PaintHome';
 import { Editor } from './paint/pages/Editor';
 import { Beginner } from './paint/pages/Beginner';
@@ -130,12 +132,14 @@ function Page({ route }: { route: Route }) {
     case 'dice': return <DiceStats />;
     case 'signin': return <SignInPage />;
     case 'account': return <AccountPage />;
+    case 'password': return <PasswordPage />;
     case 'legal': return <Legal />;
     case 'support': return <SupportPage />;
     case 'stats': return <Stats />;
     case 'admin.bugs': return <BugReportsAdmin />;
     case 'admin.suggestions': return <SuggestionsAdmin />;
     case 'admin': return <AdminDashboard />;
+    case 'notFound': return <NotFound />;
     default: return <Home />;
   }
 }
