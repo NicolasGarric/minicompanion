@@ -37,6 +37,14 @@ export function zoneInfo(zone: string): (Point & { country: string }) | null {
   return { country, lat: Number(lat), lng: Number(lng) };
 }
 
+/** A main city of a country (its first time zone), to open a map there. */
+export function countryPoint(code: string): Point | null {
+  const row = TIMEZONES.split(';').find((r) => r.split(',')[1] === code);
+  if (!row) return null;
+  const [, , lat, lng] = row.split(',');
+  return { lat: Number(lat), lng: Number(lng) };
+}
+
 /** Time zone of this device ("Europe/Paris"). */
 export const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 

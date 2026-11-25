@@ -172,7 +172,7 @@ export function PlayHome() {
             </select>
           </label>
         </div>
-        <CityPicker id="tour-city-search" value="" onPick={(c) => (setCity(c), setOrigin('city'))} />
+        <CityPicker id="tour-city-search" needPlace value="" onPick={(c) => c.place && (setCity({ name: c.name, ...c.place }), setOrigin('city'))} />
         <div className="field-row wrap">
           <button type="button" className="btn small" disabled={geo === 'loading'} onClick={aroundMe}>
             <Icon name="map" size={14} /> {geo === 'loading' ? t('stores.locating') : t('play.aroundMe')}

@@ -1658,3 +1658,5 @@ p.pile-sync { display: block; }
 .city-results li + li { border-top: 1px solid var(--border); }
 .city-results button { width: 100%; min-height: 2.75rem; padding: 0.5rem 0.75rem; text-align: left; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .city-results button:hover, .city-results button:focus-visible { background: color-mix(in srgb, var(--ink3) 45%, transparent); }
+.city-map { height: 14rem; border: 2px solid var(--border); border-radius: var(--radius); z-index: 0; }
+.city-manual-link { justify-self: start; min-height: 2rem; }

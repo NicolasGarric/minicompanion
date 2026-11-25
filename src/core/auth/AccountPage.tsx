@@ -93,7 +93,7 @@ export function AccountPage() {
           <CityPicker
             id="home-city"
             value={form.home_city}
-            onPick={(c) => (setForm({ ...form, home_city: c.name }), setPlace({ lat: c.lat, lng: c.lng }))}
+            onPick={(c) => (setForm({ ...form, home_city: c.name }), setPlace(c.place))}
             onClear={() => (setForm({ ...form, home_city: '' }), setPlace(null))}
           />
         </div>

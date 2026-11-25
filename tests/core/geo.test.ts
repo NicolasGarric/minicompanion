@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePoint, toPoint, zoneInfo } from '../../src/core/lib/geo.ts';
+import { countryPoint, parsePoint, toPoint, zoneInfo } from '../../src/core/lib/geo.ts';
 import { toCities } from '../../src/core/stores/stores.ts';
 
 const ewkb = (lng: number, lat: number) => {
@@ -25,6 +25,8 @@ test('a time zone gives a country and a place, old names included', () => {
   assert.equal(zoneInfo('Asia/Tokyo')?.country, 'JP');
   assert.equal(zoneInfo('Asia/Calcutta')?.country, 'IN');
   assert.ok(Math.abs(zoneInfo('America/Argentina/Buenos_Aires')!.lat + 34.6) < 0.2);
+  assert.ok(Math.abs(countryPoint('BE')!.lat - 50.8) < 0.2);
+  assert.equal(countryPoint('??'), null);
   assert.equal(zoneInfo('UTC'), null);
   assert.equal(zoneInfo(''), null);
 });

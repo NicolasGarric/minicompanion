@@ -181,7 +181,7 @@ export function TournamentNew() {
             </label>
             <div className="field">
               <span>{t('games.city')}</span>
-              <CityPicker id="tour-city" value={city?.name ?? ''} onPick={(c) => (setPicked(c), setError(null))} />
+              <CityPicker id="tour-city" needPlace value={city?.name ?? ''} onPick={(c) => c.place && (setPicked({ name: c.name, country: c.country, ...c.place }), setError(null))} />
             </div>
             <label className="field">
               <span>{t('tour.addressLabel')}</span>
