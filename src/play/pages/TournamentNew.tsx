@@ -3,8 +3,9 @@ import { k, LANGS, useT, useLang } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
-import { requireSignIn, useSession } from '../../core/auth/session';
-import { CITIES } from '../../core/data/cities';
+import { homePoint, requireSignIn, useSession } from '../../core/auth/session';
+import { deviceZone, toPoint } from '../../core/lib/geo';
+import { CityPicker, useCityLabel } from '../../core/ui/CityPicker';
 import { playError } from '../lib/games';
 import { suggestedSwissRounds } from '../lib/pairing';
 import { createTournament, setRoundSchedule, storesWithPlace } from '../lib/tournaments';
@@ -16,12 +17,15 @@ const slugify = (s: string) =>
 export function TournamentNew() {
   const t = useT();
   const lang = useLang((s) => s.lang);
-  const { ready, session } = useSession();
+  const { ready, session, profile } = useSession();
+  const cityLabel = useCityLabel();
+  // null = the player's home city until another one is chosen
+  const [picked, setPicked] = useState<{ name: string; country: string; lat: number; lng: number } | null>(null);
   const [stores, setStores] = useState<Awaited<ReturnType<typeof storesWithPlace>>>([]);
   const start = new Date(Date.now() + 14 * 864e5);
   start.setHours(13, 0, 0, 0);
   const [f, setF] = useState({
-    name: '', game_system: '', description: '', store_id: '', venue_name: '', address: '', city: 'Tokyo',
+    name: '', game_system: '', description: '', store_id: '', venue_name: '', address: '',
     starts_at: local(start), hours: '6', format_id: 'clash', type: 'casual', language: lang as string, max_players: '16',
     rounds_planned: String(suggestedSwissRounds(16)), lists_visibility: 'hidden_until_start', twitch_channel: '',
   });
@@ -39,18 +43,20 @@ export function TournamentNew() {
   if (!backendConfigured) return <BackendNotice />;
   const set = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
   const store = stores.find((s) => s.id === f.store_id);
+  const home = homePoint(profile);
+  const city = picked ?? (profile?.home_city && home ? { name: profile.home_city, country: '', ...home } : null);
   const schedule = multiDay ? fitDrafts(f.starts_at, Math.max(1, Math.min(10, Number(f.rounds_planned) || 1)), drafts) : [];
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
+    if (!store && !city) return setError('no_city');
     setBusy(true);
     setError(null);
     try {
       const startsAt = new Date(f.starts_at);
-      const city = CITIES.find((c) => c.id === f.city);
-      // Location: the store's point, or the city centre (only used for distance searches).
-      const location = store?.location ?? `SRID=4326;POINT(${city?.lng ?? 139.7671} ${city?.lat ?? 35.6812})`;
+      // Location: the store's point, or the city centre (only used for the map and distance searches).
+      const location = store?.location ?? toPoint(city!);
       const created = await createTournament({
         slug: `${slugify(f.name)}-${Math.random().toString(36).slice(2, 6)}`,
         name: f.name.trim(),
@@ -58,7 +64,7 @@ export function TournamentNew() {
         organiser_id: session.user.id,
         store_id: store?.id ?? null,
         venue_name: store?.name ?? f.venue_name.trim(),
-        address: store?.address ?? `${f.address.trim()}, ${f.city}`,
+        address: store?.address ?? [f.address.trim(), cityLabel(city!.name), city!.country].filter(Boolean).join(', '),
         location,
         starts_at: startsAt.toISOString(),
         ends_at: new Date(startsAt.getTime() + Number(f.hours) * 36e5).toISOString(),
@@ -147,7 +153,7 @@ export function TournamentNew() {
             <input className="text-input" type="number" min={1} max={48} value={f.hours} onChange={(e) => set({ hours: e.target.value })} />
           </label>
         </div>
-        <p className="hint">{t('tour.deadlinesHint')}</p>
+        <p className="hint">{t('tour.deadlinesHint')} {t('play.timezone', { zone: deviceZone() })}</p>
         <label className="check">
           <input type="checkbox" checked={multiDay} onChange={(e) => setMultiDay(e.target.checked)} />
           <span>{t('tour.multiDay')}</span>
@@ -173,12 +179,10 @@ export function TournamentNew() {
               <span>{t('tour.venue')}</span>
               <input className="text-input" required maxLength={80} value={f.venue_name} onChange={(e) => set({ venue_name: e.target.value })} />
             </label>
-            <label className="field">
+            <div className="field">
               <span>{t('games.city')}</span>
-              <select className="select" value={f.city} onChange={(e) => set({ city: e.target.value })}>
-                {CITIES.map((c) => <option key={c.id} value={c.id}>{t(k(`city.${c.id}`))}</option>)}
-              </select>
-            </label>
+              <CityPicker id="tour-city" value={city?.name ?? ''} onPick={(c) => (setPicked(c), setError(null))} />
+            </div>
             <label className="field">
               <span>{t('tour.addressLabel')}</span>
               <input className="text-input" required maxLength={150} value={f.address} onChange={(e) => set({ address: e.target.value })} />
@@ -201,7 +205,7 @@ export function TournamentNew() {
           </label>
         </div>
 
-        {error && <p className="error" role="alert">{t(k(`games.error.${error}`))}</p>}
+        {error && <p className="error" role="alert">{error === 'no_city' ? t('city.required') : t(k(`games.error.${error}`))}</p>}
         <div className="nav-row">
           <a className="btn ghost" href="/play">{t('common.back')}</a>
           <button className="btn primary" disabled={busy}>{t('tour.createDraft')}</button>

@@ -43,7 +43,7 @@ const DICTS = { en, fr, es, de, it, pt, ja, zh, ko };
 const tr = (lang, key) => DICTS[lang][key] ?? en[key] ?? key;
 const localeOf = (lang) => LANGS.find((l) => l.code === lang)?.locale ?? 'en-GB';
 const when = (iso, lang = 'en') =>
-  new Date(iso).toLocaleString(localeOf(lang), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Tokyo' }) + ' (JST)';
+  new Date(iso).toLocaleString(localeOf(lang), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) + ' (UTC)'; // events are worldwide; the app shows the reader's own time
 /** "play/t/x" in a language -> "ja/play/t/x" (no leading slash, as dist paths are written). */
 const langPath = (path, lang) => localizedPath(`/${path}`, lang).replace(/^\//, '');
 /** hreflang links of one page, x-default = English. */

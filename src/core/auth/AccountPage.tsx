@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { k, LANGS, useT, type Lang } from '../i18n';
-import { CITIES, cityById } from '../data/cities';
+import { LANGS, useT, type Lang } from '../i18n';
+import { CityPicker } from '../ui/CityPicker';
 import { requireSignIn, useSession } from './session';
 import { backendConfigured } from './supabase';
 import { BackendNotice } from './BackendNotice';
@@ -14,6 +14,8 @@ export function AccountPage() {
   const t = useT();
   const { ready, session, profile, updateProfile, signOut } = useSession();
   const [form, setForm] = useState({ display_name: '', handle: '', home_city: '', preferred_lang: 'en' as Lang, factions: '' });
+  // Where the home city is: undefined = not changed, null = removed
+  const [place, setPlace] = useState<{ lat: number; lng: number } | null | undefined>(undefined);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | string>('idle');
 
   useEffect(() => {
@@ -22,6 +24,7 @@ export function AccountPage() {
 
   useEffect(() => {
     if (!profile) return;
+    setPlace(undefined);
     setForm({
       display_name: profile.display_name,
       handle: profile.handle,
@@ -37,12 +40,11 @@ export function AccountPage() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('saving');
-    const city = cityById(form.home_city);
     const r = await updateProfile({
       display_name: form.display_name.trim(),
       handle: form.handle.trim().toLowerCase(),
       home_city: form.home_city || null,
-      home_location: city ? { lat: city.lat, lng: city.lng } : null,
+      home_location: place,
       preferred_lang: form.preferred_lang,
       // Factions are free text typed by the player: no official list is shipped with the app.
       factions: form.factions.split(',').map((f) => f.trim()).filter(Boolean).slice(0, 10),
@@ -86,13 +88,15 @@ export function AccountPage() {
           <input className="text-input" required pattern="[a-z0-9_]{3,24}" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
           <small className="hint">{t('profile.handleHint')}</small>
         </label>
-        <label className="field">
+        <div className="field">
           <span>{t('profile.city')}</span>
-          <select className="select" value={form.home_city} onChange={(e) => setForm({ ...form, home_city: e.target.value })}>
-            <option value="">{t('profile.cityNone')}</option>
-            {CITIES.map((c) => <option key={c.id} value={c.id}>{t(k(`city.${c.id}`))}</option>)}
-          </select>
-        </label>
+          <CityPicker
+            id="home-city"
+            value={form.home_city}
+            onPick={(c) => (setForm({ ...form, home_city: c.name }), setPlace({ lat: c.lat, lng: c.lng }))}
+            onClear={() => (setForm({ ...form, home_city: '' }), setPlace(null))}
+          />
+        </div>
         <label className="field">
           <span>{t('profile.lang')}</span>
           <select className="select" value={form.preferred_lang} onChange={(e) => setForm({ ...form, preferred_lang: e.target.value as Lang })}>

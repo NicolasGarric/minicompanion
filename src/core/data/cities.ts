@@ -1,5 +1,6 @@
 /**
- * Cities offered for the profile "home city" and the tournament city search.
+ * Cities with a translated name, kept under an English id in the database (profiles saved before the
+ * worldwide search). Any other city is found with the place search (CityPicker) and kept as written.
  * Coordinates are city centres; they only seed distance searches.
  */
 export interface City {

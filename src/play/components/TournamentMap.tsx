@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type * as Leaflet from 'leaflet';
 import { useT } from '../../core/i18n';
+import { deviceRegion } from '../../core/lib/geo';
 
 export interface MapPoint {
   id: string;
@@ -10,6 +11,12 @@ export interface MapPoint {
   lng: number;
   when: string;
 }
+
+/** Before any result: the part of the world this device's time zone is in. */
+const start = (): [[number, number], number] => {
+  const r = deviceRegion();
+  return r ? [[r.lat, r.lng], 6] : [[25, 10], 2];
+};
 
 /**
  * Tournaments on an OpenStreetMap map (Leaflet, loaded on first use). Pins are riso squares; the view
@@ -26,7 +33,7 @@ export function TournamentMap({ points, center, radiusKm }: { points: MapPoint[]
     Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]).then(([mod]) => {
       if (cancelled || !box.current) return;
       const L = (mod as unknown as { default?: typeof Leaflet }).default ?? (mod as unknown as typeof Leaflet);
-      const m = L.map(box.current, { scrollWheelZoom: false, zoomControl: true }).setView([35.68, 139.76], 10);
+      const m = L.map(box.current, { scrollWheelZoom: false, zoomControl: true }).setView(...start());
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',

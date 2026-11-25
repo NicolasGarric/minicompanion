@@ -4,8 +4,8 @@ import { distanceKm, loadShops, osmElementUrl, searchPlace, SHOP_KINDS, type Sho
 import { track } from '../analytics';
 import { k, useLang, useT } from '../i18n';
 import { Icon } from '../ui/ui';
-import { CITIES } from '../data/cities';
-import { useSession } from '../auth/session';
+import { homePoint, useSession } from '../auth/session';
+import { deviceRegion } from '../lib/geo';
 
 const MAX_LISTED = 40;
 const KIND_COLOR: Record<ShopKind, string> = { games: '#ff4f7b', model: '#1d2a5b', hobby: '#ffd23f' };
@@ -22,7 +22,7 @@ interface View {
 export function StoreFinder() {
   const t = useT();
   const lang = useLang((s) => s.lang);
-  const homeCity = useSession((s) => s.profile?.home_city ?? '');
+  const profile = useSession((s) => s.profile);
   const [shops, setShops] = useState<Store[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [kinds, setKinds] = useState<ShopKind[]>(SHOP_KINDS);
@@ -50,8 +50,9 @@ export function StoreFinder() {
     Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]).then(([mod]) => {
       if (cancelled || !box.current) return;
       const L = (mod as unknown as { default?: typeof Leaflet }).default ?? (mod as unknown as typeof Leaflet);
-      const start = CITIES.find((c) => c.id === homeCity) ?? CITIES[0];
-      const m = L.map(box.current, { preferCanvas: true, scrollWheelZoom: false }).setView([start.lat, start.lng], 12);
+      // The player's city, else the main city of this device's time zone, else the world
+      const start = homePoint(profile) ?? deviceRegion();
+      const m = L.map(box.current, { preferCanvas: true, scrollWheelZoom: false }).setView(start ? [start.lat, start.lng] : [25, 10], start ? 11 : 2);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',

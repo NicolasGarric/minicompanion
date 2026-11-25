@@ -198,7 +198,7 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
     <>
       <section className="card game-facts">
         <p>
-          <Icon name="calendar" size={16} /> {formatWhen(tour.starts_at, lang)} →{' '}
+          <Icon name="calendar" size={16} /> {formatWhen(tour.starts_at, lang, true)} →{' '}
           {schedule.length > 1
             ? formatWhen(schedule[schedule.length - 1].starts_at, lang)
             : new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(tour.ends_at))}

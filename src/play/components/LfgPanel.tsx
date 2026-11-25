@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
 import { useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
-import { countryName, sortedCountries } from '../lib/countries';
+import { countryName, likelyCountry, sortedCountries } from '../lib/countries';
 import type { GameFilters, GameLevel } from '../lib/games';
 import { closePost, createPost, listPosts, playError, type LfgPost } from '../lib/social';
 
@@ -87,7 +87,7 @@ function LfgForm({ me, onDone }: { me: string; onDone: () => void }) {
   const t = useT();
   const lang = useLang((s) => s.lang);
   const countries = useMemo(() => sortedCountries(lang), [lang]);
-  const [f, setF] = useState({ game_system: '', format: '', level: 'casual' as GameLevel, country: 'JP', city: '', area: '', from_date: today(), to_date: inDays(14), note: '' });
+  const [f, setF] = useState({ game_system: '', format: '', level: 'casual' as GameLevel, country: likelyCountry(), city: '', area: '', from_date: today(), to_date: inDays(14), note: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const set = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));

@@ -1,3 +1,5 @@
+import { deviceRegion } from '../../core/lib/geo';
+
 /**
  * ISO 3166-1 alpha-2 codes; names come from the browser (Intl.DisplayNames) in the UI language,
  * so no translated list is shipped.
@@ -19,8 +21,14 @@ export function countryName(code: string, lang: string): string {
   }
 }
 
+/** Country of this device's time zone, to preselect it; Japan when unknown. */
+export const likelyCountry = () => {
+  const c = deviceRegion()?.country;
+  return c && COUNTRY_CODES.includes(c) ? c : 'JP';
+};
+
 /** Codes sorted by their name in `lang`, with the most likely ones first. */
-export function sortedCountries(lang: string, first: string[] = ['JP']): { code: string; name: string }[] {
+export function sortedCountries(lang: string, first: string[] = [likelyCountry()]): { code: string; name: string }[] {
   const all = COUNTRY_CODES.map((code) => ({ code, name: countryName(code, lang) }));
   all.sort((a, b) => a.name.localeCompare(b.name, lang));
   return [...first.map((c) => all.find((x) => x.code === c)!).filter(Boolean), ...all.filter((x) => !first.includes(x.code))];

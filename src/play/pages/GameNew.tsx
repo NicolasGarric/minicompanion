@@ -5,7 +5,8 @@ import { backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { CITIES } from '../../core/data/cities';
-import { sortedCountries } from '../lib/countries';
+import { deviceZone } from '../../core/lib/geo';
+import { likelyCountry, sortedCountries } from '../lib/countries';
 import { createGame, gameError, listStores, popularTexts, type NewGame } from '../lib/games';
 import { listLeagues, myLeagues, type League } from '../lib/social';
 
@@ -32,7 +33,7 @@ export function GameNew() {
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({
     game_system: '', format: '', points: '', starts_at: defaultStart(), duration_minutes: '120', max_players: '2',
-    level: 'casual', language: lang, country: 'JP', city: profile?.home_city ?? '', area: '', address: '', store_id: '', note: '',
+    level: 'casual', language: lang, country: likelyCountry(), city: profile?.home_city ?? '', area: '', address: '', store_id: '', note: '',
     league_id: new URLSearchParams(location.search).get('league') ?? '',
   });
 
@@ -159,6 +160,8 @@ export function GameNew() {
             </select>
           </label>
         </div>
+
+        <p className="hint">{t('play.timezone', { zone: deviceZone() })}</p>
 
         <h2>{t('games.sectionWhere')}</h2>
         {stores.length > 0 && (

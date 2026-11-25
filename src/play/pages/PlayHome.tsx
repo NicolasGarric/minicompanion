@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { k, useLang, useT } from '../../core/i18n';
-import { CITIES } from '../../core/data/cities';
+import { CityPicker, useCityLabel } from '../../core/ui/CityPicker';
 import { TournamentMap } from '../components/TournamentMap';
 import { playError } from '../lib/games';
-import { useSession } from '../../core/auth/session';
+import { homePoint, useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
 import { supabase, backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
@@ -27,7 +27,7 @@ interface TournamentRow {
 
 const FORMATS = ['skirmish', 'clash', 'battle'];
 const TYPES = ['beginner', 'casual', 'competitive', 'narrative', 'painting_contest'];
-const RADII = [5, 15, 50];
+const RADII = [5, 15, 50, 150, 500];
 
 /** Great-circle distance in km (the list is small: filtering happens in the browser). */
 function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
@@ -49,11 +49,14 @@ export function PlayHome() {
   const [live, setLive] = useState<{ slug: string; name: string; game_system: string | null; venue_name: string }[]>([]);
   const [mine, setMine] = useState<{ slug: string; name: string; status: string; starts_at: string }[]>([]);
   const session = useSession((s) => s.session);
-  const homeCity = useSession((s) => s.profile?.home_city ?? '');
-  const [origin, setOrigin] = useState<string | null>(null); // city id, 'me' or '' (anywhere); null = not chosen yet
+  const profile = useSession((s) => s.profile);
+  const home = useMemo(() => (profile?.home_city ? homePoint(profile) : null), [profile]);
+  const cityLabel = useCityLabel();
+  const [origin, setOrigin] = useState<'home' | 'city' | 'me' | '' | null>(null); // '' = anywhere; null = not chosen yet
+  const [city, setCity] = useState<{ name: string; lat: number; lng: number } | null>(null);
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const [geo, setGeo] = useState<'idle' | 'loading' | 'denied'>('idle');
-  const [radius, setRadius] = useState(15);
+  const [radius, setRadius] = useState(50);
   const [format, setFormat] = useState('');
   const [type, setType] = useState('');
 
@@ -74,8 +77,8 @@ export function PlayHome() {
       .then(({ data }) => setMine(data ?? []));
   }, [session]);
 
-  const from = origin ?? homeCity; // starts on the profile's city
-  const center = from === 'me' ? here : CITIES.find((c) => c.id === from) ?? null;
+  const from = origin ?? (home ? 'home' : ''); // starts on the profile's city
+  const center = from === 'me' ? here : from === 'home' ? home : from === 'city' ? city : null;
   const shown = useMemo(
     () =>
       (rows ?? [])
@@ -140,10 +143,11 @@ export function PlayHome() {
         <div className="field-grid">
           <label className="field">
             <span>{t('stores.city')}</span>
-            <select className="select" value={from} onChange={(e) => setOrigin(e.target.value)}>
+            <select className="select" value={from} onChange={(e) => setOrigin(e.target.value as typeof from)}>
               <option value="">{t('stores.allCities')}</option>
               {here && <option value="me">{t('stores.nearMe')}</option>}
-              {CITIES.map((c) => <option key={c.id} value={c.id}>{t(k(`city.${c.id}`))}</option>)}
+              {home && <option value="home">{cityLabel(profile!.home_city!)}</option>}
+              {city && <option value="city">{cityLabel(city.name)}</option>}
             </select>
           </label>
           <label className="field">
@@ -168,6 +172,7 @@ export function PlayHome() {
             </select>
           </label>
         </div>
+        <CityPicker id="tour-city-search" value="" onPick={(c) => (setCity(c), setOrigin('city'))} />
         <div className="field-row wrap">
           <button type="button" className="btn small" disabled={geo === 'loading'} onClick={aroundMe}>
             <Icon name="map" size={14} /> {geo === 'loading' ? t('stores.locating') : t('play.aroundMe')}

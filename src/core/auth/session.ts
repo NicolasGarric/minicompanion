@@ -3,6 +3,8 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { useLang, type Lang } from '../i18n';
 import { currentPath, navigate } from '../router';
+import { cityById } from '../data/cities';
+import { parsePoint, toPoint, type Point } from '../lib/geo';
 
 export interface Profile {
   id: string;
@@ -10,6 +12,8 @@ export interface Profile {
   display_name: string;
   avatar_path: string | null;
   home_city: string | null;
+  /** PostGIS point, own profile only */
+  home_location?: string | null;
   preferred_lang: Lang;
   factions: string[];
   is_admin: boolean;
@@ -58,9 +62,6 @@ function takeRecovery(): boolean {
 
 // Always the site root (the address allowed in Supabase); the page to return to is kept in sessionStorage.
 const redirectUrl = () => `${location.origin}/`;
-
-/** PostGIS accepts EWKT for geography columns. */
-const toPoint = (p: { lat: number; lng: number }) => `SRID=4326;POINT(${p.lng} ${p.lat})`;
 
 export const useSession = create<SessionState>((set, get) => ({
   ready: !supabase,
@@ -189,6 +190,11 @@ export const useSession = create<SessionState>((set, get) => ({
     return {};
   },
 }));
+
+/** Centre of the player's home city, for maps and distances. */
+export function homePoint(profile: Profile | null): Point | null {
+  return parsePoint(profile?.home_location) ?? cityById(profile?.home_city) ?? null;
+}
 
 /** Remember where to come back to after signing in, then open the sign-in page. */
 export function requireSignIn() {

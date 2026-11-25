@@ -73,3 +73,45 @@ export async function searchPlace(q: string, lang: string): Promise<{ bounds: [[
   const [s, n, w, e] = hit.boundingbox.map(Number);
   return { bounds: [[s, w], [n, e]] };
 }
+
+/** A city found by the search. */
+export interface FoundCity {
+  name: string;
+  /** Region, then country, to tell namesakes apart */
+  region: string;
+  country: string;
+  countryCode: string;
+  lat: number;
+  lng: number;
+}
+
+interface NominatimCity {
+  name: string;
+  lat: string;
+  lon: string;
+  address: { state?: string; region?: string; country?: string; country_code?: string };
+  namedetails?: Record<string, string> | null;
+}
+
+/** Search results as cities: no duplicates, and the cities known under an English id keep that id. */
+export function toCities(hits: NominatimCity[], knownIds: string[]): FoundCity[] {
+  const out: FoundCity[] = [];
+  for (const h of hits) {
+    const lat = Number(h.lat), lng = Number(h.lon);
+    const countryCode = (h.address?.country_code ?? '').toUpperCase();
+    if (!h.name || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const en = h.namedetails?.['name:en'];
+    const name = countryCode === 'JP' && en && knownIds.includes(en) ? en : h.name;
+    const c = { name: name.slice(0, 80), region: h.address?.state ?? h.address?.region ?? '', country: h.address?.country ?? '', countryCode, lat, lng };
+    if (!out.some((x) => x.name === c.name && x.region === c.region && x.countryCode === c.countryCode)) out.push(c);
+  }
+  return out;
+}
+
+/** Cities of any country (OpenStreetMap Nominatim): same rules as searchPlace, on submit only. */
+export async function searchCities(q: string, lang: string, knownIds: string[]): Promise<FoundCity[]> {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&namedetails=1&featureType=city&accept-language=${encodeURIComponent(lang)}&q=${encodeURIComponent(q)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`search ${res.status}`);
+  return toCities((await res.json()) as NominatimCity[], knownIds);
+}

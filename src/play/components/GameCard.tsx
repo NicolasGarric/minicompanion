@@ -2,8 +2,9 @@ import { k, useLang, useT } from '../../core/i18n';
 import { countryName } from '../lib/countries';
 import type { Game, JoinStatus } from '../lib/games';
 
-export function formatWhen(iso: string, lang: string) {
-  return new Intl.DateTimeFormat(lang, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+/** Date and time on this device's clock; `zone` adds its short name ("GMT+9"), for events far away. */
+export function formatWhen(iso: string, lang: string, zone = false) {
+  return new Intl.DateTimeFormat(lang, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', ...(zone && { timeZoneName: 'short' }) }).format(new Date(iso));
 }
 
 /** One game in a list: what, when, where, seats. */
