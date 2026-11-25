@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
 import { SuggestionsAdmin } from './core/feedback/SuggestionsAdmin';
 import { DeckPage, Decks, OnlineDeckPage } from './paint/pages/Decks';
@@ -169,6 +170,7 @@ export default function App() {
       <>
         <Editor />
         <Toasts />
+        <Analytics />
       </>
     );
   }
@@ -179,6 +181,7 @@ export default function App() {
         <Page route={route} />
       </Shell>
       <Toasts />
+      <Analytics />
     </>
   );
 }
