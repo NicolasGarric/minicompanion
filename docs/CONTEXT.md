@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-11-25 (audit fixes: password reset, account deletion, privacy text, storage ceilings; migration 28 to apply)
+> Last update: 2026-11-25 (audit fixes: password reset, account deletion, privacy text, storage ceilings; migration 28 applied)
 
 ## What it is
 
@@ -523,7 +523,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     "After the game" card for the host, Finished / Private tags, `GameComments.tsx`, "Recent results" on Quick play
     (public confirmed games). Without migration 27 the new parts stay hidden (`is_public` undefined).
 
-40. **Audit fixes (2026-11-25, owner request)**, migration 28 **to apply** (34 SQL tests `supabase/tests/zz_account.sql`, run last because
+40. **Audit fixes (2026-11-25, owner request)**, migration 28 applied by the owner the same day, live check all OK (34 SQL tests `supabase/tests/zz_account.sql`, run last because
     they delete every demo player; live check `supabase/checks/account_check.sql` = `resources/supabase/6_account_check.sql`):
     - **Password**: "Forgot your password?" on the sign-in page (link by e-mail to the site root, a mark in localStorage tells the app
       the returning `?code=` is a reset), page `/password` (also "Change my password" in My account, current password asked); the
