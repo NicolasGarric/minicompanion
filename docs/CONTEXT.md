@@ -582,6 +582,9 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 
 - WSL + Node 22: npm hangs with ETIMEDOUT because of IPv4/IPv6 auto-selection. Fix:
   `export NODE_OPTIONS=--no-network-family-autoselection`.
+- SQL tests: the system Postgres (port 5432) asks for a password. Use a throwaway cluster instead:
+  `initdb -D <dir> -U postgres -A trust`, then `pg_ctl -D <dir> -o "-p 5499 -k '' -c listen_addresses=127.0.0.1" start`
+  (`-k ''`: the socket path would be too long in the scratch folder), then `PGPORT=5499 supabase/tests/local/run.sh`.
 
 ## How to run
 
