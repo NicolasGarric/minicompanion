@@ -33,7 +33,7 @@
 Each delivery = one migration (tables, RLS, `SECURITY DEFINER` functions, SQL tests) + screens + 9 languages,
 shipped and checked before the next one.
 
-### Delivery 1 — Core + chat + calendar (migration 29) — DONE 2026-11-27, migration to apply
+### Delivery 1 — Core + chat + calendar (migration 29) — DONE 2026-11-27, migration 29 applied the same day
 
 Built: migration `20261127000029_companies.sql` (+81 SQL tests `supabase/tests/rls_companies.sql`), pages
 `/play/companies` (my Companies, invitations, search, creation), `/play/c/<slug>` (tabs Home / Chat / Calendar /

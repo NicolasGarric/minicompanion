@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-11-27 (Companies delivery 1: migration 29 to apply; cookies added to the open points)
+> Last update: 2026-11-27 (Companies delivery 1: migration 29 applied; cookies added to the open points)
 
 ## What it is
 
@@ -552,7 +552,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
 42. **Cookies (2026-11-27, owner request: to look into)**: check what the app stores on the device (localStorage prefs and
     counters, IndexedDB projects, Supabase sign-in session, language) and whether a consent banner and a cookie / storage
     policy page are needed now or only before ads, affiliate links or third-party analytics (see "Cookies" in the to-do list below).
-43. **Companies, delivery 1 (2026-11-27, player request)**, migration 29 **to apply** (+81 SQL tests `supabase/tests/rls_companies.sql`;
+43. **Companies, delivery 1 (2026-11-27, player request)**, migration 29 applied by the owner the same day (+81 SQL tests `supabase/tests/rls_companies.sql`;
     `delete_my_account` redefined to leave Companies, zz_account still passes): player groups "Compagnie / Company" with crest generator,
     roles leader / officer / member / recruit, invitation by username, link + QR code (`/play/join/<token>`), open joining, member
     limit (default 50; an admin raises the ceiling with SQL `admin_set_company_ceiling`), main Company badge on player pages,
