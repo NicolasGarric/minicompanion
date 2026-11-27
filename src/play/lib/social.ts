@@ -368,7 +368,8 @@ export interface AppNotification {
   kind:
     | 'join_request' | 'join_answer' | 'game_match' | 'report_to_confirm' | 'report_answer' | 'message' | 'game_message' | 'league_game'
     | 'round_paired' | 'match_to_confirm' | 'match_answer' | 'round_schedule' | 'contest_results'
-    | 'mentor_request' | 'mentor_answer' | 'game_deleted' | 'suggestion';
+    | 'mentor_request' | 'mentor_answer' | 'game_deleted' | 'suggestion' | 'game_finished' | 'game_comment'
+    | 'company_invite' | 'company_role' | 'company_leader' | 'company_event' | 'company_announcement' | 'company_removed' | 'company_dissolved';
   payload: Record<string, string>;
   read_at: string | null;
   created_at: string;

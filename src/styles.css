@@ -1660,3 +1660,52 @@ p.pile-sync { display: block; }
 .city-results button:hover, .city-results button:focus-visible { background: color-mix(in srgb, var(--ink3) 45%, transparent); }
 .city-map { height: 14rem; border: 2px solid var(--border); border-radius: var(--radius); z-index: 0; }
 .city-manual-link { justify-self: start; min-height: 2rem; }
+
+/* ---------- Companies ---------- */
+.pre-line { white-space: pre-line; overflow-wrap: anywhere; }
+.check-line { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; margin-top: 0.5rem; }
+.crest { flex: none; display: block; }
+.company-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); margin-bottom: 1rem; }
+.company-tile { display: flex; gap: 0.75rem; align-items: center; margin: 0; color: inherit; text-decoration: none; }
+.company-tile:hover { border-color: var(--ink2); }
+.company-tile > div { flex: 1; display: grid; min-width: 0; }
+.company-tile strong { overflow-wrap: anywhere; }
+.company-search { display: grid; gap: 0.5rem; margin-bottom: 1rem; }
+.company-invite { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 0.75rem; }
+.company-invite p { flex: 1; margin: 0; min-width: 10rem; }
+.company-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.company-head > div:nth-child(2) { flex: 1; min-width: 12rem; }
+.company-head h1 { margin: 0; overflow-wrap: anywhere; }
+.company-head p { margin: 0.25rem 0; }
+.company-actions { display: grid; gap: 0.4rem; justify-items: start; }
+.company-page .view-switch { margin-bottom: 1rem; }
+.company-foot { margin-top: 1.5rem; }
+.company-announcements { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.company-announcements p { margin: 0 0 0.2rem; }
+.chat-list li.announce { border-left: 3px solid var(--ink3); }
+.chat-list li.hidden-msg { opacity: 0.6; }
+.chat-tools { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.chat-tools .link-button { font-size: 0.75rem; color: var(--muted); }
+.company-events { list-style: none; margin: 1rem 0 0; padding: 0; }
+.company-events .card-head small { display: block; }
+.company-members { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.5rem; }
+.company-members li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.company-members li > a, .company-members li > span:first-child { flex: 1; min-width: 8rem; }
+.tag.role-leader { background: var(--ink2); color: var(--paper); }
+.tag.role-officer { background: color-mix(in srgb, var(--ink1) 25%, var(--surface)); }
+.company-link input[readonly] { flex: 1; min-width: 0; }
+.company-qr { display: block; margin: 0.75rem 0; image-rendering: pixelated; border: 2px solid var(--ink2); }
+.company-join { display: grid; justify-items: center; text-align: center; gap: 0.5rem; }
+.company-join h1 { margin: 0; }
+.crest-editor-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.crest-controls { flex: 1; min-width: 14rem; display: grid; gap: 0.4rem; }
+.crest-step { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.4rem; text-align: center; font-size: 0.8125rem; }
+.crest-inks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.crest-inks small { flex-basis: 100%; }
+.ink-dot { width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; padding: 0; }
+.ink-dot.on { border-color: var(--ink2); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink2); }
+.company-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; padding: 0.15rem 0.6rem 0.15rem 0.3rem; border: 1px solid var(--border); border-radius: 1rem; color: var(--text); text-decoration: none; }
+.company-badge.main { border-color: var(--ink2); font-weight: 700; }
+@media (min-width: 40rem) {
+  .company-search { grid-template-columns: 2fr 1.2fr 1fr auto auto; align-items: center; }
+}

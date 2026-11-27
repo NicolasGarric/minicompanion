@@ -38,6 +38,8 @@ import { Campaigns } from './play/pages/Campaigns';
 import { CampaignPage } from './play/pages/CampaignPage';
 import { Mentors } from './play/pages/Mentors';
 import { Swap } from './play/pages/Swap';
+import { Companies, CompanyJoin } from './play/pages/Companies';
+import { CompanyPage } from './play/pages/CompanyPage';
 import { LevelPage } from './me/LevelPage';
 import { PlayerCard } from './me/PlayerCard';
 import { YearInReview } from './me/YearInReview';
@@ -110,6 +112,9 @@ function Page({ route }: { route: Route }) {
     case 'play.campaign': return <CampaignPage id={route.params.id ?? ''} />;
     case 'play.mentors': return <Mentors />;
     case 'play.swap': return <Swap />;
+    case 'play.companies': return <Companies />;
+    case 'play.company': return <CompanyPage slug={route.params.slug ?? ''} />;
+    case 'play.companyJoin': return <CompanyJoin token={route.params.token ?? ''} />;
     case 'me.level': return <LevelPage />;
     case 'me.card': return <PlayerCard />;
     case 'me.year': return <YearInReview />;

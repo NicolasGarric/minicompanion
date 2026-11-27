@@ -362,7 +362,7 @@ function ContentTab() {
   return (
     <div className="admin-content">
       <div className="chips">
-        {(['swap', 'challenge', 'tournament', 'game', 'lfg'] as ContentType[]).map((x) => (
+        {(['swap', 'challenge', 'tournament', 'game', 'lfg', 'company'] as ContentType[]).map((x) => (
           <button key={x} className={`chip ${type === x ? 'on' : ''}`} aria-pressed={type === x} onClick={() => setType(x)}>{t(k(`admin.target.${x}`))}</button>
         ))}
       </div>

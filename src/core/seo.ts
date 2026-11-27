@@ -21,6 +21,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
   'play.campaigns': ['nc.title', 'nc.lead'],
   'play.mentors': ['mentor.title', 'mentor.lead'],
   'play.swap': ['swap.title', 'swap.lead'],
+  'play.companies': ['co.title', 'co.lead'],
   stores: ['stores.title', 'stores.lead'],
   legal: ['legal.title', 'legal.about'],
   support: ['support.button', 'support.lead'],
@@ -28,7 +29,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
 
 /** Personal or tool pages: useful to people, not to search results. */
 const PRIVATE: RouteName[] = [
-  'paint.editor', 'paint.shared', 'play.game', 'play.campaign', 'play.mine', 'play.new', 'play.tournament.new', 'play.tournament.tables', 'play.table',
+  'paint.editor', 'paint.shared', 'play.game', 'play.campaign', 'play.company', 'play.companyJoin', 'play.mine', 'play.new', 'play.tournament.new', 'play.tournament.tables', 'play.table',
   'messages', 'messages.thread', 'notifications', 'account', 'password', 'signin', 'stats', 'admin.bugs', 'admin.suggestions', 'admin', 'notFound',
   'paint.deck', 'paint.pile', 'paint.army', 'paint.decks', 'paint.deckPage', 'deck.online', 'paint.sessions', 'paint.shelf', 'me.level', 'me.card', 'me.year', 'play.rules',
 ];

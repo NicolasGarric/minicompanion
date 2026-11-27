@@ -13,6 +13,7 @@ import { useUnread } from '../../core/social/unread';
 function linkOf(n: AppNotification) {
   if (n.kind === 'message') return `/messages/${n.payload.from_id}`;
   if (n.kind === 'suggestion') return '/admin/suggestions';
+  if (n.kind.startsWith('company_')) return n.payload.company_slug ? `/play/c/${n.payload.company_slug}` : '/play/companies';
   if (n.kind.startsWith('mentor_')) return '/play/mentors';
   if (n.payload.slug) return `/play/t/${n.payload.slug}`;
   return n.payload.game_id ? `/play/game/${n.payload.game_id}` : '/play/quick';
@@ -80,13 +81,14 @@ export function Notifications() {
           {items.map((n) => (
             <li key={n.id} className={n.read_at ? '' : 'unread'}>
               <a href={linkOf(n)}>
-                {t(k(`notif.${n.kind}${['join_answer', 'report_answer', 'match_answer', 'mentor_answer'].includes(n.kind) ? `.${n.payload.status}` : ''}`), {
+                {t(k(`notif.${n.kind}${['join_answer', 'report_answer', 'match_answer', 'mentor_answer'].includes(n.kind) ? `.${n.payload.status}` : n.kind === 'company_role' ? `.${n.payload.role}` : ''}`), {
                   from: n.payload.from ?? '',
                   game: n.payload.game ?? '',
                   city: n.payload.city ?? '',
                   tournament: n.payload.tournament ?? '',
                   round: n.payload.round ?? '',
                   table: n.payload.table ?? '',
+                  company: n.payload.company ?? '',
                 })}
               </a>
               <small className="muted">{formatWhen(n.created_at, lang)}</small>

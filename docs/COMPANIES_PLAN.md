@@ -24,6 +24,8 @@
 | Joining | **Invitation**, **link / QR code**, **open**; the leader enables the ones they want (no "on request" mode) |
 | Leader leaves / deletes account | Passes to the **oldest officer**, else the oldest member; dissolved only when empty |
 | Narrative campaigns | **In V1**: a Company can be a faction on the hyperroute map |
+| Rankings (2026-11-27) | **No Company ranking for now** (tournaments "under the colours of" stay, without a ranking) |
+| Account deletion (2026-11-27) | Chat messages **stay, anonymised** ("Deleted player") |
 | Store link, recruitment marketing | **Not a priority**: no store link, no sponsorship, no beginner-path funnel |
 
 ## V1, in three deliveries
@@ -31,7 +33,18 @@
 Each delivery = one migration (tables, RLS, `SECURITY DEFINER` functions, SQL tests) + screens + 9 languages,
 shipped and checked before the next one.
 
-### Delivery 1 — Core + chat + calendar (migration 29)
+### Delivery 1 — Core + chat + calendar (migration 29) — DONE 2026-11-27, migration to apply
+
+Built: migration `20261127000029_companies.sql` (+81 SQL tests `supabase/tests/rls_companies.sql`), pages
+`/play/companies` (my Companies, invitations, search, creation), `/play/c/<slug>` (tabs Home / Chat / Calendar /
+Members / Settings), `/play/join/<token>` (link and QR code), crest generator (`src/play/components/Crest.tsx`),
+badges on player pages, notifications `company_*`, moderation in `/admin` (reports and content list), 9 languages
+(`// CHECK:` on the Japanese name カンパニー; Chinese 战团 and Korean 컴퍼니 to review too).
+Postponed from delivery 1: **uploaded crest image** with admin approval (needs a storage bucket, quota, cleanup and
+account-deletion rules: delivery 2), **calendar subscription feed** (webcal needs a server function; `.ics`
+download per event or for all upcoming events is done), polls in the chat.
+
+Plan as written before the build:
 
 - **Company**: name, slug, motto, city or "online", languages, games (free text), description, visibility,
   joining modes, member limit, opt-in to rankings / challenges.
@@ -60,8 +73,7 @@ shipped and checked before the next one.
   share cards.
 - **Internal mentoring**: suggest the Company's veterans as mentors to its recruits (existing mentoring).
 - **PLAY**:
-  - Register to a tournament "under the colours of" a Company; Company ranking on the tournament page
-    (from individual results, rule to fix: sum of the best N players).
+  - Register to a tournament "under the colours of" a Company (no Company ranking for now, owner 2026-11-27).
   - Quick games and LFG posts **visible to members only** (new visibility value), filter "my Companies".
   - **Company vs Company challenges**: a challenge with N games, each confirmed result counts, score shown on both
     Company pages.
@@ -84,5 +96,5 @@ Store link, sponsorship, map of Companies and beginner funnel stay out unless th
 ## Guard rails
 
 Reports and moderation in `/admin` (Companies, messages, crests), invitation and chat rate limits, photo quotas,
-account deletion rules (leader handover, messages kept anonymised or deleted: to decide in delivery 1),
+account deletion rules (leader handover, messages kept and anonymised),
 RLS tests for every rule (`supabase/tests/`), writes with business rules through `SECURITY DEFINER` functions.

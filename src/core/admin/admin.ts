@@ -25,7 +25,7 @@ export interface AdminReport {
   reporter_handle: string; target_label: string | null; owner_id: string | null; owner_handle: string | null; target_hidden: boolean | null; same_target: number;
 }
 export interface ContentRow { id: string; created_at: string; label: string; owner_handle: string; hidden: boolean; link: string }
-export type ContentType = 'swap' | 'challenge' | 'tournament' | 'game' | 'lfg';
+export type ContentType = 'swap' | 'challenge' | 'tournament' | 'game' | 'lfg' | 'company';
 
 export const overview = async () => must(await db().rpc('admin_overview')) as Overview;
 export const daily = async (days: number) => must(await db().rpc('admin_daily', { p_days: days })) as Day[];

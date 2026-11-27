@@ -133,6 +133,7 @@ const SUB_NAV: Record<'paint' | 'play', NavItem[]> = {
   play: [
     { href: '/play', key: 'nav.play.tournaments', active: (r) => r.name.startsWith('play.tournament') || r.name === 'play' || r.name === 'play.table' },
     { href: '/play/quick', key: 'nav.play.quick', active: (r) => r.name === 'play.quick' || r.name === 'play.game' || r.name === 'play.new' },
+    { href: '/play/companies', key: 'nav.play.companies', active: (r) => r.name === 'play.companies' || r.name === 'play.company' || r.name === 'play.companyJoin' },
     { href: '/play/leagues', key: 'nav.play.leagues', active: (r) => r.name === 'play.leagues' || r.name === 'play.league' },
     { href: '/play/mine', key: 'nav.play.mine', active: (r) => r.name === 'play.mine' },
     { href: '/play/campaigns', key: 'nav.play.campaigns', active: (r) => r.name === 'play.campaigns' || r.name === 'play.campaign' },

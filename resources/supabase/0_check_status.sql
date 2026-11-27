@@ -27,4 +27,5 @@ union all select 25 as n, '20261113000025_reference_links.sql' as migration, cas
 union all select 26 as n, '20261114000026_guest_results.sql' as migration, case when to_regclass('public.game_guest_results') is null then 'TO APPLY' else 'applied' end as state
 union all select 27 as n, '20261115000027_game_visibility_comments.sql' as migration, case when to_regclass('public.game_comments') is null then 'TO APPLY' else 'applied' end as state
 union all select 28 as n, '20261116000028_account_storage_fixes.sql' as migration, case when to_regproc('public.delete_my_account') is null then 'TO APPLY' else 'applied' end as state
+union all select 29 as n, '20261127000029_companies.sql' as migration, case when to_regclass('public.companies') is null then 'TO APPLY' else 'applied' end as state
 order by n;

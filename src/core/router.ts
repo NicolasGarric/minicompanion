@@ -35,6 +35,9 @@ export type RouteName =
   | 'play.campaign'
   | 'play.mentors'
   | 'play.swap'
+  | 'play.companies'
+  | 'play.company'
+  | 'play.companyJoin'
   | 'play.tournament.new'
   | 'play.tournament.tables'
   | 'play.table'
@@ -101,6 +104,9 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'play/campaign/:id', name: 'play.campaign', section: 'play' },
   { pattern: 'play/mentors', name: 'play.mentors', section: 'play' },
   { pattern: 'play/swap', name: 'play.swap', section: 'play' },
+  { pattern: 'play/companies', name: 'play.companies', section: 'play' },
+  { pattern: 'play/c/:slug', name: 'play.company', section: 'play' },
+  { pattern: 'play/join/:token', name: 'play.companyJoin', section: 'play' },
   { pattern: 'play/league/:id', name: 'play.league', section: 'play' },
   { pattern: 'play/store/:id', name: 'play.store', section: 'play' },
   { pattern: 'u/:handle', name: 'player', section: 'play' },
@@ -163,7 +169,7 @@ function current(): Route {
 /** Pages that exist in every language under a prefix ("/fr/play"): the indexable ones. */
 export const PUBLIC_ROUTES: ReadonlySet<RouteName> = new Set<RouteName>([
   'home', 'paint', 'paint.beginner', 'paint.challenges', 'play', 'play.quick', 'play.leagues', 'play.tablegen', 'play.campaigns', 'play.mentors',
-  'play.swap', 'play.tournament', 'dice', 'stores', 'legal', 'support',
+  'play.swap', 'play.companies', 'play.tournament', 'dice', 'stores', 'legal', 'support',
 ]);
 
 /**

@@ -8,6 +8,8 @@ import { useSession } from '../../core/auth/session';
 import { Avatar } from '../../core/ui/Avatar';
 import { Icon } from '../../core/ui/ui';
 import { formatWhen } from '../components/GameCard';
+import { Crest } from '../components/Crest';
+import { playerCompanies } from '../lib/companies';
 import type { Game } from '../lib/games';
 import { thumbOf } from '../../core/lib/photo';
 import {
@@ -36,6 +38,7 @@ export function PlayerProfile({ handle }: { handle: string }) {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [history, setHistory] = useState<{ game: Game; results: GameResult[] }[]>([]);
   const [gallery, setGallery] = useState<{ id: string; title: string; url?: string }[]>([]);
+  const [companies, setCompanies] = useState<Awaited<ReturnType<typeof playerCompanies>>>([]);
   useEffect(() => {
     // Private players stay out of search results.
     if (p) setPageMeta({ title: p.display_name, description: `@${p.handle}${p.factions?.length ? ` · ${p.factions.join(', ')}` : ''}`, noindex: !p.is_public });
@@ -48,6 +51,7 @@ export function PlayerProfile({ handle }: { handle: string }) {
         const prof = await profileByHandle(handle);
         setP(prof);
         if (!prof || (!prof.is_public && prof.id !== me)) return;
+        playerCompanies(prof.id).then(setCompanies, () => undefined);
         setStats(await statsOf(prof.id));
         setRatings(await ratingsOf(prof.id));
         setHistory(await historyOf(prof.id));
@@ -86,6 +90,15 @@ export function PlayerProfile({ handle }: { handle: string }) {
       ) : (
         <>
           {!p.is_public && mine && <p className="notice">{t('profile.privateMine')}</p>}
+          {companies.length > 0 && (
+            <p className="chips player-companies">
+              {companies.map((c) => (
+                <a key={c.slug} href={`/play/c/${c.slug}`} className={`company-badge ${c.is_main ? 'main' : ''}`}>
+                  <Crest crest={c.crest} size={18} /> {c.name}
+                </a>
+              ))}
+            </p>
+          )}
           {p.factions.length > 0 && <p className="chips">{p.factions.map((f) => <span key={f} className="tag">{f}</span>)}</p>}
 
           {stats && (
