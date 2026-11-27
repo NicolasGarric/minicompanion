@@ -2,6 +2,8 @@
 
 > Requested by a player who wants to **gather their local club**. Decisions taken by the owner on 2026-11-27.
 > Name in the app: **Compagnie** (FR) / **Company** (EN), echoing MiniCompanion; translated in the 9 languages.
+> Focus: community life between members (talk, paint, play together). **Marketing angle and store links are not a
+> priority** (owner, 2026-11-27).
 
 ## Owner decisions (2026-11-27)
 
@@ -10,7 +12,7 @@
 | Name | **Compagnie** |
 | Membership | Several Companies per player, **one main** (shown on the profile, counts for rankings) |
 | Size | **Default limit** at creation (e.g. 50); the leader can lower it, an app admin can raise it on request |
-| Nature | Local (city, optional store) **or** online, chosen by the Company |
+| Nature | Local (city) **or** online, chosen by the Company. No store link |
 | Games | Multi-game, main games listed as free text (search filter, suggestions) |
 | Spirit | Competition **and** mutual help, each Company chooses whether it takes part in rankings / challenges |
 | Chat | **Realtime chat + pinned announcements** (officers), report button |
@@ -18,33 +20,69 @@
 | Team tournaments | **Company ranking first** (from individual results, Swiss rounds unchanged); real team pairings on the roadmap |
 | Device data sync | **No**: paint shelf and sessions stay on the device, not used by Companies |
 | Creation | Any signed-in account, **no validation** (reports handled afterwards in `/admin`) |
-| Visibility | **Public** (indexed page: members, gallery, record) / **Private** (name + crest visible, content for members) |
+| Visibility | **Public** (members, gallery, record visible) / **Private** (name + crest visible, content for members) |
 | Joining | **Invitation**, **link / QR code**, **open**; the leader enables the ones they want (no "on request" mode) |
 | Leader leaves / deletes account | Passes to the **oldest officer**, else the oldest member; dissolved only when empty |
 | Narrative campaigns | **In V1**: a Company can be a faction on the hyperroute map |
+| Store link, recruitment marketing | **Not a priority**: no store link, no sponsorship, no beginner-path funnel |
 
-## V1 scope
+## V1, in three deliveries
 
-1. **Core**: Company card (name, motto, city or online, languages, games, description), crest, roles
-   (leader, officers, members, recruits) with permissions, joining modes, member limit, leader handover.
-2. **Chat + calendar**: realtime chat, pinned announcements, polls (optional), Company calendar with `.ics`,
-   notifications `company_*`.
-3. **Activity feed + collective pile**: automatic feed (painted units, results, battle reports; each member
-   chooses what is shared), shared pile gauge (pile is already on the account), collective goals, Company palette /
-   schemes.
-4. **PLAY**: register "under the colours of" a Company, Company ranking in a tournament, games and LFG posts
-   for members only, Company vs Company challenges.
-5. **Narrative campaigns**: Companies as factions, territories held per Company.
+Each delivery = one migration (tables, RLS, `SECURITY DEFINER` functions, SQL tests) + screens + 9 languages,
+shipped and checked before the next one.
 
-## Later (V2+)
+### Delivery 1 — Core + chat + calendar (migration 29)
 
-- Discovery: map of Companies, link to a store (store nights, sponsorship), recruitment posts, beginner path →
-  "join a Company near you". *Note: this matches the requesting player's need (local club); worth pulling
-  forward if V1 ships quickly.*
-- Real team tournaments, alliances / rivalries / diplomacy, Company level and achievements, seasonal rankings,
-  shared club equipment inventory, collective paint project, Company prize in painting contests, share card.
+- **Company**: name, slug, motto, city or "online", languages, games (free text), description, visibility,
+  joining modes, member limit, opt-in to rankings / challenges.
+- **Crest**: generator (shape, division, pattern, symbol, 2–3 riso inks) stored as a small JSON; optional
+  uploaded image pending admin approval (`/admin` queue).
+- **Members and roles**: leader, officers, members, recruits; permissions (invite, moderate the chat, manage
+  events, edit the card, promote). Main Company flag per player. Leave, kick, transfer leadership; automatic
+  handover to the oldest officer / member when the leader leaves or deletes their account.
+- **Joining**: invitation by username (notification), invitation link + QR code (revocable, optional expiry and
+  number of uses), open joining.
+- **Chat**: Realtime channel per Company, pinned announcements, report a message, officers delete messages,
+  rate limit.
+- **Calendar**: Company events (date, place or online, description, who comes), `.ics` export and subscription,
+  reminders like the tournament rounds.
+- **Pages**: `/play/companies` (my Companies + search by name / city / game / language), Company page
+  (tabs: Feed / Chat / Calendar / Members), Company badge on profiles and player cards.
+- **Notifications** `company_*`: invitation, joined, promoted, new event, announcement, mention.
+
+### Delivery 2 — Activity feed + collective pile + PLAY
+
+- **Activity feed**: units painted, armies finished, challenge entries, game results, battle reports, tournament
+  podiums. Each member chooses what is posted (per type, off by default for private profiles).
+- **Collective pile**: shared gauge from members' piles (already on the account, members opt in), collective goals
+  set by officers ("300 models painted this quarter") with progress.
+- **Company palette / schemes**: official colours and shared schemes, applied in one tap in the editor; crest on
+  share cards.
+- **Internal mentoring**: suggest the Company's veterans as mentors to its recruits (existing mentoring).
+- **PLAY**:
+  - Register to a tournament "under the colours of" a Company; Company ranking on the tournament page
+    (from individual results, rule to fix: sum of the best N players).
+  - Quick games and LFG posts **visible to members only** (new visibility value), filter "my Companies".
+  - **Company vs Company challenges**: a challenge with N games, each confirmed result counts, score shown on both
+    Company pages.
+  - Battle reports posted to the feed.
+
+### Delivery 3 — Narrative campaigns
+
+- A campaign can be played **by Companies**: each Company is a faction on the hyperroute map, members' battles
+  count for their Company, territories held per Company.
+- Join a campaign as a Company (leader / officers), members join under its colours.
+- Campaign events in the Company feed.
+
+## Later (roadmap)
+
+Real team tournaments, alliances / rivalries / truces, Company level and achievements, hall of fame and seasonal
+rankings, shared club equipment (terrain, mats, loan armies), collective paint project (units assigned to members),
+"collective work" category and Company prize in painting contests, polls in the chat, topic threads.
+Store link, sponsorship, map of Companies and beginner funnel stay out unless the owner changes priorities.
 
 ## Guard rails
 
-Reports and moderation in `/admin`, invitation rate limits, photo quotas, account deletion rules (leader handover),
+Reports and moderation in `/admin` (Companies, messages, crests), invitation and chat rate limits, photo quotas,
+account deletion rules (leader handover, messages kept anonymised or deleted: to decide in delivery 1),
 RLS tests for every rule (`supabase/tests/`), writes with business rules through `SECURITY DEFINER` functions.

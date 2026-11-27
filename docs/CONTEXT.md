@@ -219,7 +219,7 @@ discover → paint → share → play → watch → back to physical stores.
 | Translations review (2026-10-27) | **In-app "Suggest a translation"**, reviewed in `/admin` |
 | Vite 8 (2026-10-27) | Approved and done |
 | Languages added (2026-10-23) | French, Spanish, German, Italian, Brazilian Portuguese, **Simplified** Chinese, Korean (Noto Sans SC / KR for those two); events can be in any of them or "Japanese and English" (migration 000010) |
-| Companies (2026-11-27) | Player groups named **Compagnie / Company**, requested by a player for their local club. All choices and V1 scope (core, chat + calendar, activity feed + collective pile, PLAY ranking / members-only games / challenges, narrative campaign factions) in `docs/COMPANIES_PLAN.md` |
+| Companies (2026-11-27) | Player groups named **Compagnie / Company**, requested by a player for their local club. V1 in 3 deliveries (core + chat + calendar; feed + collective pile + PLAY; narrative campaign factions), see `docs/COMPANIES_PLAN.md`. **Marketing angle and store links are no longer a priority** |
 
 ## Open points / next steps (updated 2026-10-27, evening)
 
