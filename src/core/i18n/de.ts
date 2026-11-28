@@ -2773,4 +2773,6 @@ export const de: Record<MessageKey, string> = {
   "hub.link.builder": "Armeeplaner",
   "hub.link.cards": "Einheitenkarten",
   "hub.link.site": "Offizielle Website",
+  "cards.sec.profile": "Profil",
+  "cards.sec.rules": "Waffen & Regeln",
 };

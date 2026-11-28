@@ -26,6 +26,7 @@
   --radius: 0.25rem;
   --font: 'Zen Maru Gothic', 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --display: 'Dela Gothic One', 'Noto Sans JP', sans-serif;
+  --condensed: 'Barlow Condensed', 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans KR', sans-serif;
   color-scheme: light;
 }
 
@@ -1521,25 +1522,11 @@ textarea.text-input { font: inherit; line-height: 1.45; resize: vertical; }
 .ucard { position: relative; display: grid; align-content: start; min-width: 0; background: var(--surface); border: 3px solid var(--ink2); box-shadow: 6px 6px 0 var(--ink1); }
 .ucard-band { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0.7rem; background: var(--ink2); color: var(--paper); font-size: 0.75rem; font-weight: 700; }
 .ucard-band b { font-family: var(--display); font-weight: 400; }
-.ucard-photo { position: relative; aspect-ratio: 16 / 10; margin: 0.75rem 0.75rem 0; border: 2px solid var(--ink2); background: var(--army, var(--ink2)) center / cover no-repeat; }
-.ucard-photo.empty { background-image: radial-gradient(rgba(255, 250, 240, 0.35) 28%, transparent 30%); background-size: 9px 9px; background-repeat: repeat; }
 .ucard-stamp { position: absolute; right: 0.5rem; top: 0.5rem; transform: rotate(6deg); border: 2px solid #fffaf0; color: #fffaf0; background: rgba(29, 42, 91, 0.6); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.05rem 0.4rem; }
-.ucard-head { display: grid; gap: 0.35rem; padding: 0.65rem 0.85rem 0.4rem; }
-.ucard-head h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1.3rem; line-height: 1.2; overflow-wrap: anywhere; }
 .ucard-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
 .ucard .role-pill { color: #fffaf0; background: var(--role, var(--ink2)); font-weight: 700; font-size: 0.72rem; padding: 0.05rem 0.55rem; border-radius: 999px; }
 .ucard-link { display: inline-flex; align-items: center; gap: 0.25rem; font: inherit; font-size: 0.75rem; font-weight: 700; color: var(--ok); background: transparent; border: 1.5px solid var(--ok); border-radius: 999px; padding: 0.05rem 0.5rem; cursor: pointer; }
 .ucard-link:disabled { cursor: default; }
-.ucard-rows { list-style: none; margin: 0; padding: 0.2rem 0.85rem 0.75rem; display: grid; }
-.ucard-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.1rem 0.75rem; align-items: center; padding: 0.4rem 0.25rem; border-top: 1px dashed var(--border); }
-.ucard-row .l { font-weight: 700; font-size: 0.9rem; overflow-wrap: anywhere; }
-.ucard-row.n .v { font-family: var(--display); font-size: 1.2rem; min-width: 2.3rem; text-align: center; border: 2px solid var(--ink2); padding: 0 0.3rem; font-variant-numeric: tabular-nums; }
-.ucard-row.t { grid-template-columns: minmax(0, 1fr); }
-.ucard-row.t .l { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.ucard-row.t .v { white-space: pre-wrap; overflow-wrap: anywhere; }
-.ucard-row.changed { background: #fbefc4; }
-.ucard-row.gone .l, .ucard-row.gone .v { text-decoration: line-through; opacity: 0.55; }
-.ucard-row .was { font: 400 0.75rem var(--font); color: var(--muted); margin-right: 0.3rem; }
 .ucard mark { background: var(--ink3); color: var(--ink2); }
 .ucard-empty { padding: 0 0.85rem 0.75rem; margin: 0; }
 .ucard-foot { padding: 0 0.85rem 0.85rem; }
@@ -1776,3 +1763,37 @@ p.pile-sync { display: block; }
 .ref-sections { margin: 0.4rem 0; padding-left: 1.1rem; }
 .ref-sections li.sub { margin-left: 1rem; font-size: 0.875rem; }
 @media (min-width: 64rem) { .ref-sections.cols { columns: 3; } }
+
+/* Unit card as a mobile unit sheet (style B, 2026-11-28): title bar, foldable sections, stat grid, name bars */
+.ucard { overflow: hidden; }
+.ucard > *, .ucard-sec-body { min-width: 0; }
+.ucard-grid-wrap { width: 100%; }
+.ucard-title { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 0.9rem; background: var(--ink2); color: var(--surface); }
+.ucard-title-main { flex: 1; min-width: 0; display: grid; gap: 0.4rem; }
+.ucard-title h3 { margin: 0; font-family: var(--condensed); font-weight: 700; font-size: 1.75rem; line-height: 1.02; letter-spacing: 0.02em; text-transform: uppercase; overflow-wrap: anywhere; }
+.ucard-title .ucard-link { color: var(--ink3); border-color: var(--ink3); }
+.ucard-cost { flex: none; display: grid; justify-items: center; padding: 0.3rem 0.55rem; background: var(--ink3); color: var(--ink2); font-family: var(--condensed); font-weight: 700; font-size: 1.35rem; line-height: 1; border-radius: var(--radius); font-variant-numeric: tabular-nums; }
+.ucard-cost small { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.ucard-cost.changed { outline: 3px solid var(--ink1); }
+.ucard-photo { position: relative; aspect-ratio: 16 / 9; border-bottom: 2px solid var(--ink2); background: var(--army, var(--ink2)) center / cover no-repeat; }
+.ucard-sec { border-top: 2px solid var(--ink2); }
+.ucard-sec-band { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 2.9rem; padding: 0 0.9rem; border: 0; background: var(--ink3); color: var(--ink2); font-family: var(--condensed); font-weight: 700; font-size: 1.2rem; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; text-align: left; }
+.ucard-sec-band svg { flex: none; transform: rotate(180deg); transition: transform 0.15s; }
+.ucard-sec.closed .ucard-sec-band svg { transform: none; }
+.ucard-sec-body { padding-bottom: 0.6rem; }
+.ucard-grid-wrap { overflow-x: auto; }
+.ucard-grid { display: grid; min-width: min-content; }
+.ucard-gh { display: flex; align-items: center; justify-content: center; min-height: 2rem; padding: 0.2rem 0.3rem; background: var(--surface-2); color: var(--ink2); font-family: var(--condensed); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; line-height: 1.1; overflow-wrap: anywhere; }
+.ucard-gv { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 2.75rem; font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.ucard-gh.first, .ucard-gv.first { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 0 var(--border); }
+.ucard-gv.first { background: var(--surface); }
+.ucard-gv.changed, .ucard-items li.changed { background: #fbefc4; }
+.ucard-gh.gone, .ucard-gv.gone, .ucard-items li.gone { text-decoration: line-through; opacity: 0.55; }
+.ucard .was { font: 400 0.75rem var(--font); color: var(--muted); margin-right: 0.3rem; }
+.ucard-items { list-style: none; margin: 0; padding: 0.6rem 0.9rem 0; display: grid; gap: 0.7rem; }
+.ucard-items li { display: grid; gap: 0.35rem; }
+.ucard-namebar { justify-self: start; max-width: 100%; padding: 0.35rem 0.7rem; border-radius: var(--radius); background: var(--ink2); color: var(--surface); font-weight: 700; overflow-wrap: anywhere; }
+.ucard-items p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ucard-refs { padding: 0.4rem 0.9rem 0; }
+.ucard-empty { padding: 0.75rem 0.85rem; margin: 0; }
+.ucard-foot { padding: 0.75rem 0.85rem 0.85rem; border-top: 2px solid var(--ink2); }

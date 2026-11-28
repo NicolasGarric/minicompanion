@@ -1,2 +1,2 @@
-Noto Sans JP, Noto Sans SC, Noto Sans KR, Dela Gothic One and Zen Maru Gothic are licensed under the SIL Open Font License, Version 1.1.
+Noto Sans JP, Noto Sans SC, Noto Sans KR, Dela Gothic One, Zen Maru Gothic and Barlow Condensed are licensed under the SIL Open Font License, Version 1.1.
 Full text: https://openfontlicense.org/open-font-license-official-text/

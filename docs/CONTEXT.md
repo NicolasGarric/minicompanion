@@ -632,3 +632,12 @@ npm run build      # type-check + production build
     - Still open: the recommended layouts (`layouts.ts`, `layouts2026.ts`) keep the published force disposition and primary
       mission names and the 45 layouts measured from the published images (owner to decide); `/play/rules` stays noindex;
       publish-time disclaimer + checkbox to add when public templates / decks exist.
+47. **Unit card as a mobile unit sheet, style B (2026-11-28, owner choice among 3 mockups on claude.ai "Fiche d'unité mobile
+    MiniCompanion")**: `UnitCard` (every screen: My pile, decks, shared decks, games, campaigns) = navy title bar (name in
+    Barlow Condensed uppercase, role, linked units, cost chip from the "Points" row), photo, foldable sections with yellow bands
+    (open / closed remembered on the device: `cardClosed` in `cf.prefs`), **Profile** = number rows as one column grid (header +
+    values, first column frozen, horizontal scroll), **Weapons & rules** = text rows as name bars + text, reference links,
+    campaign history (changed / lost rows kept). Barlow Condensed 600/700 self-hosted (`public/fonts`, OFL). No dark mode yet
+    (the site has none). Next, owner answers: Play › **My miniatures** = same armies as My pile, game view; **army = collection,
+    list = selection with total and limit** (decks become lists); **cost name per army** (Points, Power, Crowns…) and a cost field
+    per unit, the "Points" row taken over.

@@ -2773,4 +2773,6 @@ export const es: Record<MessageKey, string> = {
   "hub.link.builder": "Creador de ejércitos",
   "hub.link.cards": "Cartas de unidad",
   "hub.link.site": "Sitio oficial",
+  "cards.sec.profile": "Perfil",
+  "cards.sec.rules": "Armas y reglas",
 };

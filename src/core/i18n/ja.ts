@@ -2792,4 +2792,6 @@ export const ja: Record<MessageKey, string> = {
   "hub.link.builder": "アーミービルダー", // CHECK: hobby term
   "hub.link.cards": "ユニットカード",
   "hub.link.site": "公式サイト",
+  "cards.sec.profile": "プロファイル",
+  "cards.sec.rules": "武器とルール",
 };

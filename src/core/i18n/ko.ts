@@ -2773,4 +2773,6 @@ export const ko: Record<MessageKey, string> = {
   "hub.link.builder": "아미 빌더",
   "hub.link.cards": "유닛 카드",
   "hub.link.site": "공식 사이트",
+  "cards.sec.profile": "프로필",
+  "cards.sec.rules": "무기 및 규칙",
 };

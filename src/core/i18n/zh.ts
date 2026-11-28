@@ -2773,4 +2773,6 @@ export const zh: Record<MessageKey, string> = {
   "hub.link.builder": "军表工具",
   "hub.link.cards": "单位卡",
   "hub.link.site": "官方网站",
+  "cards.sec.profile": "属性",
+  "cards.sec.rules": "武器与规则",
 };

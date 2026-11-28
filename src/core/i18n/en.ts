@@ -2798,6 +2798,8 @@ export const en = {
   "hub.link.builder": "Army builder",
   "hub.link.cards": "Unit cards",
   "hub.link.site": "Official site",
+  "cards.sec.profile": "Profile",
+  "cards.sec.rules": "Weapons & rules",
 } as const;
 
 export type MessageKey = keyof typeof en;

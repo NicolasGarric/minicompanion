@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { usePrefs } from '../../core/prefs';
 import { k, useT } from '../../core/i18n';
 import { Icon, IconButton } from '../../core/ui/ui';
 import { supabase } from '../../core/auth/supabase';
@@ -93,47 +94,108 @@ function Hl({ text, q }: { text: string; q: string }) {
   return <>{text.split(re).map((p, i) => (i % 2 ? <mark key={i}>{p}</mark> : p))}</>;
 }
 
+/** One foldable section of a unit card: full-width band, title on the left, chevron on the right. */
+function CardSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  const closed = usePrefs((s) => s.cardClosed.includes(id));
+  const toggle = usePrefs((s) => s.toggleCardSection);
+  return (
+    <section className={`ucard-sec ${closed ? 'closed' : ''}`}>
+      <button type="button" className="ucard-sec-band" aria-expanded={!closed} onClick={() => toggle(id)}>
+        <span>{title}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      {!closed && <div className="ucard-sec-body">{children}</div>}
+    </section>
+  );
+}
+
+/**
+ * A unit card as a mobile unit sheet (style B chosen by the owner on 2026-11-28, the app's own look):
+ * navy title bar with the name and the cost, foldable sections (state remembered on the device),
+ * number rows as one column grid (header + values share it, first column frozen when it scrolls),
+ * text rows as name bars with their text, reference links, campaign history.
+ */
 export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: string; band?: [string, string]; onGo?: (id: string) => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const refs = refsOfRows(card.rows);
+  const ptsLabels = new Set([t('cards.row.points'), t('pile.pts'), 'points', 'pts'].map((x) => x.trim().toLowerCase()));
+  const isPts = (x: InfoLine) => x.t === 'n' && ptsLabels.has(x.l.trim().toLowerCase());
   const rows = card.rows.filter((x) => !isRefRow(x));
+  const cost = rows.find(isPts);
+  const stats = rows.filter((x) => x.t === 'n' && x !== cost);
+  const texts = rows.filter((x) => x.t === 't');
+  const lostStats = card.lost?.filter((x) => x.t === 'n') ?? [];
+  const lostTexts = card.lost?.filter((x) => x.t === 't') ?? [];
+  const cols = stats.length + lostStats.length;
   return (
     <article className="ucard" style={{ ['--army' as string]: card.colour, ['--role' as string]: ROLE_INK[card.role] }}>
       {band && <div className="ucard-band"><span>{band[0]}</span><b>{band[1]}</b></div>}
-      <div className={`ucard-photo ${card.photo ? '' : 'empty'}`} style={card.photo ? { backgroundImage: `url(${card.photo})` } : undefined}>
-        {band && <span className="ucard-stamp">{t('cards.campaignCopy')}</span>}
-      </div>
-      <div className="ucard-head">
-        <h3><Hl text={card.name} q={q} /></h3>
-        <div className="ucard-meta">
-          <span className={`role-pill role-${card.role}`}>{t(k(`role.${card.role}`))}</span>
-          {card.links?.map(([id, name]) => (
-            <button key={id} type="button" className="ucard-link" onClick={() => onGo?.(id)} disabled={!onGo}>
-              <Icon name="link" size={13} /> {t('cards.linkedTo', { name })}
-            </button>
-          ))}
+      <header className="ucard-title">
+        <div className="ucard-title-main">
+          <h3><Hl text={card.name} q={q} /></h3>
+          <div className="ucard-meta">
+            <span className={`role-pill role-${card.role}`}>{t(k(`role.${card.role}`))}</span>
+            {card.links?.map(([id, name]) => (
+              <button key={id} type="button" className="ucard-link" onClick={() => onGo?.(id)} disabled={!onGo}>
+                <Icon name="link" size={13} /> {t('cards.linkedTo', { name })}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      {rows.length + (card.lost?.length ?? 0) === 0 ? (!refs.length && <p className="hint ucard-empty">{t('cards.noInfo')}</p>) : (
-        <ul className="ucard-rows">
-          {rows.map((x, i) => (
-            <li key={i} className={`ucard-row ${x.t === 'n' ? 'n' : 't'} ${x.changed ? 'changed' : ''}`}>
-              <span className="l"><Hl text={x.l} q={q} /></span>
-              <span className="v">
-                {x.was != null && <s className="was">{x.was}</s>}
-                {x.t === 'n' ? x.v : <Hl text={String(x.v)} q={q} />}
-              </span>
-            </li>
-          ))}
-          {card.lost?.map((x, i) => (
-            <li key={`lost${i}`} className={`ucard-row ${x.t === 'n' ? 'n' : 't'} changed gone`}>
-              <span className="l">{x.l}</span><span className="v">{String(x.v)}</span>
-            </li>
-          ))}
-        </ul>
+        {cost && (
+          <span className={`ucard-cost ${cost.changed ? 'changed' : ''}`}>
+            {cost.was != null && <s className="was">{cost.was}</s>}
+            {cost.v} <small>{cost.l}</small>
+          </span>
+        )}
+      </header>
+      {card.photo && (
+        <div className="ucard-photo" style={{ backgroundImage: `url(${card.photo})` }}>
+          {band && <span className="ucard-stamp">{t('cards.campaignCopy')}</span>}
+        </div>
       )}
-      {refs.length > 0 && <div className="ucard-refs"><RefChips links={refs} compact /></div>}
+      {rows.length + (card.lost?.length ?? 0) === 0 && !refs.length && <p className="hint ucard-empty">{t('cards.noInfo')}</p>}
+      {cols > 0 && (
+        <CardSection id="profile" title={t('cards.sec.profile')}>
+          <div className="ucard-grid-wrap">
+            <div className="ucard-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(3.4rem, 1fr))` }}>
+              {stats.map((x, i) => <span key={`h${i}`} className={`ucard-gh ${i === 0 ? 'first' : ''}`}><Hl text={x.l} q={q} /></span>)}
+              {lostStats.map((x, i) => <span key={`hl${i}`} className="ucard-gh gone">{x.l}</span>)}
+              {stats.map((x, i) => (
+                <span key={`v${i}`} className={`ucard-gv ${i === 0 ? 'first' : ''} ${x.changed ? 'changed' : ''}`}>
+                  {x.was != null && <s className="was">{x.was}</s>}
+                  {x.v}
+                </span>
+              ))}
+              {lostStats.map((x, i) => <span key={`vl${i}`} className="ucard-gv gone">{String(x.v)}</span>)}
+            </div>
+          </div>
+        </CardSection>
+      )}
+      {texts.length + lostTexts.length > 0 && (
+        <CardSection id="rules" title={t('cards.sec.rules')}>
+          <ul className="ucard-items">
+            {texts.map((x, i) => (
+              <li key={i} className={x.changed ? 'changed' : ''}>
+                <span className="ucard-namebar"><Hl text={x.l} q={q} /></span>
+                <p>{x.was != null && <s className="was">{x.was}</s>}<Hl text={String(x.v)} q={q} /></p>
+              </li>
+            ))}
+            {lostTexts.map((x, i) => (
+              <li key={`lost${i}`} className="gone">
+                <span className="ucard-namebar">{x.l}</span>
+                <p>{String(x.v)}</p>
+              </li>
+            ))}
+          </ul>
+        </CardSection>
+      )}
+      {refs.length > 0 && (
+        <CardSection id="refs" title={t('refs.title')}>
+          <div className="ucard-refs"><RefChips links={refs} compact /></div>
+        </CardSection>
+      )}
       {!!card.history?.length && (
         <div className="ucard-foot">
           <button type="button" className="ucard-histbtn" aria-expanded={open} onClick={() => setOpen(!open)}>
