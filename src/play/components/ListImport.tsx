@@ -104,7 +104,6 @@ export function ListImport({ onClose, onDone }: { onClose: () => void; onDone: (
                     <input className="num-input" type="number" min={1} max={100000} value={limit} onChange={(e) => setLimit(e.target.value === '' ? '' : Math.max(1, +e.target.value))} /></label>
                 </div>
               )}
-              <p className="mini-total"><b>{total}</b>{limit !== '' && <> / {limit}</>} {label}{list.total != null && list.total !== total && <span className="hint"> · {t('mini.listSays', { n: list.total })}</span>}</p>
               <ul className="import-units">
                 {units.map((u, i) => (
                   <li key={i} className={u.group != null ? 'grouped' : ''}>
@@ -124,7 +123,14 @@ export function ListImport({ onClose, onDone }: { onClose: () => void; onDone: (
               </ul>
             </>
           )}
-          <div className="nav-row">
+          <div className="nav-row import-foot">
+            {units.length > 0 && (
+              <p className={`mini-total ${limit !== '' && total > limit ? 'over' : ''}`}>
+                <b>{total}</b>{limit !== '' && <> / {limit}</>} {label}
+                {list.total != null && list.total !== total && <span className="hint"> · {t('mini.listSays', { n: list.total })}</span>}
+              </p>
+            )}
+            <span className="spacer" />
             <button type="button" className="btn ghost" onClick={() => setList(null)}>{t('common.back')}</button>
             <button type="button" className="btn primary" disabled={!units.length} onClick={create}><Icon name="check" size={16} /> {t('mini.create')}</button>
           </div>
