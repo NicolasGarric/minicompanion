@@ -54,6 +54,7 @@ declare -A GUARD=(
   [20261116000028_account_storage_fixes.sql]="to_regproc('public.delete_my_account') is null"
   [20261127000029_companies.sql]="to_regclass('public.companies') is null"
   [20261128000030_privacy_consent.sql]="to_regproc('public.mark_active_day') is null"
+  [20261128000031_army_costs.sql]="not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'decks' and column_name = 'point_limit')"
 )
 seq_of() { local n="${1%%_*}"; echo $((10#${n: -6})); } # 20261104000016_x.sql -> 16
 

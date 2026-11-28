@@ -38,6 +38,7 @@ import { Challenges } from './paint/pages/Challenges';
 import { SharedDeck } from './paint/components/DeckCards';
 import { TableGen } from './play/pages/TableGen';
 import { RulesLinks } from './play/pages/RulesLinks';
+import { MyMiniatures } from './play/pages/MyMiniatures';
 import { Campaigns } from './play/pages/Campaigns';
 import { CampaignPage } from './play/pages/CampaignPage';
 import { Mentors } from './play/pages/Mentors';
@@ -112,6 +113,7 @@ function Page({ route }: { route: Route }) {
     case 'paint.challenges': return <Challenges />;
     case 'play.tablegen': return <TableGen />;
     case 'play.rules': return <RulesLinks />;
+    case 'play.miniatures': return <MyMiniatures />;
     case 'play.campaigns': return <Campaigns />;
     case 'play.campaign': return <CampaignPage id={route.params.id ?? ''} />;
     case 'play.mentors': return <Mentors />;

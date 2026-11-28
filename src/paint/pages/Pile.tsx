@@ -9,6 +9,7 @@ import { DeckView } from '../components/DeckCards';
 import { TimelapseDialog } from '../components/TimelapseDialog';
 import { isRefRow } from '../../core/lib/refLinks';
 import { CardRefsEditor, InfoEditor, UnitCard, useInfoOf, usePhotoUrls, type CardView } from '../components/UnitCard';
+import { AddUnitForm } from '../components/AddUnitForm';
 import { PileSyncBanner } from '../components/PileSync';
 import { removeRemotePhotos } from '../hobby/sync';
 
@@ -98,10 +99,9 @@ function ArmyGauge({ army }: { army: Army }) {
 export function ArmyPage({ id }: { id: string }) {
   const t = useT();
   const army = useHobby((s) => s.armies.find((a) => a.id === id));
-  const { updateArmy, removeArmy, addUnit } = useHobby.getState();
+  const { updateArmy, removeArmy } = useHobby.getState();
   const [tab, setTab] = useState<'list' | 'deck'>(() => (location.search.includes('tab=deck') ? 'deck' : 'list'));
   const [editing, setEditing] = useState<string | null>(null);
-  const [quick, setQuick] = useState({ name: '', count: 1 });
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!army) {
@@ -114,12 +114,6 @@ export function ArmyPage({ id }: { id: string }) {
   }
   const s = armyStats(army);
   const pct = Math.round(s.progress * 100);
-  const add = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quick.name.trim()) return;
-    addUnit(army.id, { name: quick.name.trim().slice(0, 60), count: quick.count });
-    setQuick({ name: '', count: 1 });
-  };
   const unit = army.units.find((u) => u.id === editing);
 
   return (
@@ -148,11 +142,7 @@ export function ArmyPage({ id }: { id: string }) {
 
       {tab === 'list' ? (
         <>
-          <form className="unit-quick" onSubmit={add}>
-            <input className="text-input" value={quick.name} onChange={(e) => setQuick({ ...quick, name: e.target.value })} placeholder={t('pile.unitPlaceholder')} aria-label={t('pile.unitName')} maxLength={60} />
-            <input className="num-input" type="number" min={1} max={999} value={quick.count} onChange={(e) => setQuick({ ...quick, count: Math.max(1, +e.target.value || 1) })} aria-label={t('pile.count')} />
-            <button className="btn primary" disabled={!quick.name.trim()}><Icon name="plus" size={16} /> {t('pile.addUnit')}</button>
-          </form>
+          <AddUnitForm army={army} />
           {army.units.length === 0 ? <p className="hint">{t('pile.noUnits')}</p> : (
             <ul className="unit-list">
               {army.units.map((u) => <UnitRow key={u.id} army={army} unit={u} onEdit={() => setEditing(u.id)} />)}

@@ -55,6 +55,8 @@ export interface LocalDeck {
   remoteId?: string;
   /** Reference links: rules, mission pack, faction pages (migration 25) */
   refs?: RefLink[];
+  /** Cost limit of the list, e.g. 2000 (migration 31) */
+  limit?: number;
 }
 
 export interface Army {
@@ -62,6 +64,8 @@ export interface Army {
   name: string;
   /** Ink of the army on gauges and cards */
   colour: string;
+  /** Name of the unit cost in this army: Points, Power, Crowns… (migration 31; default the "Points" label) */
+  costLabel?: string;
   units: Unit[];
   createdAt: number;
 }
@@ -116,7 +120,9 @@ interface HobbyState extends Stored {
   addArmy: (name: string, colour: string) => string;
   /** New army with its units at once (from a tournament list), all still in the box. */
   addArmyWithUnits: (name: string, units: { name: string; count: number; points: number | null }[]) => string;
-  updateArmy: (id: string, patch: Partial<Pick<Army, 'name' | 'colour'>>) => void;
+  updateArmy: (id: string, patch: Partial<Pick<Army, 'name' | 'colour' | 'costLabel'>>) => void;
+  /** Text list import: completes or creates the army, then creates the played list (deck). Returns their ids. */
+  importList: (p: ImportPlan) => { armyId: string; deckId: string | null };
   removeArmy: (id: string) => void;
   addUnit: (armyId: string, u: Partial<Unit> & { name: string }) => string;
   updateUnit: (armyId: string, unitId: string, patch: Partial<Unit>) => void;
@@ -130,7 +136,7 @@ interface HobbyState extends Stored {
   addSession: (s: Omit<Session, 'id'>) => void;
   removeSession: (id: string) => void;
   addDeck: (name: string, groups?: Groups) => string;
-  updateDeck: (id: string, patch: Partial<Pick<LocalDeck, 'name' | 'groups' | 'refs'>>) => void;
+  updateDeck: (id: string, patch: Partial<Pick<LocalDeck, 'name' | 'groups' | 'refs' | 'limit'>>) => void;
   removeDeck: (id: string) => void;
   /** Sync only: replace the whole pile and decks, or record what was pushed */
   replaceAll: (p: Pick<Stored, 'armies' | 'decks'>, sync: SyncState) => void;
@@ -195,6 +201,51 @@ export const useHobby = create<HobbyState>((set, get) => {
       return id;
     },
     updateArmy: (id, patch) => mapArmy(id, (a) => ({ ...a, ...patch })),
+    importList: (p) => {
+      const now = Date.now();
+      const armies = get().armies;
+      const old = p.armyId ? armies.find((a) => a.id === p.armyId) : undefined;
+      const armyId = old?.id ?? hid();
+      const label = old?.costLabel || p.costLabel;
+      // Units already in the army are reused, one per imported unit of the same name (no duplicates)
+      const taken = new Set<string>();
+      const units: Unit[] = [];
+      const ids = p.units.map((x) => {
+        const same = old?.units.find((u) => !taken.has(u.id) && u.name.trim().toLowerCase() === x.name.trim().toLowerCase());
+        if (same) {
+          taken.add(same.id);
+          return same.id;
+        }
+        const id = hid();
+        units.push({ id, name: x.name, role: x.role, count: x.count, painted: 0, stage: 'box', info: x.info(label), photos: [], createdAt: now });
+        return id;
+      });
+      // Leader linked to the unit it leads
+      const links = new Map<string, string>();
+      p.units.forEach((x, i) => {
+        if (!x.leader || x.group == null) return;
+        const j = p.units.findIndex((y, k) => k !== i && y.group === x.group && !y.leader);
+        if (j >= 0) links.set(ids[i], ids[j]);
+      });
+      const link = (u: Unit) => (links.has(u.id) ? { ...u, linkedTo: links.get(u.id) } : u);
+      const army: Army = old
+        ? { ...old, units: [...old.units, ...units].map(link) }
+        : { id: armyId, name: p.armyName.slice(0, 60) || '—', colour: ARMY_INKS[armies.length % ARMY_INKS.length], costLabel: p.costLabel, units: units.map(link), createdAt: now };
+      // The list: one group per unit, the leader right after the unit it leads
+      const groups: string[][] = [];
+      ids.forEach((id) => {
+        if (links.has(id)) return;
+        const g = [id, ...ids.filter((x) => links.get(x) === id)];
+        if (!groups.some((h) => h.includes(id))) groups.push(g);
+      });
+      const deckId = p.listName != null ? hid() : null;
+      save({
+        armies: old ? armies.map((a) => (a.id === armyId ? army : a)) : [...armies, army],
+        decks: deckId ? [...get().decks, { id: deckId, name: p.listName!.slice(0, 60) || '—', groups, createdAt: now, ...(p.limit ? { limit: p.limit } : null) }] : get().decks,
+        ...mark([`a:${armyId}`, ...army.units.map((u) => `u:${armyId}:${u.id}`), ...(deckId ? [`d:${deckId}`] : [])]),
+      });
+      return { armyId, deckId };
+    },
     removeArmy: (id) => {
       const army = get().armies.find((a) => a.id === id);
       army?.units.forEach((u) => u.photos.forEach((p) => void db.setKV(`photo:${p.id}`, undefined)));
@@ -279,6 +330,25 @@ export const useHobby = create<HobbyState>((set, get) => {
 
 export const photoBlob = (id: string) => db.getKV<Blob>(`photo:${id}`);
 
+/** What the list import adds: units with their card rows (built with the army's cost label). */
+export interface ImportPlan {
+  /** Existing army to complete, or null for a new one called `armyName` */
+  armyId: string | null;
+  armyName: string;
+  costLabel: string;
+  units: { name: string; role: Role; count: number; group?: number; leader?: boolean; info: (costLabel: string) => InfoLine[] }[];
+  /** Name of the list to create, or null for no list */
+  listName: string | null;
+  limit: number | null;
+}
+
+/** Cost of a unit: its number row called like the army's cost (or Points), else the legacy points. */
+export function unitCost(u: Unit, labels: string[]): number | null {
+  const want = new Set(labels.map((x) => x.trim().toLowerCase()));
+  const row = u.info?.find((x) => x.t === 'n' && want.has(x.l.trim().toLowerCase()));
+  return row ? Number(row.v) : u.info ? null : u.points ?? null;
+}
+
 /** Units linked to removed units lose their link. */
 function unlinkFrom(a: Army, removed: Set<string>): Army {
   return a.units.some((u) => u.linkedTo && removed.has(u.linkedTo))
@@ -291,11 +361,12 @@ export const cardPhotoOf = (u: Unit) => u.photos.find((p) => p.id === u.cardPhot
 
 /* ---------- Derived numbers ---------- */
 
-export function armyStats(a: Army) {
+export function armyStats(a: Army, labels: string[] = []) {
+  const want = [a.costLabel ?? '', 'points', 'pts', ...labels].filter(Boolean);
   const figures = a.units.reduce((s, u) => s + u.count, 0);
   const painted = a.units.reduce((s, u) => s + u.painted, 0);
   const byStage = Object.fromEntries(STAGES.map((st) => [st, a.units.filter((u) => u.stage === st).length])) as Record<Stage, number>;
-  const points = a.units.reduce((s, u) => s + (u.points ?? 0), 0);
+  const points = a.units.reduce((s, u) => s + (unitCost(u, want) ?? 0), 0);
   return { figures, painted, progress: figures ? painted / figures : 0, byStage, points };
 }
 

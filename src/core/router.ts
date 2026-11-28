@@ -25,6 +25,7 @@ export type RouteName =
   | 'play'
   | 'play.quick'
   | 'play.mine'
+  | 'play.miniatures'
   | 'play.new'
   | 'play.game'
   | 'play.tournament'
@@ -93,6 +94,7 @@ const ROUTES: { pattern: string; name: RouteName; section: Section }[] = [
   { pattern: 'play', name: 'play', section: 'play' },
   { pattern: 'play/quick', name: 'play.quick', section: 'play' },
   { pattern: 'play/mine', name: 'play.mine', section: 'play' },
+  { pattern: 'play/miniatures', name: 'play.miniatures', section: 'play' },
   { pattern: 'play/new', name: 'play.new', section: 'play' },
   { pattern: 'play/game/:id', name: 'play.game', section: 'play' },
   { pattern: 'play/t-new', name: 'play.tournament.new', section: 'play' },

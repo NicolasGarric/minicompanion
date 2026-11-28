@@ -1797,3 +1797,51 @@ p.pile-sync { display: block; }
 .ucard-refs { padding: 0.4rem 0.9rem 0; }
 .ucard-empty { padding: 0.75rem 0.85rem; margin: 0; }
 .ucard-foot { padding: 0.75rem 0.85rem 0.85rem; border-top: 2px solid var(--ink2); }
+
+/* Add a unit in one go (name, role, miniatures, painted, stage, cost, card rows) */
+.add-unit { display: grid; gap: 0.6rem; }
+.add-unit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.add-unit-grid .add-unit-name { grid-column: 1 / -1; }
+.add-unit-grid .num-input, .add-unit-grid .select { width: 100%; }
+.add-unit-same { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+@media (min-width: 64rem) {
+  .add-unit-grid { grid-template-columns: 2fr 1.2fr 0.7fr 0.7fr 1.2fr 0.8fr; }
+  .add-unit-grid .add-unit-name { grid-column: auto; }
+}
+
+/* Paste a list: preview */
+.list-import { display: grid; gap: 0.75rem; }
+.import-units { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; max-height: 50vh; overflow-y: auto; }
+.import-units li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.35rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.import-units li.grouped { border-left: 4px solid var(--ink3); }
+.import-units li > .text-input { grid-column: 1 / -1; }
+.import-units li > .select { grid-column: 1 / -1; }
+.import-units li > .num-input { width: 100%; }
+.import-units .import-meta { grid-column: 1 / -1; color: var(--muted); display: inline-flex; align-items: center; gap: 0.25rem; }
+@media (min-width: 64rem) {
+  .import-units li { grid-template-columns: minmax(0, 2fr) 9rem 5rem 6rem auto; align-items: center; }
+  .import-units li > .text-input, .import-units li > .select { grid-column: auto; }
+}
+
+/* Play › My miniatures */
+.mini-total { margin: 0; font-variant-numeric: tabular-nums; }
+.mini-total b { font-family: var(--condensed); font-size: 1.4rem; }
+.mini-total.over b { color: var(--danger); }
+.mini-army { border-left: 0.4rem solid var(--army, var(--ink2)); display: grid; gap: 0.6rem; }
+.mini-army-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 0.75rem; width: 100%; min-height: 2.75rem; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.mini-army-name { font-family: var(--condensed); font-weight: 700; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.mini-army-sum { color: var(--text-2); font-size: 0.875rem; }
+.mini-army-sum b { font-family: var(--condensed); font-size: 1.15rem; color: var(--text); }
+.mini-cost-label { max-width: 14rem; }
+.mini-units { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.mini-units th { text-align: left; font-family: var(--condensed); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.8rem; background: var(--surface-2); padding: 0.35rem 0.4rem; }
+.mini-units td { padding: 0.35rem 0.4rem; border-top: 1px dashed var(--border); vertical-align: middle; }
+.mini-units .num { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mini-units td small { display: block; }
+.mini-unit-name { padding: 0.2rem 0; min-height: 2.25rem; border: 0; background: transparent; color: var(--link); font: inherit; font-weight: 700; text-align: left; text-decoration: underline; cursor: pointer; }
+.mini .role-pill { white-space: nowrap; }
+.check-row { display: flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; cursor: pointer; }
+.mini-lists { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.mini-list-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.mini-list-name { font-weight: 700; font-size: 1.05rem; }
+.mini-list .num-input { width: 6rem; }

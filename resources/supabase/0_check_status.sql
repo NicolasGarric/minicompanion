@@ -29,4 +29,5 @@ union all select 27 as n, '20261115000027_game_visibility_comments.sql' as migra
 union all select 28 as n, '20261116000028_account_storage_fixes.sql' as migration, case when to_regproc('public.delete_my_account') is null then 'TO APPLY' else 'applied' end as state
 union all select 29 as n, '20261127000029_companies.sql' as migration, case when to_regclass('public.companies') is null then 'TO APPLY' else 'applied' end as state
 union all select 30 as n, '20261128000030_privacy_consent.sql' as migration, case when to_regproc('public.mark_active_day') is null then 'TO APPLY' else 'applied' end as state
+union all select 31 as n, '20261128000031_army_costs.sql' as migration, case when not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'decks' and column_name = 'point_limit') then 'TO APPLY' else 'applied' end as state
 order by n;

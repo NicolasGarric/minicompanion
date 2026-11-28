@@ -8764,3 +8764,31 @@ $setup_20261128000030_privacy_consent$;
     raise notice 'already there, skipped: 20261128000030_privacy_consent.sql';
   end if;
 end $guard$;
+
+-- >>> 20261128000031_army_costs.sql (skipped automatically if already applied)
+do $guard$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'decks' and column_name = 'point_limit') then
+    execute $setup_20261128000031_army_costs$
+-- =============================================================================================
+-- Army costs and list limits (owner decisions 2026-11-28, Play > My miniatures):
+--   * each army names its unit cost (Points, Power, Crowns...); units keep their cost as a number row
+--     of their card called like it, so nothing changes for pile_units.
+--   * a list (deck) can carry a cost limit, e.g. 2000, shown as "1,995 / 2,000".
+-- The app works before this migration: it then keeps both values on the device only.
+-- =============================================================================================
+
+alter table public.pile_armies add column if not exists cost_label text
+  check (cost_label is null or char_length(btrim(cost_label)) between 1 and 20);
+
+alter table public.decks add column if not exists point_limit int
+  check (point_limit is null or point_limit between 1 and 100000);
+
+-- decks are written column by column (share_code only through deck_share()): the limit is one of them.
+grant insert (point_limit), update (point_limit) on public.decks to authenticated;
+
+$setup_20261128000031_army_costs$;
+    raise notice 'applied: 20261128000031_army_costs.sql';
+  else
+    raise notice 'already there, skipped: 20261128000031_army_costs.sql';
+  end if;
+end $guard$;

@@ -650,3 +650,19 @@ npm run build      # type-check + production build
       ("Name (90 Points)", • / ◦ bullets, CHARACTERS / BATTLELINE… sections), New Recruit / BattleScribe ("[90 pts]"),
       One Page Rules Army Forge, and a free format (one unit per line with points anywhere). Parser stays local (no AI, no
       network), imported content private. Owner sample: official app export, Leagues of Votann, 1,995 / 2,000 pts.
+49. **Add form, text list import, Play › My miniatures (2026-11-28)** — **migration 31 to apply in Supabase**
+    (`20261128000031_army_costs.sql`: `pile_armies.cost_label`, `decks.point_limit` + its column grant; +7 SQL tests
+    `supabase/tests/rls_army_costs.sql`, whole suite passes locally). Before it is applied, sync keeps working (`dropColumn` in `sync.ts`) and both values stay on the device.
+    - `AddUnitForm` (`src/paint/components/AddUnitForm.tsx`): name (suggestions from all units), role, miniatures, painted, stage,
+      cost (army cost name), card rows foldable; a unit of the same name elsewhere → "Copy the card (army)". Replaces the quick form in My pile.
+    - `listImport.ts` (`src/play/lib`, tests `tests/play/listImport.test.ts` on invented lists): official app export (header name + total,
+      faction, battle size limit, sections → roles, "Attached unit" → leader linked to its bodyguard, "• Nx Model" followed by "◦" lines =
+      miniatures, wargear merged by name, "Warlord" / "Enhancements: X" kept as rows, profiles in parentheses dropped) and free format
+      (one unit per line with points). New Recruit / Army Forge waiting for owner samples.
+    - `ListImport` dialog: paste → editable preview (army new or existing, army name, cost name, list name, limit, units name / role /
+      miniatures / cost, remove) → `importList` in the hobby store: reuses units of the same name in an existing army (no duplicates),
+      cost row + one text row per wargear (label "9x Name", ≤ 30 chars, full text in the value when cut), leader linked, list = deck with
+      one group per unit (leader after its unit) and the limit.
+    - `/play/miniatures` (tab "My miniatures", noindex): import button, new army, armies (cost name editable, units table with role,
+      miniatures, cost, unit name opens its card, add a unit), lists with total / limit (red when over) and editable limit, link to the swipe.
+    - `armyStats` counts costs from the card rows (army cost name or Points) instead of the old `points` field.

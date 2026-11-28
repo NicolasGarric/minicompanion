@@ -12,13 +12,13 @@ import { cleanRefs, type RefLink } from '../../core/lib/refLinks';
  */
 
 type Labels = { points: string; stars: string; note: string };
-interface ArmyRow { id: string; local_id: string | null; name: string; colour: string; position: number }
+interface ArmyRow { id: string; local_id: string | null; name: string; colour: string; position: number; cost_label?: string | null }
 interface UnitRow {
   id: string; army_id: string; local_id: string | null; name: string; role: Role; stage: Unit['stage']; count: number; painted: number;
   note: string | null; info: InfoLine[]; photos: { p: string; at: number }[]; card_photo: string | null; linked_to: string | null;
   position: number; done_at: string | null; created_at: string;
 }
-interface DeckRow { id: string; name: string; groups: Groups; refs?: RefLink[]; created_at: string }
+interface DeckRow { id: string; name: string; groups: Groups; refs?: RefLink[]; point_limit?: number | null; created_at: string }
 
 const db = () => {
   if (!supabase) throw new Error('backend');
@@ -29,29 +29,46 @@ const must = <T>(r: { data: T | null; error: unknown }): T => {
   return r.data as T;
 };
 
-/** Before migration 25 the decks have no `refs` column: the links then stay on this device. */
+/**
+ * Columns added by later migrations: before migration 25 the decks have no `refs`, before migration 31
+ * no `point_limit` and the armies no `cost_label`. Until they are applied those values stay on the device.
+ */
 let deckRefs = true;
-const noColumn = (e: unknown) => (e as { code?: string })?.code === '42703' || /refs/.test(String((e as { message?: string })?.message ?? ''));
-async function writeDeck(row: { name: string; groups: string[][]; refs: RefLink[] }, remoteId?: string): Promise<string> {
+let costs = true;
+const missing = (e: unknown, col: string) => {
+  const m = String((e as { message?: string })?.message ?? '');
+  return ((e as { code?: string })?.code === '42703' || (e as { code?: string })?.code === 'PGRST204') && m.includes(col);
+};
+/** Turns off the optional column the error is about; false if the error is about something else. */
+const dropColumn = (e: unknown) => {
+  if (deckRefs && missing(e, 'refs')) return !(deckRefs = false);
+  if (costs && (missing(e, 'point_limit') || missing(e, 'cost_label'))) return !(costs = false);
+  return false;
+};
+async function writeDeck(row: { name: string; groups: string[][]; refs: RefLink[]; point_limit: number | null }, remoteId?: string): Promise<string> {
   const send = async (r: Partial<typeof row>) => remoteId
     ? (await db().from('decks').update(r).eq('id', remoteId)).error
     : await db().from('decks').insert(r).select('id').single().then((x) => (x.error ? x.error : ((remoteId = (x.data as { id: string }).id), null)));
-  let err = await send(deckRefs ? row : { name: row.name, groups: row.groups });
-  if (err && deckRefs && noColumn(err)) {
-    deckRefs = false;
-    err = await send({ name: row.name, groups: row.groups });
-  }
+  const payload = () => ({ name: row.name, groups: row.groups, ...(deckRefs ? { refs: row.refs } : null), ...(costs ? { point_limit: row.point_limit } : null) });
+  let err = await send(payload());
+  while (err && dropColumn(err)) err = await send(payload());
   if (err) throw err;
   return remoteId!;
 }
 async function readDecks(): Promise<DeckRow[]> {
-  if (deckRefs) {
-    const r = await db().from('decks').select('id, name, groups, refs, created_at').order('created_at');
-    if (!r.error) return r.data as DeckRow[];
-    if (!noColumn(r.error)) throw r.error;
-    deckRefs = false;
+  for (;;) {
+    const cols = ['id', 'name', 'groups', 'created_at', ...(deckRefs ? ['refs'] : []), ...(costs ? ['point_limit'] : [])].join(', ');
+    const r = await db().from('decks').select(cols).order('created_at');
+    if (!r.error) return r.data as unknown as DeckRow[];
+    if (!dropColumn(r.error)) throw r.error;
   }
-  return must(await db().from('decks').select('id, name, groups, created_at').order('created_at')) as DeckRow[];
+}
+async function readArmies(): Promise<ArmyRow[]> {
+  for (;;) {
+    const r = await db().from('pile_armies').select(`id, local_id, name, colour, position${costs ? ', cost_label' : ''}`).order('position');
+    if (!r.error) return r.data as unknown as ArmyRow[];
+    if (!dropColumn(r.error)) throw r.error;
+  }
 }
 
 async function serverIds() {
@@ -108,10 +125,15 @@ export async function pushPile(uid: string, labels: Labels) {
   const armyRows = armies
     .map((a, i) => ({ a, i }))
     .filter(({ a }) => keys.has(`a:${a.id}`) || a.units.some((u) => keys.has(`u:${a.id}:${u.id}`)) || !ids.army.has(a.id))
-    .map(({ a, i }) => ({ local_id: a.id, name: a.name.trim().slice(0, 60) || '—', colour: /^#[0-9a-f]{6}$/i.test(a.colour) ? a.colour : '#1d2a5b', position: i }));
+    .map(({ a, i }) => ({ local_id: a.id, name: a.name.trim().slice(0, 60) || '—', colour: /^#[0-9a-f]{6}$/i.test(a.colour) ? a.colour : '#1d2a5b', position: i, cost_label: a.costLabel?.trim().slice(0, 20) || null }));
   if (armyRows.length) {
-    const back = must(await db().from('pile_armies').upsert(armyRows, { onConflict: 'owner_id,local_id' }).select('id, local_id')) as Pick<ArmyRow, 'id' | 'local_id'>[];
-    for (const r of back) ids.army.set(r.local_id!, r.id);
+    for (;;) {
+      const rows = costs ? armyRows : armyRows.map(({ cost_label: _, ...r }) => r);
+      const r = await db().from('pile_armies').upsert(rows, { onConflict: 'owner_id,local_id' }).select('id, local_id');
+      if (r.error && dropColumn(r.error)) continue;
+      for (const x of must(r) as Pick<ArmyRow, 'id' | 'local_id'>[]) ids.army.set(x.local_id!, x.id);
+      break;
+    }
   }
 
   const unitRows: Record<string, unknown>[] = [];
@@ -155,7 +177,7 @@ export async function pushPile(uid: string, labels: Labels) {
   for (const d of decks) {
     if (!keys.has(`d:${d.id}`) && d.remoteId) continue;
     const groups = d.groups.map((g) => g.map((id) => ids.unit.get(id)).filter(Boolean) as string[]).filter((g) => g.length);
-    const row = { name: d.name.trim().slice(0, 60) || '—', groups, refs: cleanRefs(d.refs) };
+    const row = { name: d.name.trim().slice(0, 60) || '—', groups, refs: cleanRefs(d.refs), point_limit: d.limit && d.limit >= 1 ? Math.min(100000, Math.round(d.limit)) : null };
     if (d.remoteId) await writeDeck(row, d.remoteId);
     else remoteIds.set(d.id, await writeDeck(row));
   }
@@ -178,7 +200,7 @@ export async function pushPile(uid: string, labels: Labels) {
 
 /** Replaces the pile of this device with the account's, keeping the photos already on the device. */
 export async function pullPile(uid: string) {
-  const armies = must(await db().from('pile_armies').select('id, local_id, name, colour, position').order('position')) as ArmyRow[];
+  const armies = await readArmies();
   const units = must(await db().from('pile_units').select('*').order('position')) as UnitRow[];
   const decks = await readDecks();
   const st = useHobby.getState();
@@ -192,6 +214,7 @@ export async function pullPile(uid: string) {
       id: a.local_id ?? a.id,
       name: a.name,
       colour: a.colour,
+      costLabel: costs ? a.cost_label ?? undefined : old?.costLabel,
       createdAt: old?.createdAt ?? Date.now(),
       units: units.filter((u) => u.army_id === a.id).map((u): Unit => {
         const id = u.local_id ?? u.id;
@@ -225,6 +248,7 @@ export async function pullPile(uid: string) {
       name: d.name,
       remoteId: d.id,
       refs: deckRefs ? cleanRefs(d.refs) : old?.refs,
+      limit: costs ? d.point_limit ?? undefined : old?.limit,
       createdAt: old?.createdAt ?? Date.parse(d.created_at),
       groups: cleanGroups(d.groups.map((g) => g.map((x) => localOf.get(x) ?? x)), known),
     };
