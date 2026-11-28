@@ -641,3 +641,12 @@ npm run build      # type-check + production build
     (the site has none). Next, owner answers: Play › **My miniatures** = same armies as My pile, game view; **army = collection,
     list = selection with total and limit** (decks become lists); **cost name per army** (Points, Power, Crowns…) and a cost field
     per unit, the "Points" row taken over.
+48. **Next (owner answers 2026-11-28): add form + list import + Play › My miniatures**
+    - Add a unit = **one form** (name, role, figures, painted, stage, cost + the card rows foldable below); typing the name
+      suggests the player's units of the same name (other armies, lists) and copies their card in one tap.
+    - **Paste a text list** → editable preview → creates or completes the army (no duplicates) **and** creates the list with
+      total and limit; "Attached unit" groups become linked units (leader + bodyguard). Each weapon / wargear line becomes a
+      text row of the card ("9x EtaCarn plasma gun"), names only, no profile imported. Formats: official app export
+      ("Name (90 Points)", • / ◦ bullets, CHARACTERS / BATTLELINE… sections), New Recruit / BattleScribe ("[90 pts]"),
+      One Page Rules Army Forge, and a free format (one unit per line with points anywhere). Parser stays local (no AI, no
+      network), imported content private. Owner sample: official app export, Leagues of Votann, 1,995 / 2,000 pts.
