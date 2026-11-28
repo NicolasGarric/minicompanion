@@ -256,7 +256,7 @@ export function TableEditor({ table, onChange, marks }: { table: Table; onChange
     commit({
       ...table,
       objectives: cardObjectives(table.deployment, table.width, table.height, twoCentral),
-      refs: refs.some((r) => r.l === ref.l) ? refs : [...refs, ref].slice(-4),
+      refs: refs.some((r) => r.u === ref.u) ? refs : [...refs, ref].slice(-4),
     });
     setObjective(null);
   };

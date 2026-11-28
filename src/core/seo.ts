@@ -25,6 +25,7 @@ const PAGES: Partial<Record<RouteName, [MessageKey, MessageKey]>> = {
   stores: ['stores.title', 'stores.lead'],
   legal: ['legal.title', 'legal.about'],
   cookies: ['cookie.pageTitle', 'cookie.pageLead'],
+  terms: ['terms.title', 'terms.lead'],
   support: ['support.button', 'support.lead'],
 };
 

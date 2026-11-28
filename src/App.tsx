@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { useConsent } from './core/consent';
 import { CookieBanner } from './core/privacy/CookieBanner';
 import { CookiesPage } from './core/privacy/CookiesPage';
+import { Terms } from './core/pages/Terms';
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
 import { SuggestionsAdmin } from './core/feedback/SuggestionsAdmin';
 import { DeckPage, Decks, OnlineDeckPage } from './paint/pages/Decks';
@@ -144,6 +145,7 @@ function Page({ route }: { route: Route }) {
     case 'password': return <PasswordPage />;
     case 'legal': return <Legal />;
     case 'cookies': return <CookiesPage />;
+    case 'terms': return <Terms />;
     case 'support': return <SupportPage />;
     case 'stats': return <Stats />;
     case 'admin.bugs': return <BugReportsAdmin />;

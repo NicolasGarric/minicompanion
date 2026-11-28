@@ -96,7 +96,7 @@ export function Footer({ compact }: { compact?: boolean }) {
   return (
     <footer className={`site-footer ${compact ? 'compact' : ''}`}>
       <p>
-        {t('legal.short')} <a href="/legal">{t('nav.legal')}</a>
+        {t('legal.short')} <a href="/legal">{t('nav.legal')}</a> · <a href="/terms">{t('nav.terms')}</a>
       </p>
       <p className="footer-actions">
         <ShareSite />

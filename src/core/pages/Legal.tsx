@@ -15,7 +15,8 @@ export function Legal() {
 
       <section className="card">
         <h2>{t('legal.disclaimerTitle')}</h2>
-        {disclaimerLangs.map((l) => <p key={l} lang={l}>{translate('legal.full', undefined, l)}</p>)}
+        {disclaimerLangs.map((l) => <p key={l} lang={l}>{translate('legal.unofficial', undefined, l)} {translate('legal.full', undefined, l)}</p>)}
+        <p><a href="/terms">{t('nav.terms')}</a></p>
       </section>
 
       <section>

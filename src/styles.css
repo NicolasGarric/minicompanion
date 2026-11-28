@@ -1747,3 +1747,32 @@ p.pile-sync { display: block; }
   .cookie-table td:nth-child(3), .cookie-table td:nth-child(4) { color: var(--muted); font-size: 0.75rem; }
   .cookie-table .cell-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
 }
+
+/* Rules & resources hub (/play/rules) */
+.hub-filters { display: grid; gap: 0.75rem; }
+.hub-family h2 small { font-size: 0.8rem; font-weight: 400; color: var(--text-2); }
+.hub-games { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.hub-game { border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.hub-game-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.6rem; }
+.hub-game-head small { color: var(--text-2); }
+.hub-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0; }
+.hub-tags a.tag { text-decoration: none; }
+.hub-game button.ref-chip { font: inherit; cursor: pointer; }
+.hub-index { margin-top: 0.75rem; }
+@media (min-width: 64rem) {
+  .hub-filters { grid-template-columns: 1fr auto; align-items: end; }
+  .hub-filters .chips { grid-column: 1 / -1; grid-row: 2; }
+  .hub-games { grid-template-columns: 1fr 1fr; column-gap: 1.5rem; }
+}
+/* Reference links (chips, search hits, page sections), shared by cards, decks, games and the hub */
+.ref-chips { list-style: none; margin: 0.4rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.ref-chip { display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid var(--border); background: transparent; border-radius: 1rem; padding: 0.25rem 0.65rem; font-size: 0.8125rem; color: var(--text); text-decoration: none; max-width: 100%; }
+.ref-chip:hover { border-color: var(--accent); }
+.ref-chip .ref-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ref-chips.compact .ref-chip { padding: 0.15rem 0.5rem; font-size: 0.75rem; }
+.ref-hits { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.25rem; }
+.ref-hit { display: grid; text-align: left; width: 100%; padding: 0.4rem 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); background: transparent; color: var(--text); text-decoration: none; font: inherit; }
+.ref-hit small { color: var(--text-2); }
+.ref-sections { margin: 0.4rem 0; padding-left: 1.1rem; }
+.ref-sections li.sub { margin-left: 1rem; font-size: 0.875rem; }
+@media (min-width: 64rem) { .ref-sections.cols { columns: 3; } }

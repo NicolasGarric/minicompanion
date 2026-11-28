@@ -1,7 +1,8 @@
 /**
  * Competitive deployment cards (Chapter Approved 2026-27 mission deck, as published on Wahapedia):
  * the measures only (zones, objective points), read from the cards on 2026-11-10. Our own names and our
- * own drawing; the published card is linked from the map (reference link), nothing else is copied.
+ * own drawing, no published card names (owner decision 2026-11-28); the published deck is linked from the
+ * map (reference link), nothing else is copied.
  *
  * Every card is drawn on a 44" x 60" battlefield seen in portrait: x across (0-44), y down (0-60),
  * side A (attacker) first. Other table sizes scale the card; landscape tables turn it a quarter.
@@ -19,8 +20,6 @@ export interface Objective {
 
 type Pt = [number, number];
 interface Card {
-  /** Name on the published card, for the reference link label */
-  published: string;
   zones: [Pt[], Pt[]];
   homeA: Pt;
   expansion: Pt;
@@ -42,14 +41,13 @@ const round = (n: number) => Math.round(n * 100) / 100;
 
 export const CARDS: Record<CardId, Card> = {
   // 12" strips along both long edges
-  cp_strips: { published: 'Dawn of War', zones: [[[0, 0], [12, 0], [12, 60], [0, 60]], [[32, 0], [44, 0], [44, 60], [32, 60]]], homeA: [10, 30], expansion: [25, 10], divider: [0, 1] },
+  cp_strips: { zones: [[[0, 0], [12, 0], [12, 60], [0, 60]], [[32, 0], [44, 0], [44, 60], [32, 60]]], homeA: [10, 30], expansion: [25, 10], divider: [0, 1] },
   // Triangles from the short edge to the middle of the long edge
-  cp_wedges: { published: 'Crucible of Battle', zones: [[[0, 0], [44, 0], [0, 30]], [[44, 60], [0, 60], [44, 30]]], homeA: [10, 12], expansion: [34, 15], divider: [44, -30] },
+  cp_wedges: { zones: [[[0, 0], [44, 0], [0, 30]], [[44, 60], [0, 60], [44, 30]]], homeA: [10, 12], expansion: [34, 15], divider: [44, -30] },
   // 18" bands along both short edges
-  cp_bands: { published: 'Hammer and Anvil', zones: [[[0, 0], [44, 0], [44, 18], [0, 18]], [[0, 42], [44, 42], [44, 60], [0, 60]]], homeA: [10, 14], expansion: [36, 24], divider: [1, 0] },
+  cp_bands: { zones: [[[0, 0], [44, 0], [44, 18], [0, 18]], [[0, 42], [44, 42], [44, 60], [0, 60]]], homeA: [10, 14], expansion: [36, 24], divider: [1, 0] },
   // Opposite quarters, 9" kept clear around the centre
   cp_quarters: {
-    published: 'Search and Destroy',
     zones: [
       [[0, 0], [22, 0], ...arc(270, 180), [0, 30]],
       [[44, 60], [22, 60], ...arc(90, 0), [44, 30]],
@@ -58,13 +56,11 @@ export const CARDS: Record<CardId, Card> = {
   },
   // Long-edge strips, 14" deep on one half and 8" on the other
   cp_stagger: {
-    published: 'Sweeping Engagement',
     zones: [[[0, 0], [14, 0], [14, 30], [8, 30], [8, 60], [0, 60]], [[44, 60], [30, 60], [30, 30], [36, 30], [36, 0], [44, 0]]],
     homeA: [10, 14], expansion: [30, 10], divider: [-6, 60],
   },
   // Short-edge bands, 20" deep on one half and 12" on the other
   cp_step: {
-    published: 'Tipping Point',
     zones: [[[0, 0], [44, 0], [44, 12], [22, 12], [22, 20], [0, 20]], [[44, 60], [0, 60], [0, 48], [22, 48], [22, 40], [44, 40]]],
     homeA: [11, 14], expansion: [38, 24], divider: [44, -8],
   },
@@ -102,5 +98,6 @@ export function cardObjectives(id: CardId, W: number, H: number, twoCentral = fa
   ];
 }
 
-/** Reference link to the published deployment card. */
-export const cardRef = (id: CardId) => ({ u: DECK_URL, l: CARDS[id].published });
+/** Reference link to the published deployment deck. */
+// Owner decision 2026-11-28: no published card names, the link carries no label (the chip shows the page name).
+export const cardRef = (_id: CardId): { u: string; l?: string } => ({ u: DECK_URL });

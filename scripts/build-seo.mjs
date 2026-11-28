@@ -111,6 +111,7 @@ const PAGES = [
   ['play/swap', 'swap.title', 'swap.lead', () => ''],
   ['play/companies', 'co.title', 'co.lead', () => ''],
   ['cookies', 'cookie.pageTitle', 'cookie.pageLead', () => ''],
+  ['terms', 'terms.title', 'terms.lead', (l) => `<p>${esc(tr(l, 'terms.ugc'))}</p><p>${esc(tr(l, 'legal.unofficial'))}</p>`],
   ['dice', 'dice.title', 'dice.lead', () => ''],
   ['stores', 'stores.title', 'stores.lead', () => '<p>OpenStreetMap (ODbL).</p>'],
   ['legal', 'legal.title', 'legal.about', (l) => `<p>${esc(tr(l, 'legal.full'))}</p>`],
