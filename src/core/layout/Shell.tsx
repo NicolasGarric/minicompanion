@@ -1,3 +1,4 @@
+import { CookieLink } from '../privacy/CookieBanner';
 import { useEffect, type ReactNode } from 'react';
 import { LANGS, useLang, useT, type Lang, type MessageKey } from '../i18n';
 import type { Route } from '../router';
@@ -101,6 +102,7 @@ export function Footer({ compact }: { compact?: boolean }) {
         <SuggestButton />
         <BugReportButton />
         <TranslationSuggestButton />
+        <CookieLink />
       </p>
     </footer>
   );

@@ -36,6 +36,8 @@ select pg_temp.expect_error($q$select * from public.page_views_daily$q$, '42501'
 set role authenticated;
 select pg_temp.as_user(pg_temp.uid(12));
 select public.track_page_view('home', 'en', true);
+-- Since migration 30 the active day has its own call (mark_active_day), separate from page counts.
+select public.mark_active_day();
 reset role;
 select pg_temp.ok((select views = 2 and visits = 1 from public.page_views_daily where page = 'play.tournament' and day = current_date), 'page views and visits are counted');
 select pg_temp.ok((select count(*) from public.page_views_daily where page not in ('play.tournament', 'home')) = 0, 'bad or admin page names are ignored');

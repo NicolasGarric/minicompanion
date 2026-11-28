@@ -1709,3 +1709,41 @@ p.pile-sync { display: block; }
 @media (min-width: 40rem) {
   .company-search { grid-template-columns: 2fr 1.2fr 1fr auto auto; align-items: center; }
 }
+
+/* ---------- Cookies (banner, panel, page, external content): same riso look as the cards and buttons ---------- */
+.cookie-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; background: var(--surface); border-top: 3px solid var(--ink2); box-shadow: 0 -6px 0 var(--ink3); padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom)); }
+.cookie-bar-inner { max-width: 64rem; margin: 0 auto; display: grid; gap: 0.75rem; }
+.cookie-bar h2 { font-family: var(--display); font-size: 1rem; margin: 0 0 0.25rem; color: var(--ink2); }
+.cookie-bar p { margin: 0; font-size: 0.875rem; color: var(--text-2); }
+/* Refuse and Accept side by side, same size (refusing must be as easy as accepting); Customise below on phones. */
+.cookie-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.cookie-actions .btn.ghost { grid-column: 1 / -1; order: 3; }
+.cookie-panel .cookie-actions { grid-template-columns: 1fr; }
+.cookie-panel .cookie-actions .btn.ghost { order: 0; }
+.cookie-panel { display: grid; gap: 0.9rem; }
+.cookie-panel section { border: 2px solid var(--ink2); padding: 0.6rem 0.75rem; display: grid; gap: 0.3rem; background: var(--bg); }
+.cookie-panel section .hint { margin: 0; }
+.toggle.disabled { cursor: default; }
+.toggle.disabled .track { opacity: 0.6; }
+.external-embed { display: grid; gap: 0.5rem; justify-items: start; padding: 1rem; border: 2px dashed var(--ink2); background: var(--bg); }
+.external-embed p { margin: 0; }
+.cookie-state { list-style: none; margin: 0 0 0.75rem; padding: 0; display: grid; gap: 0.35rem; }
+.cookie-state li { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+.cookie-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.cookie-table th, .cookie-table td { text-align: left; vertical-align: top; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); }
+.cookie-table th { color: var(--text-2); font-weight: 700; border-bottom: 2px solid var(--ink2); }
+.cookie-table code { font-size: 0.75rem; overflow-wrap: anywhere; }
+.cookie-table .cell-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (min-width: 48rem) {
+  .cookie-bar-inner { grid-template-columns: 1fr auto; align-items: center; }
+  .cookie-actions { display: flex; }
+  .cookie-actions .btn.ghost { order: 0; }
+  .cookie-panel .cookie-actions { display: grid; grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 40rem) {
+  .cookie-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cookie-table tr { display: grid; gap: 0.15rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+  .cookie-table td { border: 0; padding: 0; }
+  .cookie-table td:nth-child(3), .cookie-table td:nth-child(4) { color: var(--muted); font-size: 0.75rem; }
+  .cookie-table .cell-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+}

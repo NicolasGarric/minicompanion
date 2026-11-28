@@ -50,6 +50,12 @@ export async function suspend(user: string, suspended: boolean, reason?: string)
  * The first page of a tab session counts as a visit. Skipped with "Do Not Track" and on admin pages.
  */
 const VISIT_KEY = 'cf.visit';
+/** One active day per day for a signed-in player (the server skips players who objected). */
+export function markActiveDay() {
+  if (!supabase) return;
+  void supabase.rpc('mark_active_day').then(() => undefined, () => undefined);
+}
+
 export function trackPageView(route: Route, lang: string) {
   if (!supabase || route.name.startsWith('admin') || route.name === 'notFound') return;
   if (typeof navigator !== 'undefined' && navigator.doNotTrack === '1') return;

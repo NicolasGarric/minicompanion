@@ -43,13 +43,6 @@ export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; ln
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** OpenStreetMap embed of one point (no API key, no dependency). */
-export function osmEmbedUrl(p: { lat: number; lng: number }) {
-  const d = 0.008;
-  const bbox = [p.lng - d, p.lat - d * 0.7, p.lng + d, p.lat + d * 0.7].join(',');
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${p.lat},${p.lng}`;
-}
-
 export function osmLink(p: { lat: number; lng: number }) {
   return `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=17/${p.lat}/${p.lng}`;
 }

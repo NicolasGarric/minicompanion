@@ -1,10 +1,13 @@
 import { Analytics } from '@vercel/analytics/react';
+import { useConsent } from './core/consent';
+import { CookieBanner } from './core/privacy/CookieBanner';
+import { CookiesPage } from './core/privacy/CookiesPage';
 import { BugReportsAdmin } from './core/feedback/BugReportsAdmin';
 import { SuggestionsAdmin } from './core/feedback/SuggestionsAdmin';
 import { DeckPage, Decks, OnlineDeckPage } from './paint/pages/Decks';
 import { usePileSync } from './paint/components/PileSync';
 import { AdminDashboard } from './core/admin/AdminDashboard';
-import { trackPageView } from './core/admin/admin';
+import { markActiveDay, trackPageView } from './core/admin/admin';
 import { useLang } from './core/i18n';
 import { useEffect } from 'react';
 import { useRouteMeta } from './core/seo';
@@ -140,6 +143,7 @@ function Page({ route }: { route: Route }) {
     case 'account': return <AccountPage />;
     case 'password': return <PasswordPage />;
     case 'legal': return <Legal />;
+    case 'cookies': return <CookiesPage />;
     case 'support': return <SupportPage />;
     case 'stats': return <Stats />;
     case 'admin.bugs': return <BugReportsAdmin />;
@@ -154,8 +158,16 @@ export default function App() {
   const route = useRoute();
   useRouteMeta(route);
   const lang = useLang((s) => s.lang);
-  // Anonymous page-type counter for the admin dashboard (not the URL, no identifier)
-  useEffect(() => trackPageView(route, lang), [route.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Anonymous page-type counter for the admin dashboard (not the URL, no identifier), only with consent
+  const stats = useConsent((s) => !!s.choice?.stats);
+  useEffect(() => {
+    if (stats) trackPageView(route, lang);
+  }, [route.name, stats]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Active days of signed-in players (legitimate interest, the player can object in My account)
+  const userId = useSession((s) => s.session?.user.id);
+  useEffect(() => {
+    if (userId) markActiveDay();
+  }, [userId]);
   const projectId = useStore((s) => s.projectId);
 
   useEffect(() => {
@@ -175,7 +187,8 @@ export default function App() {
       <>
         <Editor />
         <Toasts />
-        <Analytics />
+        {stats && <Analytics />}
+        <CookieBanner />
       </>
     );
   }
@@ -186,7 +199,8 @@ export default function App() {
         <Page route={route} />
       </Shell>
       <Toasts />
-      <Analytics />
+      {stats && <Analytics />}
+      <CookieBanner />
     </>
   );
 }

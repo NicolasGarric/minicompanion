@@ -1,3 +1,4 @@
+import { useConsent } from '../consent';
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
 import { navigate } from '../router';
@@ -23,6 +24,8 @@ export function SignInPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  // Optional, unticked: creating an account never depends on it.
+  const [statsOk, setStatsOk] = useState(false);
 
   useEffect(() => sessionStorage.removeItem(DELETED_KEY), []);
   useEffect(() => {
@@ -43,6 +46,7 @@ export function SignInPage() {
       const r = await signIn(email.trim(), password);
       if (r.error) setError(t('auth.error.signin'));
     } else {
+      if (statsOk) useConsent.getState().set({ stats: true, external: !!useConsent.getState().choice?.external });
       const r = await signUp(email.trim(), password, displayName.trim());
       if (r.error) setError(r.error);
       else if (r.needsConfirmation) setSent(true);
@@ -115,6 +119,12 @@ export function SignInPage() {
             autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
           />
         </label>
+        {mode === 'signup' && !useConsent.getState().choice?.stats && (
+          <label className="check-line">
+            <input type="checkbox" checked={statsOk} onChange={(e) => setStatsOk(e.target.checked)} />
+            <span>{t('cookie.signupStats')} <a href="/cookies" target="_blank" rel="noreferrer">{t('cookie.more')}</a></span>
+          </label>
+        )}
         {error && <p className="error" role="alert">{error}</p>}
         <button className="btn primary" disabled={busy}>
           {t(mode === 'signin' ? 'auth.signin.cta' : 'auth.signup.cta')}

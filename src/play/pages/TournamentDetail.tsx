@@ -8,7 +8,9 @@ import { supabase, backendConfigured } from '../../core/auth/supabase';
 import { BackendNotice } from '../../core/auth/BackendNotice';
 import { requireSignIn, useSession } from '../../core/auth/session';
 import { Icon } from '../../core/ui/ui';
-import { osmEmbedUrl, osmLink } from '../../core/stores/stores';
+import { osmLink } from '../../core/stores/stores';
+import { TournamentMap } from '../components/TournamentMap';
+import { ExternalEmbed } from '../../core/privacy/ExternalEmbed';
 import { formatWhen } from '../components/GameCard';
 import { playError } from '../lib/games';
 import { downloadIcs } from '../lib/ics';
@@ -251,18 +253,21 @@ function InfoTab({ data, me, mine, onChange, lang }: { data: Data; me: string | 
 
       {tour.twitch_channel && (
         <section className="card twitch">
-          <iframe
-            title={t('tour.stream', { channel: tour.twitch_channel })}
-            src={`https://player.twitch.tv/?channel=${tour.twitch_channel}&parent=${location.hostname}&muted=true&autoplay=false`}
-            allowFullScreen
-            loading="lazy"
-          />
+          {/* Twitch sets its own cookies: loaded on a click, or when "External content" is accepted. */}
+          <ExternalEmbed service="Twitch" link={`https://www.twitch.tv/${tour.twitch_channel}`}>
+            <iframe
+              title={t('tour.stream', { channel: tour.twitch_channel })}
+              src={`https://player.twitch.tv/?channel=${tour.twitch_channel}&parent=${location.hostname}&muted=true&autoplay=false`}
+              allowFullScreen
+              loading="lazy"
+            />
+          </ExternalEmbed>
         </section>
       )}
 
       {place && (
         <section className="card tour-map">
-          <iframe title={t('tour.map')} src={osmEmbedUrl(place)} loading="lazy" />
+          <TournamentMap points={[{ id: tour.id, slug: tour.slug, name: tour.name, lat: place.lat, lng: place.lng, when: formatWhen(tour.starts_at, lang) }]} center={null} radiusKm={null} />
           <a className="small" href={osmLink(place)} target="_blank" rel="noreferrer">{t('tour.openMap')} ↗</a>
         </section>
       )}

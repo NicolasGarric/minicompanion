@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { LANGS, useT, type Lang } from '../i18n';
 import { CityPicker } from '../ui/CityPicker';
 import { requireSignIn, useSession } from './session';
-import { backendConfigured } from './supabase';
+import { backendConfigured, supabase } from './supabase';
 import { BackendNotice } from './BackendNotice';
 import { Avatar } from '../ui/Avatar';
 import { DeleteAccount } from './DeleteAccount';
@@ -75,6 +75,16 @@ export function AccountPage() {
           label={t('profile.publicToggle')}
         />
         <small className="hint">{t(profile.is_public ? 'profile.publicOn' : 'profile.publicOff')}</small>
+        <Toggle
+          checked={profile.activity_stats !== false}
+          onChange={async (v) => {
+            if (!supabase) return;
+            await supabase.rpc('set_activity_stats', { p_on: v });
+            await useSession.getState().refreshProfile();
+          }}
+          label={t('cookie.activityToggle')}
+        />
+        <small className="hint">{t('cookie.activityHint')} <a href="/cookies">{t('cookie.more')}</a></small>
       </section>
 
       <form className="card field-col" onSubmit={save}>

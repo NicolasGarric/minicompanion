@@ -9,13 +9,14 @@ run it again after adding a migration, never edit these copies by hand.
 | | |
 |---|---|
 | Migrations 01 - 29 | applied (29 on 2026-11-27; Companies RPCs answer on the live API) |
+| Migration 30 (cookies and privacy) | **to apply**: `2_apply_latest_migration.sql` |
 | Demo data | removed from the live database (checked 2026-10-28) |
 
 ## What to run
 
 1. `0_check_status.sql`: read-only. Lists every migration as `applied` or `TO APPLY`.
 2. Then one of these:
-   - `2_apply_latest_migration.sql`: the migrations not applied yet (none for now).
+   - `2_apply_latest_migration.sql`: the migrations not applied yet (30, cookies and privacy).
    - `1_apply_all_migrations.sql`: all migrations in one script. Migrations already in the
      database are skipped automatically, so it is safe to run on any database, new or old
      (migration 03 is a policy fix that simply runs again).
@@ -30,7 +31,7 @@ run it again after adding a migration, never edit these copies by hand.
 7. `6_account_check.sql`: check of account deletion and storage ceilings (migration 28). Same principle: the test
    account it creates and deletes is cancelled. Every line should start with `OK`.
 
-The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `29_companies.sql`),
+The `migrations/` folder holds the same migrations one file per step (`01_core.sql` … `30_privacy_consent.sql`),
 for reading or for running one by one, in number order. Unlike the scripts above, these files do not skip
 themselves: running one twice stops with "already exists".
 

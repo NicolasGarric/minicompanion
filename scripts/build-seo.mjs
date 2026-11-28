@@ -110,6 +110,7 @@ const PAGES = [
   ['play/mentors', 'mentor.title', 'mentor.lead', () => ''],
   ['play/swap', 'swap.title', 'swap.lead', () => ''],
   ['play/companies', 'co.title', 'co.lead', () => ''],
+  ['cookies', 'cookie.pageTitle', 'cookie.pageLead', () => ''],
   ['dice', 'dice.title', 'dice.lead', () => ''],
   ['stores', 'stores.title', 'stores.lead', () => '<p>OpenStreetMap (ODbL).</p>'],
   ['legal', 'legal.title', 'legal.about', (l) => `<p>${esc(tr(l, 'legal.full'))}</p>`],

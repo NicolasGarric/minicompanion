@@ -1,3 +1,5 @@
+import { hasConsent } from './consent';
+
 /**
  * Privacy-friendly analytics: only daily aggregated counters, stored in the browser.
  * No identifiers, no cookies, no third-party service.
@@ -48,6 +50,8 @@ export function readAnalytics(): AnalyticsData {
 const lastSeen = new Map<string, number>();
 
 export function track(event: AnalyticsEvent, detail?: string) {
+  // Kept on this device only when the visitor accepted statistics (cookie banner).
+  if (!hasConsent('stats')) return;
   // Same event twice within 1 s (double mount, double click) counts once.
   const key = `${event}:${detail ?? ''}`;
   const now = Date.now();

@@ -19,6 +19,8 @@ export interface Profile {
   is_admin: boolean;
   /** Public profile page (/u/handle); private by default. Missing before the social migration. */
   is_public?: boolean;
+  /** Active days counted (legitimate interest); false when the player objected. Missing before migration 30. */
+  activity_stats?: boolean;
 }
 
 export type ProfileUpdate = Partial<Pick<Profile, 'handle' | 'display_name' | 'home_city' | 'preferred_lang' | 'factions'>> & {
