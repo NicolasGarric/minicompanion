@@ -2815,4 +2815,5 @@ export const zh: Record<MessageKey, string> = {
   "mini.create": "创建",
   "mini.importedList": "导入的名单",
   "mini.importedArmy": "导入的军队",
+  "cards.edit": "编辑卡片",
 };

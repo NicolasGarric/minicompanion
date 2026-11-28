@@ -2815,4 +2815,5 @@ export const pt: Record<MessageKey, string> = {
   "mini.create": "Criar",
   "mini.importedList": "Lista importada",
   "mini.importedArmy": "Exército importado",
+  "cards.edit": "Editar a carta",
 };

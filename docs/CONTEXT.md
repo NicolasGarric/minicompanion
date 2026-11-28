@@ -666,3 +666,7 @@ npm run build      # type-check + production build
     - `/play/miniatures` (tab "My miniatures", noindex): import button, new army, armies (cost name editable, units table with role,
       miniatures, cost, unit name opens its card, add a unit), lists with total / limit (red when over) and editable limit, link to the swipe.
     - `armyStats` counts costs from the card rows (army cost name or Points) instead of the old `points` field.
+50. **Card editing in the deck builder (2026-11-28, owner request: the technical side of units is managed there, not on the
+    painting side)**: the card editor moved to `src/paint/components/UnitCardEditor.tsx`, shared by My pile and the deck page.
+    In the deck "Build" tab every card of the scroll order has "Edit the card": name, role, miniatures, cost (army cost name), card
+    photo, link, info rows, reference links, live preview. Info editor: wider label field (wargear names readable).

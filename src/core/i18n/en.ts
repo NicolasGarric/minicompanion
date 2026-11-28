@@ -2840,6 +2840,7 @@ export const en = {
   "mini.create": "Create",
   "mini.importedList": "Imported list",
   "mini.importedArmy": "Imported army",
+  "cards.edit": "Edit the card",
 } as const;
 
 export type MessageKey = keyof typeof en;

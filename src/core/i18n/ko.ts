@@ -2815,4 +2815,5 @@ export const ko: Record<MessageKey, string> = {
   "mini.create": "만들기",
   "mini.importedList": "가져온 리스트",
   "mini.importedArmy": "가져온 아미",
+  "cards.edit": "카드 편집",
 };

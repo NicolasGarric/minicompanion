@@ -2834,4 +2834,5 @@ export const ja: Record<MessageKey, string> = {
   "mini.create": "作成",
   "mini.importedList": "読み込んだリスト",
   "mini.importedArmy": "読み込んだアーミー",
+  "cards.edit": "カードを編集",
 };

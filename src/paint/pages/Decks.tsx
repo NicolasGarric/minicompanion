@@ -3,11 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { k, useT } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { useSession } from '../../core/auth/session';
-import { Icon, IconButton } from '../../core/ui/ui';
+import { Icon, IconButton, Modal } from '../../core/ui/ui';
 import { addCard, linkToAbove, memberUp, moveGroup, removeCard, sumOf, unlink, MAX_CARDS, type Groups } from '../hobby/cards';
 import { useHobby, type Army, type LocalDeck } from '../hobby/store';
 import { deckShareCode, deckUrl, shareDeck, viewDeck, type OnlineDeck } from '../hobby/sync';
-import { SwipeDeck, pileUrl, useInfoOf, useLocalCards, type CardView } from '../components/UnitCard';
+import { SwipeDeck, pileUrl, useInfoOf, useLocalCards, usePhotoUrls, type CardView } from '../components/UnitCard';
+import { UnitCardEditor } from '../components/UnitCardEditor';
 import { PileSyncBanner } from '../components/PileSync';
 import { RefChips, RefLinksEditor } from '../../core/ui/RefLinks';
 
@@ -80,6 +81,7 @@ export function DeckPage({ id }: { id: string }) {
   const { updateDeck, removeDeck } = useHobby.getState();
   const [tab, setTab] = useState<'play' | 'build'>(() => (location.search.includes('tab=build') ? 'build' : 'play'));
   const [confirm, setConfirm] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const cards = useLocalCards(armies, deck?.groups ?? []);
   const pts = usePointsLabels();
 
@@ -100,7 +102,7 @@ export function DeckPage({ id }: { id: string }) {
         <SwipeDeck cards={cards} groups={deck.groups} title={deck.name} total={total ? `${total} ${t('pile.pts')}` : undefined} />
       ) : (
         <div className="deck-build">
-          <DeckOrder deck={deck} cards={cards} onChange={(groups) => updateDeck(deck.id, { groups })} />
+          <DeckOrder deck={deck} cards={cards} onChange={(groups) => updateDeck(deck.id, { groups })} onEdit={setEditing} />
           <DeckPicker armies={armies} groups={deck.groups} onChange={(groups) => updateDeck(deck.id, { groups })} />
         </div>
       )}
@@ -110,6 +112,7 @@ export function DeckPage({ id }: { id: string }) {
           kinds={['missions', 'rules', 'factions', 'narrative', 'boarding']} />
       </section>
       <DeckShare deck={deck} />
+      {editing && <EditCardModal armies={armies} unitId={editing} onClose={() => setEditing(null)} />}
       <div className="field-row wrap danger-zone">
         {confirm ? (
           <>
@@ -126,7 +129,7 @@ export function DeckPage({ id }: { id: string }) {
 }
 
 /** Scroll order: move a card or a linked group, link to the card above, unlink, take out. */
-function DeckOrder({ deck, cards, onChange }: { deck: LocalDeck; cards: CardView[]; onChange: (g: Groups) => void }) {
+function DeckOrder({ deck, cards, onChange, onEdit }: { deck: LocalDeck; cards: CardView[]; onChange: (g: Groups) => void; onEdit: (id: string) => void }) {
   const t = useT();
   const byId = new Map(cards.map((c) => [c.id, c]));
   const g = deck.groups;
@@ -148,6 +151,7 @@ function DeckOrder({ deck, cards, onChange }: { deck: LocalDeck; cards: CardView
                     <span className="num tab">{num}</span>
                     <span className="nm"><b>{c?.name ?? '—'}</b><small className="muted">{c ? t(k(`role.${c.role}`)) : ''}{mi > 0 ? ` · ${t('cards.linked')}` : ''}</small></span>
                     <span className="tools">
+                      {c && <button type="button" className="btn small" onClick={() => onEdit(id)}><Icon name="brush" size={13} /> {t('cards.edit')}</button>}
                       {mi === 0 ? (
                         <>
                           <IconButton icon="up" label={t('colours.layerUp')} size={14} disabled={gi === 0} onClick={() => onChange(moveGroup(g, gi, -1))} />
@@ -174,6 +178,19 @@ function DeckOrder({ deck, cards, onChange }: { deck: LocalDeck; cards: CardView
         ))}
       </ol>
     </section>
+  );
+}
+
+/** The card editor of a unit of the deck, with its technical basics (name, role, miniatures, cost). */
+function EditCardModal({ armies, unitId, onClose }: { armies: Army[]; unitId: string; onClose: () => void }) {
+  const army = armies.find((a) => a.units.some((u) => u.id === unitId));
+  const unit = army?.units.find((u) => u.id === unitId);
+  const urls = usePhotoUrls(unit?.photos ?? []);
+  if (!army || !unit) return null;
+  return (
+    <Modal title={unit.name} onClose={onClose} wide>
+      <UnitCardEditor army={army} unit={unit} urls={urls} basics />
+    </Modal>
   );
 }
 

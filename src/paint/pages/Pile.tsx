@@ -3,12 +3,12 @@ import { k, localeOf, useLang, useT } from '../../core/i18n';
 import { navigate } from '../../core/router';
 import { Icon, IconButton, Modal } from '../../core/ui/ui';
 import { download, shrinkPhoto } from '../../core/lib/image';
-import { ARMY_INKS, ROLES, STAGES, armyStats, cardPhotoOf, photoBlob, useHobby, type Army, type Role, type Stage, type Unit } from '../hobby/store';
+import { ARMY_INKS, ROLES, STAGES, armyStats, photoBlob, useHobby, type Army, type Role, type Stage, type Unit } from '../hobby/store';
 import { deckImage, deckLink, deckOf, type Deck } from '../hobby/deck';
 import { DeckView } from '../components/DeckCards';
 import { TimelapseDialog } from '../components/TimelapseDialog';
-import { isRefRow } from '../../core/lib/refLinks';
-import { CardRefsEditor, InfoEditor, UnitCard, useInfoOf, usePhotoUrls, type CardView } from '../components/UnitCard';
+import { usePhotoUrls } from '../components/UnitCard';
+import { UnitCardEditor } from '../components/UnitCardEditor';
 import { AddUnitForm } from '../components/AddUnitForm';
 import { PileSyncBanner } from '../components/PileSync';
 import { removeRemotePhotos } from '../hobby/sync';
@@ -264,7 +264,7 @@ function UnitDialog({ army, unit, onClose }: { army: Army; unit: Unit; onClose: 
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => { void onFiles(e.target.files); e.target.value = ''; }} />
         </div>
 
-        <CardSection army={army} unit={unit} urls={urls} />
+        <UnitCardEditor army={army} unit={unit} urls={urls} />
 
         <div className="field-row wrap">
           <button className="btn primary" disabled={unit.photos.length < 2} onClick={() => setStory(true)}>
@@ -281,66 +281,6 @@ function UnitDialog({ army, unit, onClose }: { army: Army; unit: Unit; onClose: 
       </div>
       {story && <TimelapseDialog army={army} unit={unit} onClose={() => setStory(false)} />}
     </Modal>
-  );
-}
-
-/** The unit's card: photo chosen among its photos, link to another unit, free info list, preview. */
-function CardSection({ army, unit, urls }: { army: Army; unit: Unit; urls: Map<string, string> }) {
-  const t = useT();
-  const armies = useHobby((s) => s.armies);
-  const { updateUnit } = useHobby.getState();
-  const infoOf = useInfoOf();
-  const lines = infoOf(unit);
-  const all = armies.flatMap((a) => a.units);
-  const linkedHere = all.some((u) => u.linkedTo === unit.id);
-  const targets = all.filter((u) => u.id !== unit.id && !u.linkedTo);
-  const labels = [...new Set(all.flatMap((u) => u.info ?? []).filter((x) => !isRefRow(x)).map((x) => x.l.trim()).filter(Boolean))].slice(0, 60);
-  const ph = cardPhotoOf(unit);
-  const target = all.find((u) => u.id === unit.linkedTo);
-  const card: CardView = {
-    id: unit.id, name: unit.name, role: unit.role, colour: army.colour, photo: ph ? urls.get(ph.id) : undefined,
-    rows: lines.filter((x) => x.l.trim()), links: target ? [[target.id, target.name]] : [],
-  };
-  return (
-    <section className="card-section">
-      <h3>{t('cards.title')}</h3>
-      <p className="hint">{t('cards.hint')}</p>
-      <div className="card-section-grid">
-        <div className="card-section-form">
-          {unit.photos.length > 0 && (
-            <div className="field">
-              <span>{t('cards.photo')}</span>
-              <div className="card-photos" role="radiogroup" aria-label={t('cards.photo')}>
-                {unit.photos.map((p, i) => (
-                  <button key={p.id} type="button" role="radio" aria-checked={ph?.id === p.id} className={ph?.id === p.id ? 'on' : ''}
-                    onClick={() => updateUnit(army.id, unit.id, { cardPhoto: p.id })} aria-label={t('pile.photoN', { n: i + 1 })}>
-                    {urls.get(p.id) ? <img src={urls.get(p.id)} alt="" /> : <span className="spinner small" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <label className="field">
-            <span>{t('cards.linkTo')}</span>
-            <select className="select" value={unit.linkedTo ?? ''} disabled={linkedHere}
-              onChange={(e) => updateUnit(army.id, unit.id, { linkedTo: e.target.value || undefined })}>
-              <option value="">{t('cards.noLink')}</option>
-              {targets.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-            {linkedHere && <small className="hint">{t('cards.othersLinked')}</small>}
-          </label>
-          <div className="field">
-            <span>{t('cards.info')}</span>
-            <InfoEditor lines={lines} suggestions={labels} onChange={(info) => updateUnit(army.id, unit.id, { info })} />
-          </div>
-          <div className="field">
-            <span>{t('refs.title')}</span>
-            <CardRefsEditor lines={lines} onChange={(info) => updateUnit(army.id, unit.id, { info })} />
-          </div>
-        </div>
-        <UnitCard card={card} />
-      </div>
-    </section>
   );
 }
 

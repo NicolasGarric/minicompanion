@@ -1540,7 +1540,7 @@ textarea.text-input { font: inherit; line-height: 1.45; resize: vertical; }
 .ucard-state.contested, .ucard-state.pending { background: var(--ink3); border-color: var(--ink3); color: var(--ink2); }
 
 .info-editor { display: grid; gap: 0.45rem; }
-.info-row { display: grid; grid-template-columns: auto minmax(0, 8rem) minmax(0, 1fr) auto; gap: 0.35rem; align-items: start; background: var(--surface); border: 2px solid var(--ink2); padding: 0.35rem; }
+.info-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 0.35rem; align-items: start; background: var(--surface); border: 2px solid var(--ink2); padding: 0.35rem; }
 .info-type { width: 2.6rem; height: 2.3rem; font: inherit; font-size: 0.78rem; font-weight: 700; border: 2px solid var(--ink2); background: var(--paper); color: var(--ink2); cursor: pointer; }
 .info-type.n { background: var(--ink2); color: var(--paper); }
 .info-row .text-input, .info-row .num-input { width: 100%; min-width: 0; }
@@ -1849,3 +1849,4 @@ p.pile-sync { display: block; }
 .mini-list-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
 .mini-list-name { font-weight: 700; font-size: 1.05rem; }
 .mini-list .num-input { width: 6rem; }
+.card-basics .num-input { width: 100%; }
