@@ -2720,4 +2720,8 @@ export const ja: Record<MessageKey, string> = {
   "cookie.signupStats": "匿名の訪問統計に同意します（任意）。",
   "cookie.activityToggle": "サイトを利用した日を記録する",
   "cookie.activityHint": "アクティブなプレイヤー数を数えるためだけに使います。オフにすると、記録済みの日付も削除されます。",
+  // Share the site (footer)
+  "share.site.button": "サイトをシェア",
+  "share.site.text": "MiniCompanion：ミニチュアの配色を考えて、対戦や大会を探して、カンパニーの仲間と遊ぼう。",
+  "share.sheet.qrDownload": "QRコードをダウンロード",
 };

@@ -2701,4 +2701,8 @@ export const ko: Record<MessageKey, string> = {
   "cookie.signupStats": "익명 방문 통계에 동의합니다(선택).",
   "cookie.activityToggle": "사이트를 이용한 날짜 기록",
   "cookie.activityHint": "활동 중인 플레이어 수를 세는 데만 쓰입니다. 끄면 이미 기록된 날짜도 삭제됩니다.",
+  // Share the site (footer)
+  "share.site.button": "사이트 공유",
+  "share.site.text": "MiniCompanion: 미니어처 도색 배색을 계획하고, 게임과 대회를 찾고, 컴퍼니와 함께 플레이하세요.",
+  "share.sheet.qrDownload": "QR 코드 다운로드",
 };

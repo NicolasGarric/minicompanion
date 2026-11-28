@@ -2726,6 +2726,10 @@ export const en = {
   'cookie.signupStats': "I accept the anonymous visit statistics (optional).",
   'cookie.activityToggle': "Count the days I use the site",
   'cookie.activityHint': "Used only to count active players. Turning it off erases the days already recorded.",
+  // Share the site (footer)
+  'share.site.button': "Share the site",
+  'share.site.text': "MiniCompanion: plan your miniature paint schemes, find games and tournaments, and play with your Company.",
+  'share.sheet.qrDownload': "Download the QR code",
 } as const;
 
 export type MessageKey = keyof typeof en;

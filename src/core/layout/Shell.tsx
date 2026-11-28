@@ -1,4 +1,5 @@
 import { CookieLink } from '../privacy/CookieBanner';
+import { ShareSite } from '../ui/ShareSite';
 import { useEffect, type ReactNode } from 'react';
 import { LANGS, useLang, useT, type Lang, type MessageKey } from '../i18n';
 import type { Route } from '../router';
@@ -98,6 +99,7 @@ export function Footer({ compact }: { compact?: boolean }) {
         {t('legal.short')} <a href="/legal">{t('nav.legal')}</a>
       </p>
       <p className="footer-actions">
+        <ShareSite />
         <SupportLink />
         <SuggestButton />
         <BugReportButton />

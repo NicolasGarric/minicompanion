@@ -2701,4 +2701,8 @@ export const zh: Record<MessageKey, string> = {
   "cookie.signupStats": "我接受匿名访问统计（可选）。",
   "cookie.activityToggle": "记录我使用网站的日期",
   "cookie.activityHint": "仅用于统计活跃玩家。关闭后会删除已记录的日期。",
+  // Share the site (footer)
+  "share.site.button": "分享网站",
+  "share.site.text": "MiniCompanion：规划你的模型涂装配色，寻找对战和比赛，和你的战团一起玩。",
+  "share.sheet.qrDownload": "下载二维码",
 };

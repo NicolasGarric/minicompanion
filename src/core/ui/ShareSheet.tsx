@@ -62,6 +62,7 @@ export function ShareSheet({ title, text, url, onClose }: { title: string; text:
           <figure className="share-qr">
             <img src={qr} alt={t('share.sheet.qrAlt')} />
             <figcaption className="hint">{t('share.sheet.qrHint')}</figcaption>
+            <a className="btn small" href={qr} download="minicompanion-qr.png"><Icon name="download" size={14} /> {t('share.sheet.qrDownload')}</a>
           </figure>
         )}
       </div>

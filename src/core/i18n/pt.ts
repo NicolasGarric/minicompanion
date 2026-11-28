@@ -2701,4 +2701,8 @@ export const pt: Record<MessageKey, string> = {
   "cookie.signupStats": "Aceito as estatísticas de visita anônimas (opcional).",
   "cookie.activityToggle": "Contar os dias em que uso o site",
   "cookie.activityHint": "Serve só para contar os jogadores ativos. Desativar apaga os dias já registrados.",
+  // Share the site (footer)
+  "share.site.button": "Compartilhar o site",
+  "share.site.text": "MiniCompanion: planeje as cores das suas miniaturas, encontre partidas e torneios e jogue com a sua Companhia.",
+  "share.sheet.qrDownload": "Baixar o QR code",
 };
