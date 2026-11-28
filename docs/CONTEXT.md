@@ -1,7 +1,7 @@
 # Project context — MiniCompanion
 
 > Working memory for this project. Read this first when resuming work.
-> Last update: 2026-11-28 (cookies and privacy: consent banner, self-hosted fonts, migration 30 to apply; marketing no longer a priority)
+> Last update: 2026-11-28 (cookies and privacy: consent banner, self-hosted fonts, migration 30 applied; share the site in the footer; marketing no longer a priority)
 
 ## What it is
 
@@ -561,7 +561,7 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
     limit (default 50; an admin raises the ceiling with SQL `admin_set_company_ceiling`), main Company badge on player pages,
     realtime chat + announcements, calendar with answers and `.ics`, reports (3 hide) and `/admin` moderation.
     Details, postponed items and deliveries 2-3 in `docs/COMPANIES_PLAN.md`.
-44. **Cookies and privacy (2026-11-28, owner decisions)**, migration 30 **to apply** (+11 SQL tests `supabase/tests/rls_privacy.sql`):
+44. **Cookies and privacy (2026-11-28, owner decisions)**, migration 30 applied by the owner the same day (+11 SQL tests `supabase/tests/rls_privacy.sql`):
     - Consent (`src/core/consent.ts`, kept 6 months then asked again): bottom bar `CookieBanner` in the site's riso style, Refuse and
       Accept same size side by side, Customise opens the panel (necessary always on / statistics / external content); "Cookies" link
       in the footer reopens it; withdrawing reloads the page. Policy page `/cookies` (`CookiesPage`, table of every storage key).
@@ -574,6 +574,9 @@ Agreed order: 4. PAINT performance → 5. visual pass. Then:
       `node scripts/fetch-fonts.mjs`): no request to Google any more. CSP: Google hosts and the OSM iframe removed.
     - **Twitch** behind `ExternalEmbed` (loads on click or with "External content"); tournament map is the Leaflet map (no iframe).
     - Privacy text (legal.privacy3 / privacy5) updated in the 9 languages.
+45. **Share the site (2026-11-28, owner request)**: footer button "Share the site" (`src/core/ui/ShareSite.tsx`) opens the
+    existing share sheet on the home page in the visitor's language (phone share menu, copy, LINE / WhatsApp / X / e-mail, QR code);
+    every share sheet can now download its QR code (to print for a club table).
 
 ## To do (owner list, 2026-10-29)
 
