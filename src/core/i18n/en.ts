@@ -2841,6 +2841,17 @@ export const en = {
   "mini.importedList": "Imported list",
   "mini.importedArmy": "Imported army",
   "cards.edit": "Edit the card",
+  "cards.addSection": "Section",
+  "cards.section": "Section",
+  "cards.sectionTitle": "Section title",
+  "cards.noSection": "No section",
+  "cards.removeSection": "Remove the section (its rows stay)",
+  "cards.sectionHint": "Add a section to make your own foldable bands (e.g. Ranged weapons), then choose the section of each row.",
+  "cards.sec.ranged": "Ranged weapons",
+  "cards.sec.melee": "Melee weapons",
+  "cards.sec.abilities": "Abilities",
+  "cards.sec.wargear": "Wargear",
+  "cards.sec.keywords": "Keywords",
 } as const;
 
 export type MessageKey = keyof typeof en;

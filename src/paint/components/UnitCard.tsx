@@ -4,7 +4,7 @@ import { k, useT } from '../../core/i18n';
 import { Icon, IconButton } from '../../core/ui/ui';
 import { supabase } from '../../core/auth/supabase';
 import { thumbOf } from '../../core/lib/photoPaths';
-import { cleanInfo, legacyInfo, searchCards, toggleType, MAX_LINES, LABEL_MAX, TEXT_MAX, type Groups, type InfoLine } from '../hobby/cards';
+import { cleanInfo, isSection, legacyInfo, moveToSection, searchCards, sectionRow, splitSections, toggleType, MAX_LINES, LABEL_MAX, TEXT_MAX, type Groups, type InfoLine } from '../hobby/cards';
 import { ROLE_INK } from '../hobby/deck';
 import { cardPhotoOf, photoBlob, type Army, type Role, type Unit, type UnitPhoto } from '../hobby/store';
 import { addRefRow, isRefRow, refsOfRows, type RefLink } from '../../core/lib/refLinks';
@@ -109,6 +109,48 @@ function CardSection({ id, title, children }: { id: string; title: string; child
   );
 }
 
+type Row = InfoLine & { was?: number | string; changed?: boolean };
+
+/** Number rows as one column grid: header + values share it, first column frozen when it scrolls. */
+function StatGrid({ stats, lost, q }: { stats: Row[]; lost: InfoLine[]; q: string }) {
+  const cols = stats.length + lost.length;
+  return (
+    <div className="ucard-grid-wrap">
+      <div className="ucard-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(3.4rem, 1fr))` }}>
+        {stats.map((x, i) => <span key={`h${i}`} className={`ucard-gh ${i === 0 ? 'first' : ''}`}><Hl text={x.l} q={q} /></span>)}
+        {lost.map((x, i) => <span key={`hl${i}`} className="ucard-gh gone">{x.l}</span>)}
+        {stats.map((x, i) => (
+          <span key={`v${i}`} className={`ucard-gv ${i === 0 ? 'first' : ''} ${x.changed ? 'changed' : ''}`}>
+            {x.was != null && <s className="was">{x.was}</s>}
+            {x.v}
+          </span>
+        ))}
+        {lost.map((x, i) => <span key={`vl${i}`} className="ucard-gv gone">{String(x.v)}</span>)}
+      </div>
+    </div>
+  );
+}
+
+/** Text rows as name bars with their text. */
+function TextItems({ texts, lost, q }: { texts: Row[]; lost: InfoLine[]; q: string }) {
+  return (
+    <ul className="ucard-items">
+      {texts.map((x, i) => (
+        <li key={i} className={x.changed ? 'changed' : ''}>
+          <span className="ucard-namebar"><Hl text={x.l} q={q} /></span>
+          {(x.was != null || String(x.v).trim() !== '') && <p>{x.was != null && <s className="was">{x.was}</s>}<Hl text={String(x.v)} q={q} /></p>}
+        </li>
+      ))}
+      {lost.map((x, i) => (
+        <li key={`lost${i}`} className="gone">
+          <span className="ucard-namebar">{x.l}</span>
+          {String(x.v).trim() !== '' && <p>{String(x.v)}</p>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * A unit card as a mobile unit sheet (style B chosen by the owner on 2026-11-28, the app's own look):
  * navy title bar with the name and the cost, foldable sections (state remembered on the device),
@@ -123,11 +165,13 @@ export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: str
   const isPts = (x: InfoLine) => x.t === 'n' && ptsLabels.has(x.l.trim().toLowerCase());
   const rows = card.rows.filter((x) => !isRefRow(x));
   const cost = rows.find(isPts);
-  const stats = rows.filter((x) => x.t === 'n' && x !== cost);
-  const texts = rows.filter((x) => x.t === 't');
+  const { lead, sections } = splitSections(rows.filter((x) => x !== cost));
+  const stats = lead.filter((x) => x.t === 'n');
+  const texts = lead.filter((x) => x.t === 't');
   const lostStats = card.lost?.filter((x) => x.t === 'n') ?? [];
-  const lostTexts = card.lost?.filter((x) => x.t === 't') ?? [];
-  const cols = stats.length + lostStats.length;
+  const lostTexts = card.lost?.filter((x) => x.t === 't' && !isSection(x)) ?? [];
+  const content = rows.filter((x) => !isSection(x)).length + (card.lost?.length ?? 0);
+
   return (
     <article className="ucard" style={{ ['--army' as string]: card.colour, ['--role' as string]: ROLE_INK[card.role] }}>
       {band && <div className="ucard-band"><span>{band[0]}</span><b>{band[1]}</b></div>}
@@ -155,42 +199,27 @@ export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: str
           {band && <span className="ucard-stamp">{t('cards.campaignCopy')}</span>}
         </div>
       )}
-      {rows.length + (card.lost?.length ?? 0) === 0 && !refs.length && <p className="hint ucard-empty">{t('cards.noInfo')}</p>}
-      {cols > 0 && (
+      {content === 0 && !refs.length && <p className="hint ucard-empty">{t('cards.noInfo')}</p>}
+      {stats.length + lostStats.length > 0 && (
         <CardSection id="profile" title={t('cards.sec.profile')}>
-          <div className="ucard-grid-wrap">
-            <div className="ucard-grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(3.4rem, 1fr))` }}>
-              {stats.map((x, i) => <span key={`h${i}`} className={`ucard-gh ${i === 0 ? 'first' : ''}`}><Hl text={x.l} q={q} /></span>)}
-              {lostStats.map((x, i) => <span key={`hl${i}`} className="ucard-gh gone">{x.l}</span>)}
-              {stats.map((x, i) => (
-                <span key={`v${i}`} className={`ucard-gv ${i === 0 ? 'first' : ''} ${x.changed ? 'changed' : ''}`}>
-                  {x.was != null && <s className="was">{x.was}</s>}
-                  {x.v}
-                </span>
-              ))}
-              {lostStats.map((x, i) => <span key={`vl${i}`} className="ucard-gv gone">{String(x.v)}</span>)}
-            </div>
-          </div>
+          <StatGrid stats={stats} lost={lostStats} q={q} />
         </CardSection>
       )}
       {texts.length + lostTexts.length > 0 && (
         <CardSection id="rules" title={t('cards.sec.rules')}>
-          <ul className="ucard-items">
-            {texts.map((x, i) => (
-              <li key={i} className={x.changed ? 'changed' : ''}>
-                <span className="ucard-namebar"><Hl text={x.l} q={q} /></span>
-                <p>{x.was != null && <s className="was">{x.was}</s>}<Hl text={String(x.v)} q={q} /></p>
-              </li>
-            ))}
-            {lostTexts.map((x, i) => (
-              <li key={`lost${i}`} className="gone">
-                <span className="ucard-namebar">{x.l}</span>
-                <p>{String(x.v)}</p>
-              </li>
-            ))}
-          </ul>
+          <TextItems texts={texts} lost={lostTexts} q={q} />
         </CardSection>
       )}
+      {sections.map((sec, i) => (
+        <CardSection key={`${i}${sec.title}`} id={`u:${sec.title.toLowerCase()}`} title={sec.title || '—'}>
+          {sec.rows.length === 0 ? <p className="hint ucard-empty">{t('cards.noInfo')}</p> : (
+            <>
+              {sec.rows.some((x) => x.t === 'n') && <StatGrid stats={sec.rows.filter((x) => x.t === 'n')} lost={[]} q={q} />}
+              {sec.rows.some((x) => x.t === 't') && <TextItems texts={sec.rows.filter((x) => x.t === 't')} lost={[]} q={q} />}
+            </>
+          )}
+        </CardSection>
+      ))}
       {refs.length > 0 && (
         <CardSection id="refs" title={t('refs.title')}>
           <div className="ucard-refs"><RefChips links={refs} compact /></div>
@@ -217,17 +246,38 @@ export function UnitCard({ card, q = '', band, onGo }: { card: CardView; q?: str
   );
 }
 
-/** Rows of a card: type (123 / Aa), label, value; move up, remove; add a number or a text. */
+/**
+ * Rows of a card: type (123 / Aa), label, value; move up / down, remove; add a number, a text or a
+ * section. Sections (owner request 2026-11-28) are titled bands the player creates; each row picks
+ * the section it goes in, or moves across them with the arrows.
+ */
 export function InfoEditor({ lines, onChange, suggestions = [] }: { lines: InfoLine[]; onChange: (l: InfoLine[]) => void; suggestions?: string[] }) {
   const t = useT();
   const set = (i: number, x: InfoLine) => onChange(lines.map((y, j) => (j === i ? x : y)));
   const listId = useMemo(() => `labels-${Math.random().toString(36).slice(2, 8)}`, []);
+  const secListId = `${listId}-s`;
   const add = (type: 'n' | 't') => onChange([...lines, { l: type === 'n' ? '' : t('cards.rule'), t: type, v: type === 'n' ? 0 : '' }]);
+  const swap = (i: number, j: number) => onChange(lines.map((y, k) => (k === i ? lines[j] : k === j ? lines[i] : y)));
+  const titles = lines.filter(isSection).map((x) => x.l);
+  const sectionOf = (i: number) => lines.slice(0, i).filter(isSection).length - 1;
+  const presets = ['cards.sec.profile', 'cards.sec.ranged', 'cards.sec.melee', 'cards.sec.abilities', 'cards.sec.wargear', 'cards.sec.keywords'] as const;
   return (
     <div className="info-editor">
       <datalist id={listId}>{suggestions.map((s) => <option key={s} value={s} />)}</datalist>
-      {lines.map((x, i) => isRefRow(x) ? null : (
-        <div key={i} className="info-row">
+      <datalist id={secListId}>{presets.map((key) => <option key={key} value={t(key)} />)}</datalist>
+      {lines.map((x, i) => isRefRow(x) ? null : isSection(x) ? (
+        <div key={i} className="info-row section">
+          <span className="info-type s" aria-hidden="true"><Icon name="layers" size={14} /></span>
+          <input className="text-input" list={secListId} value={x.l} maxLength={LABEL_MAX} aria-label={t('cards.sectionTitle')} placeholder={t('cards.sectionTitle')}
+            onChange={(e) => set(i, { ...x, l: e.target.value })} />
+          <span className="info-tools">
+            <IconButton icon="up" label={t('colours.layerUp')} size={14} disabled={i === 0} onClick={() => swap(i, i - 1)} />
+            <IconButton icon="down" label={t('colours.layerDown')} size={14} disabled={i === lines.length - 1} onClick={() => swap(i, i + 1)} />
+            <IconButton icon="trash" label={t('cards.removeSection')} size={14} onClick={() => onChange(lines.filter((_, j) => j !== i))} />
+          </span>
+        </div>
+      ) : (
+        <div key={i} className={`info-row ${titles.length ? 'in-sections' : ''}`}>
           <button type="button" className={`info-type ${x.t}`} onClick={() => set(i, toggleType(x))}
             aria-label={t(x.t === 'n' ? 'cards.typeNumber' : 'cards.typeText')} title={t('cards.toggleType')}>
             {x.t === 'n' ? '123' : 'Aa'}
@@ -242,8 +292,14 @@ export function InfoEditor({ lines, onChange, suggestions = [] }: { lines: InfoL
               onChange={(e) => set(i, { ...x, v: e.target.value })} />
           )}
           <span className="info-tools">
-            <IconButton icon="up" label={t('colours.layerUp')} size={14} disabled={i === 0}
-              onClick={() => onChange(lines.map((y, j) => (j === i - 1 ? lines[i] : j === i ? lines[i - 1] : y)))} />
+            {titles.length > 0 && (
+              <select className="select info-sec" value={sectionOf(i)} aria-label={t('cards.section')} onChange={(e) => onChange(moveToSection(lines, i, +e.target.value))}>
+                <option value={-1}>{t('cards.noSection')}</option>
+                {titles.map((title, s) => <option key={s} value={s}>{title || '—'}</option>)}
+              </select>
+            )}
+            <IconButton icon="up" label={t('colours.layerUp')} size={14} disabled={i === 0} onClick={() => swap(i, i - 1)} />
+            <IconButton icon="down" label={t('colours.layerDown')} size={14} disabled={i === lines.length - 1} onClick={() => swap(i, i + 1)} />
             <IconButton icon="trash" label={t('common.delete')} size={14} onClick={() => onChange(lines.filter((_, j) => j !== i))} />
           </span>
         </div>
@@ -251,7 +307,9 @@ export function InfoEditor({ lines, onChange, suggestions = [] }: { lines: InfoL
       <div className="field-row wrap">
         <button type="button" className="btn small" disabled={lines.length >= MAX_LINES} onClick={() => add('n')}><Icon name="plus" size={14} /> {t('cards.addNumber')}</button>
         <button type="button" className="btn small ghost" disabled={lines.length >= MAX_LINES} onClick={() => add('t')}><Icon name="plus" size={14} /> {t('cards.addText')}</button>
+        <button type="button" className="btn small ghost" disabled={lines.length >= MAX_LINES} onClick={() => onChange([...lines, sectionRow('')])}><Icon name="layers" size={14} /> {t('cards.addSection')}</button>
       </div>
+      {titles.length === 0 && <p className="hint small">{t('cards.sectionHint')}</p>}
     </div>
   );
 }

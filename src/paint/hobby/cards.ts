@@ -16,6 +16,35 @@ export interface InfoLine {
 export type Groups = string[][];
 
 export const MAX_LINES = 40;
+
+/**
+ * Sections chosen by the player (owner request 2026-11-28): a section is a text row whose value is
+ * this marker, its label is the title; the rows after it belong to it until the next section. Stored
+ * as a plain text row, so the database checks, campaign copies and shared decks keep working as is.
+ */
+export const SECTION_V = '§section';
+export const isSection = (x: Pick<InfoLine, 't' | 'v'>) => x.t === 't' && x.v === SECTION_V;
+export const sectionRow = (title: string): InfoLine => ({ l: title, t: 't', v: SECTION_V });
+
+/** Rows before the first section, then each section with its rows (in the player's order). */
+export function splitSections<T extends Pick<InfoLine, 'l' | 't' | 'v'>>(rows: T[]): { lead: T[]; sections: { title: string; rows: T[] }[] } {
+  const lead: T[] = [];
+  const sections: { title: string; rows: T[] }[] = [];
+  for (const x of rows) {
+    if (isSection(x)) sections.push({ title: x.l.trim(), rows: [] });
+    else (sections.length ? sections[sections.length - 1].rows : lead).push(x);
+  }
+  return { lead, sections };
+}
+
+/** Moves row `i` to the end of section `s` (index among the sections), or before the first section when s < 0. */
+export function moveToSection<T extends Pick<InfoLine, 'l' | 't' | 'v'>>(rows: T[], i: number, s: number): T[] {
+  const row = rows[i];
+  const rest = rows.filter((_, j) => j !== i);
+  const heads = rest.map((x, j) => (isSection(x) ? j : -1)).filter((j) => j >= 0);
+  const at = s < 0 ? (heads[0] ?? rest.length) : (heads[s + 1] ?? rest.length);
+  return [...rest.slice(0, at), row, ...rest.slice(at)];
+}
 export const MAX_CARDS = 60;
 export const LABEL_MAX = 30;
 export const TEXT_MAX = 500;
@@ -67,7 +96,7 @@ export function searchCards<T extends { name: string; info: InfoLine[] }>(cards:
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return [];
   return cards.filter((c) => {
-    const hay = [c.name, ...c.info.map((x) => `${x.l} ${x.v}`)].join(' ').toLowerCase();
+    const hay = [c.name, ...c.info.map((x) => (isSection(x) ? x.l : `${x.l} ${x.v}`))].join(' ').toLowerCase();
     return words.every((w) => hay.includes(w));
   });
 }

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { k, useT } from '../../core/i18n';
 import { Icon, IconButton, Modal } from '../../core/ui/ui';
-import { cleanInfo, LABEL_MAX, type InfoLine } from '../../paint/hobby/cards';
+import { cleanInfo, sectionRow, LABEL_MAX, type InfoLine } from '../../paint/hobby/cards';
 import { ROLES, useHobby, type Role } from '../../paint/hobby/store';
 import { parseListText, type ImportedList, type ImportedUnit } from '../lib/listImport';
 
-/** Card rows of an imported unit: its cost, its extra lines, then one text row per weapon or wargear. */
-export function importInfo(u: ImportedUnit, costLabel: string): InfoLine[] {
+/** Card rows of an imported unit: its cost, then a Wargear section with its extra lines and one text row per weapon or wargear. */
+export function importInfo(u: ImportedUnit, costLabel: string, wargear: string): InfoLine[] {
   const rows: InfoLine[] = [];
   if (u.cost != null) rows.push({ l: costLabel, t: 'n', v: u.cost });
+  // Wargear and extra lines go in their own section, ready for the player's other sections
+  if (u.notes.length + u.gear.length) rows.push(sectionRow(wargear.slice(0, LABEL_MAX)));
   for (const [l, v] of u.notes) rows.push({ l: l.slice(0, LABEL_MAX), t: 't', v: l.length > LABEL_MAX ? `${l} ${v}`.trim() : v });
   for (const g of u.gear) {
     const label = `${g.n}x ${g.name}`;
@@ -54,7 +56,7 @@ export function ListImport({ onClose, onDone }: { onClose: () => void; onDone: (
       armyId: target || null,
       armyName: armyName.trim() || t('mini.importedArmy'),
       costLabel: costLabel.trim().slice(0, 20) || t('cards.row.points'),
-      units: units.map((u) => ({ name: u.name.trim().slice(0, 60) || '—', role: u.role, count: u.count, group: u.group, leader: u.leader, info: (l: string) => importInfo(u, l) })),
+      units: units.map((u) => ({ name: u.name.trim().slice(0, 60) || '—', role: u.role, count: u.count, group: u.group, leader: u.leader, info: (l: string) => importInfo(u, l, t('cards.sec.wargear')) })),
       listName: makeList ? listName.trim() || t('mini.importedList') : null,
       limit: limit === '' ? null : limit,
     });

@@ -670,3 +670,11 @@ npm run build      # type-check + production build
     painting side)**: the card editor moved to `src/paint/components/UnitCardEditor.tsx`, shared by My pile and the deck page.
     In the deck "Build" tab every card of the scroll order has "Edit the card": name, role, miniatures, cost (army cost name), card
     photo, link, info rows, reference links, live preview. Info editor: wider label field (wargear names readable).
+51. **Player sections on unit cards (2026-11-28, owner request)**: the player creates titled foldable bands ("+ Section",
+    title suggestions Profile / Ranged weapons / Melee weapons / Abilities / Wargear / Keywords) and picks the section of each
+    row (select on the row, or up / down arrows across bands). A section is stored as a plain text row whose value is the
+    marker `§section` (`SECTION_V`, `isSection`, `splitSections`, `moveToSection` in `cards.ts`): no migration, the database
+    check, campaign copies and shared decks keep working. On the card: rows before the first section keep the default bands
+    (Profile = numbers, Weapons & rules = texts); each section shows its numbers as a column grid and its texts as name bars;
+    fold state per section title. The list import puts wargear and extra lines in a "Wargear" section. Tests
+    `tests/paint/cards.sections.test.ts`.

@@ -1850,3 +1850,10 @@ p.pile-sync { display: block; }
 .mini-list-name { font-weight: 700; font-size: 1.05rem; }
 .mini-list .num-input { width: 6rem; }
 .card-basics .num-input { width: 100%; }
+
+/* Player sections in the card editor (titled bands, rows choose their section) */
+.info-row.section { grid-template-columns: auto minmax(0, 1fr) auto; background: var(--ink3); align-items: center; }
+.info-row.section .text-input { font-family: var(--condensed); font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.info-type.s { display: inline-flex; align-items: center; justify-content: center; width: 2.4rem; min-height: 2.2rem; background: var(--ink2); color: var(--ink3); }
+.info-row.in-sections { margin-left: 0.9rem; }
+.info-tools .info-sec { max-width: 9rem; font-size: 0.8rem; padding: 0.2rem 0.3rem; }
